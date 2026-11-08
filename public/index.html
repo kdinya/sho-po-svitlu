@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="theme-color" content="#07111f" />
+    <meta name="theme-color" content="#06122d" />
     <meta name="description" content="Зрозумілий графік світла за чергою з публічного Telegram-каналу." />
     <meta name="color-scheme" content="dark" />
     <link rel="manifest" href="/manifest.json" />
@@ -23,94 +23,137 @@
       <symbol id="i-send" viewBox="0 0 24 24"><path d="m21 3-7.2 18-3.9-7.1L3 10l18-7Z" fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="1.8"/><path d="m10 14 5-5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.8"/></symbol>
       <symbol id="i-open" viewBox="0 0 24 24"><path d="M14 4h6v6m0-6-9 9" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/><path d="M18 13v5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.8"/></symbol>
       <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.7"/></symbol>
+      <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18m-2 0v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7"/></symbol>
     </svg>
 
     <div class="app-shell">
       <header class="topbar">
         <a class="brand" href="/" aria-label="ШоПоСвітлу — на головну">
           <span class="brand-mark"><svg class="icon"><use href="#i-bolt" /></svg></span>
-          <span class="brand-copy"><strong>ШоПоСвітлу</strong><small>світло під контролем</small></span>
+          <span class="brand-copy"><strong>ШоПоСвітлу</strong></span>
         </a>
         <div class="queue-picker" id="queuePicker">
-          <span class="queue-label">МОЯ ЧЕРГА</span>
           <button class="queue-trigger" id="queueSelect" type="button" aria-label="Оберіть чергу" aria-haspopup="listbox" aria-expanded="false" aria-controls="queueMenu">
+            <span class="queue-trigger-prefix">Черга</span>
             <span id="queueValue">6.2</span>
             <svg class="queue-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
           </button>
           <div class="queue-menu" id="queueMenu" role="listbox" aria-label="Доступні черги" hidden></div>
         </div>
-        <div class="top-actions">
-          <span class="network-indicator" id="networkIndicator"><i></i><span>очікуємо дані</span></span>
-          <button class="icon-button" id="settingsButton" type="button" aria-label="Відкрити джерело та налаштування" title="Джерело та налаштування"><svg class="icon"><use href="#i-settings" /></svg></button>
-        </div>
       </header>
 
       <main id="mainContent">
         <section class="page-screen is-active" id="homeScreen" data-screen="home">
-          <div class="page-heading home-heading">
-            <p class="eyebrow"><span id="heroDayLabel">СЬОГОДНІ</span> · <span class="heading-date" id="heroDate"></span></p>
-            <h1>Черга <span id="homeQueue">6.2</span></h1>
-          </div>
+          <!-- Hero Status Card directly matching the mockup -->
           <article class="status-card" id="statusCard" data-state="unknown" aria-live="polite">
-            <img class="mascot-art" src="/images/mascot-lightbulb.webp" alt="Мультяшна усміхнена лампочка показує великий палець вгору" width="160" height="184" />
-            <div class="status-topline"><span class="live-pill"><i></i><span id="statusKicker">СТАН ЗА ГРАФІКОМ</span></span></div>
-            <div class="status-main">
-              <div class="lamp-scene" id="lampScene" aria-hidden="true">
-                <span class="lamp-orbit orbit-one"></span><span class="lamp-orbit orbit-two"></span>
-                <svg class="lamp-svg" viewBox="0 0 100 112" role="presentation">
-                  <path class="lamp-glow" d="M50 8c-19.3 0-34 14.7-34 33 0 12.7 6.8 20.6 14.2 29.6 4.8 5.9 7.7 10.1 8.2 16.4h23.2c.5-6.3 3.4-10.5 8.2-16.4C77.2 61.6 84 53.7 84 41 84 22.7 69.3 8 50 8Z"/>
-                  <path class="lamp-glass" d="M50 11C32.4 11 19 24.4 19 41c0 11.3 6.1 18.5 13.1 27.1 5.2 6.3 8.6 11.1 9.1 19.1h17.6c.5-8 3.9-12.8 9.1-19.1C75.9 59.5 82 52.3 82 41c0-16.6-13.4-30-32-30Z"/>
-                  <path class="lamp-filament" d="m43 82 7-15 7 15m-13-3h12m-12 8h12m-10 8h8m-7 6h6"/>
-                  <path class="lamp-spark" d="M50 25 40 44h9l-2 14 14-22h-10l2-11Z"/>
-                </svg><span class="lamp-base"></span>
+            <div class="status-card-inner">
+              <div class="status-left">
+                <p class="hero-eyebrow">Графік відключень електроенергії</p>
+                <h1 class="hero-status-title" id="statusTitle">Зараз є світло!</h1>
+                <p class="hero-date" id="heroDate">Сьогодні, 9 листопада</p>
+                <div class="hero-next-pill" id="nextCard">
+                  <svg class="icon"><use href="#i-clock" /></svg>
+                  <span id="nextTitle">Наступна зміна: о 18:00</span>
+                  <span class="hero-countdown" id="countdown"></span>
+                </div>
               </div>
-              <div class="status-copy">
-                <h2 id="statusTitle">Перевіряємо графік</h2>
-                <p id="statusDetail">Зараз завантажимо останні повідомлення каналу.</p>
-                <div class="status-meta"><span class="status-dot"></span><span id="statusMeta">Оновлюємо дані</span></div>
+              <div class="status-right">
+                <img class="mascot-art" src="/images/mascot-lightbulb.webp" alt="Усміхнена лампочка ШоПоСвітлу" width="160" height="184" fetchpriority="high" />
+                <button class="hero-refresh-btn" id="refreshButton" type="button" aria-label="Оновити дані">
+                  <svg class="icon" id="updateIcon"><use href="#i-refresh" /></svg>
+                  <span>Оновити</span>
+                </button>
               </div>
             </div>
-            <div class="status-bottom"><span class="signal-bars" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span>Плановий графік · не вимір мережі</span></div>
+            <div class="status-bottom-meta">
+              <span class="meta-dot"></span>
+              <span id="statusMeta">Оновлюємо дані</span>
+            </div>
+            <!-- Keep hidden fallback nodes for script compatibility -->
+            <div hidden>
+              <span id="statusKicker"></span>
+              <p id="statusDetail"></p>
+              <span id="nextDetail"></span>
+              <span id="homeQueue">6.2</span>
+              <span id="heroDayLabel">СЬОГОДНІ</span>
+              <span id="networkIndicator"><i></i><span></span></span>
+              <button id="settingsButton" type="button"></button>
+            </div>
           </article>
 
-          <article class="next-card" id="nextCard">
-            <div class="next-icon"><svg class="icon"><use href="#i-clock" /></svg></div>
-            <div class="next-copy"><span class="eyebrow">НАЙБЛИЖЧА ЗМІНА</span><strong id="nextTitle">Шукаємо графік</strong><span id="nextDetail">Щойно отримаємо дані — покажемо час</span></div>
-            <div class="countdown" id="countdown" aria-label="Час до найближчої зміни">—</div>
-          </article>
-
-          <div class="home-actions">
-            <button class="refresh-button" id="refreshButton" type="button"><svg class="icon"><use href="#i-refresh" /></svg><span>Оновити</span></button>
-          </div>
+          <!-- 24-Hour Schedule Section -->
           <section class="home-overview panel" aria-labelledby="homeOverviewHeading">
             <div class="overview-heading">
-              <div class="section-heading"><div><p class="eyebrow">СЬОГОДНІ · <span id="homeOverviewDate">—</span></p><h2 id="homeOverviewHeading">Графік на сьогодні</h2></div></div>
+              <div class="overview-title-group">
+                <svg class="icon overview-icon"><use href="#i-calendar" /></svg>
+                <h2 id="homeOverviewHeading">Графік на сьогодні</h2>
+              </div>
               <div class="overview-day-switch" role="tablist" aria-label="Оберіть день графіка">
                 <button class="overview-day is-active" id="homeTodayTab" type="button" role="tab" aria-selected="true" data-day="today">Сьогодні</button>
                 <button class="overview-day" id="homeTomorrowTab" type="button" role="tab" aria-selected="false" data-day="tomorrow">Завтра</button>
               </div>
             </div>
-            <div class="overview-legend"><span><i class="legend-on"></i> Є світло</span><span><i class="legend-off"></i> Немає світла</span></div>
+
+            <!-- 24-Hour Timeline Bar -->
             <div class="timeline-wrap overview-timeline" id="homeTimelineWrap">
               <div class="timeline-track" id="homeTimelineTrack" aria-label="Графік відключень за добу"></div>
-              <div class="now-marker" id="homeNowMarker" aria-label="Поточний час"><span>ЗАРАЗ <b id="homeCurrentTime">--:--</b></span><i></i></div>
-              <div class="timeline-ticks" aria-hidden="true"><span>00:00</span><span>06:00</span><span>12:00</span><span>18:00</span><span>24:00</span></div>
+              <div class="now-marker" id="homeNowMarker" aria-label="Поточний час">
+                <span>ЗАРАЗ <b id="homeCurrentTime">--:--</b></span>
+                <i></i>
+              </div>
+              <div class="timeline-ticks" aria-hidden="true">
+                <span>00:00</span><span>06:00</span><span>12:00</span><span>18:00</span><span>24:00</span>
+              </div>
             </div>
+
+            <div class="overview-legend">
+              <span><i class="legend-on"></i> Є світло</span>
+              <span><i class="legend-off"></i> Немає світла</span>
+            </div>
+
+            <!-- Outages Section -->
             <div class="overview-outages">
-              <div class="overview-outages-heading"><h3>Найближчі відключення</h3><span class="outage-count" id="homeOutageCount">—</span></div>
-              <div class="outage-list overview-outage-list" id="homeOutageList"><div class="empty-state"><span class="empty-orb"></span><p>Завантажуємо графік…</p></div></div>
+              <div class="overview-outages-heading">
+                <h3><svg class="icon"><use href="#i-clock" /></svg> Найближчі відключення</h3>
+                <span class="outage-count" id="homeOutageCount">—</span>
+              </div>
+              <div class="outage-list overview-outage-list" id="homeOutageList">
+                <div class="empty-state"><span class="empty-orb"></span><p>Завантажуємо графік…</p></div>
+              </div>
             </div>
+            <span id="homeOverviewDate" hidden></span>
           </section>
 
-          <a class="home-source-card" href="#" id="homeSourceCard" aria-label="Налаштування джерела даних">
+          <!-- Data Source Card -->
+          <div class="home-source-card" id="homeSourceCard">
             <span class="home-source-mark"><svg class="icon"><use href="#i-send" /></svg></span>
-            <span class="home-source-copy"><small>ДЖЕРЕЛО ДАНИХ</small><strong id="homeSourceName">Світло Маловисківського району</strong><span id="homeSourceUpdate">Очікуємо оновлення</span></span>
-            <span class="home-source-action" aria-hidden="true"><svg class="icon"><use href="#i-settings" /></svg></span>
-          </a>
-          <button class="install-button home-install-button" id="installButton" type="button"><svg class="icon"><use href="#i-bolt" /></svg><span>Встановити на пристрій</span></button>
+            <span class="home-source-copy">
+              <small>ДЖЕРЕЛО ДАНИХ</small>
+              <strong id="homeSourceName">Світло Маловисківського району</strong>
+              <span id="homeSourceUpdate">Оновлено: очікуємо</span>
+            </span>
+            <button class="home-source-action-btn" id="openSourceSettingsBtn" type="button" aria-label="Налаштування джерела">
+              <svg class="icon"><use href="#i-settings" /></svg>
+              <span>Налаштування</span>
+            </button>
+          </div>
+
+          <!-- Install & Share quick buttons -->
+          <div class="home-utility-actions">
+            <button class="utility-btn install-btn" id="installButton" type="button">
+              <svg class="icon"><use href="#i-bolt" /></svg>
+              <span>Встановити додаток</span>
+            </button>
+            <button class="utility-btn share-btn" id="shareAppButton" type="button">
+              <svg class="icon"><use href="#i-open" /></svg>
+              <span>Поділитися</span>
+            </button>
+          </div>
+
           <p class="home-safety-note">Графік є планом і може відрізнятися від фактичного електропостачання.</p>
         </section>
 
+        <!-- Detailed Schedule Screen (Tab 2) -->
         <section class="page-screen" id="scheduleScreen" data-screen="schedule" hidden>
           <div class="page-heading">
             <p class="eyebrow">ТВОЯ ЧЕРГА <span class="heading-date" id="scheduleDate">Сьогодні</span></p>
@@ -122,7 +165,8 @@
           </div>
 
           <section class="timeline-section panel" aria-labelledby="timelineHeading">
-            <div class="section-heading"><div><p class="eyebrow">00:00 — 24:00</p><h2 id="timelineHeading">Світло протягом доби</h2></div>
+            <div class="section-heading">
+              <div><p class="eyebrow">00:00 — 24:00</p><h2 id="timelineHeading">Світло протягом доби</h2></div>
               <div class="timeline-legend"><span><i class="legend-on"></i> є</span><span><i class="legend-off"></i> немає</span></div>
             </div>
             <div class="timeline-wrap" id="timelineWrap">
@@ -134,62 +178,136 @@
           </section>
 
           <section class="panel outage-panel">
-            <div class="section-heading"><div><p class="eyebrow">ПЛАН НА ДЕНЬ</p><h2>Коли не буде світла</h2></div><span class="outage-count" id="outageCount">—</span></div>
-            <div class="outage-list" id="outageList"><div class="empty-state"><span class="empty-orb"></span><p>Додаємо планові інтервали…</p></div></div>
+            <div class="section-heading">
+              <div><p class="eyebrow">ПЛАН НА ДЕНЬ</p><h2>Коли не буде світла</h2></div>
+              <span class="outage-count" id="outageCount">—</span>
+            </div>
+            <div class="outage-list" id="outageList">
+              <div class="empty-state"><span class="empty-orb"></span><p>Додаємо планові інтервали…</p></div>
+            </div>
           </section>
         </section>
 
+        <!-- Settings Screen (Tab 3) -->
         <section class="page-screen" id="sourceScreen" data-screen="source" hidden>
           <div class="page-heading">
             <p class="eyebrow">КАНАЛ ТА ОНОВЛЕННЯ</p>
             <h1>Джерело <span>даних</span></h1>
           </div>
           <article class="panel source-panel">
-            <div class="source-heading"><span class="telegram-mark"><svg class="icon"><use href="#i-send" /></svg></span><div><p class="eyebrow">TELEGRAM</p><h2>Першоджерело</h2></div><span class="source-status" id="sourceStatus"><i></i> очікуємо</span></div>
+            <div class="source-heading">
+              <span class="telegram-mark"><svg class="icon"><use href="#i-send" /></svg></span>
+              <div><p class="eyebrow">TELEGRAM</p><h2>Першоджерело</h2></div>
+              <span class="source-status" id="sourceStatus"><i></i> очікуємо</span>
+            </div>
             <a class="source-link" id="sourceLink" href="https://t.me/s/SvitloMalovyskivskohoRaionu" target="_blank" rel="noopener noreferrer">
               <span class="source-names"><strong id="sourceName">Світло Маловисківського району</strong><small id="sourceHandle">t.me/s/SvitloMalovyskivskohoRaionu</small></span>
               <svg class="icon source-open"><use href="#i-open" /></svg>
             </a>
             <div class="source-divider"></div>
-            <div class="update-row"><span class="update-icon" id="updateIcon"><svg class="icon"><use href="#i-refresh" /></svg></span><span class="update-copy"><small>ОСТАННЄ ОНОВЛЕННЯ</small><strong id="updatedAt">Ще не оновлювали</strong></span></div>
-            <p class="source-disclaimer">Як часто перевіряти канал: кожні 5, 15 або 30 хвилин.</p>
-            <button class="edit-source-button" id="editSourceButton" type="button"><svg class="icon"><use href="#i-settings" /></svg> Змінити канал та інтервал</button>
+            <div class="update-row">
+              <span class="update-icon"><svg class="icon"><use href="#i-refresh" /></svg></span>
+              <span class="update-copy"><small>ОСТАННЄ ОНОВЛЕННЯ</small><strong id="updatedAt">Ще не оновлювали</strong></span>
+            </div>
+            <button class="edit-source-button" id="editSourceButton" type="button">
+              <svg class="icon"><use href="#i-settings" /></svg> Змінити або додати канал
+            </button>
           </article>
-          <button class="share-app-button" id="shareAppButton" type="button"><svg class="icon"><use href="#i-open" /></svg><span><strong>Поділитися додатком</strong><small>Надішліть посилання друзям</small></span><span class="share-arrow" aria-hidden="true">↗</span></button>
-          <div class="honesty-note"><span class="honesty-icon"><svg class="icon"><use href="#i-sun" /></svg></span><p><strong>Це план, а не датчик.</strong><br />Фактичне електропостачання може відрізнятися від графіка. Перевіряйте повідомлення у першоджерелі.</p></div>
+          <div class="honesty-note">
+            <span class="honesty-icon"><svg class="icon"><use href="#i-sun" /></svg></span>
+            <p><strong>Це план, а не датчик.</strong><br />Фактичне електропостачання може відрізнятися від графіка. Перевіряйте повідомлення у першоджерелі.</p>
+          </div>
         </section>
 
-        <div class="error-banner" id="errorBanner" role="status" aria-live="polite" hidden><span class="error-icon">!</span><div><strong id="errorTitle">Канал недоступний</strong><span id="errorText"></span></div><button id="errorRetry" type="button">Спробувати ще</button></div>
+        <div class="error-banner" id="errorBanner" role="status" aria-live="polite" hidden>
+          <span class="error-icon">!</span>
+          <div><strong id="errorTitle">Канал недоступний</strong><span id="errorText"></span></div>
+          <button id="errorRetry" type="button">Спробувати ще</button>
+        </div>
       </main>
 
-      <footer class="footer"><span>ШоПоСвітлу <span class="footer-muted">· графік, не вимір</span></span><span id="footerUpdate">Очікуємо перше оновлення</span></footer>
+      <footer class="footer">
+        <span>ШоПоСвітлу <span class="footer-muted">· графік, не вимір</span></span>
+        <span id="footerUpdate">Очікуємо перше оновлення</span>
+      </footer>
     </div>
 
+    <!-- Fixed Bottom Navigation directly matching the mockup -->
     <nav class="bottom-nav" aria-label="Основна навігація">
-      <button class="nav-item is-active" type="button" data-screen-target="home" aria-current="page"><svg class="icon"><use href="#i-bolt" /></svg><span>Стан</span></button>
-      <button class="nav-item" type="button" data-screen-target="schedule"><svg class="icon"><use href="#i-calendar" /></svg><span>Графік</span></button>
-      <button class="nav-item" type="button" data-screen-target="source"><svg class="icon"><use href="#i-settings" /></svg><span>Налаштування</span></button>
+      <button class="nav-item is-active" type="button" data-screen-target="home" aria-current="page">
+        <svg class="icon"><use href="#i-bolt" /></svg>
+        <span>Стан</span>
+      </button>
+      <button class="nav-item" type="button" data-screen-target="schedule">
+        <svg class="icon"><use href="#i-calendar" /></svg>
+        <span>Графік</span>
+      </button>
+      <button class="nav-item" type="button" data-screen-target="source">
+        <svg class="icon"><use href="#i-settings" /></svg>
+        <span>Налаштування</span>
+      </button>
     </nav>
 
+    <!-- Channel Selection & Settings Dialog -->
     <dialog class="settings-dialog" id="settingsDialog" aria-labelledby="settingsTitle">
-      <form id="settingsForm" method="dialog" class="settings-form">
-        <div class="dialog-top"><div><p class="eyebrow">ПЕРСОНАЛЬНІ НАЛАШТУВАННЯ</p><h2 id="settingsTitle">Канал і частота</h2></div><button class="icon-button dialog-close" id="closeSettings" type="button" aria-label="Закрити">×</button></div>
-        <label class="field-label" for="channelInput">Посилання на Telegram-канал</label>
-        <div class="input-wrap"><svg class="icon"><use href="#i-send" /></svg><input id="channelInput" name="channel" type="text" inputmode="url" autocomplete="url" placeholder="https://t.me/s/назва_каналу" required /></div>
-        <p class="field-help">Публічне посилання на канал або його @назва.</p>
-        <label class="field-label" for="intervalInput">Як часто оновлювати</label>
-        <div class="interval-options" role="radiogroup" aria-label="Інтервал оновлення">
-          <label><input id="intervalInput" type="radio" name="interval" value="5" /><span>5 хв</span></label>
-          <label><input type="radio" name="interval" value="15" /><span>15 хв</span></label>
-          <label><input type="radio" name="interval" value="30" /><span>30 хв</span></label>
+      <div class="settings-modal-box">
+        <div class="dialog-top">
+          <div>
+            <p class="eyebrow">ДЖЕРЕЛО ДАНИХ</p>
+            <h2 id="settingsTitle">Оберіть Telegram-канал</h2>
+          </div>
+          <button class="icon-button dialog-close" id="closeSettings" type="button" aria-label="Закрити">×</button>
         </div>
-        <div class="settings-callout"><svg class="icon"><use href="#i-sun" /></svg><p>Спільний Cloudflare Worker уже підключений власником застосунку. Тут змінюються лише ваш канал та частота перевірки.</p></div>
-        <div class="dialog-actions"><button class="text-button" id="cancelSettings" type="button">Скасувати</button><button class="primary-button" type="submit">Зберегти</button></div>
-      </form>
+
+        <div class="dialog-body">
+          <div class="dialog-section-header">
+            <span class="field-label">Доступні канали</span>
+            <button type="button" class="add-channel-toggle" id="toggleAddChannelBtn">
+              <span>+ Додати канал</span>
+            </button>
+          </div>
+
+          <!-- New Channel Input Block (shown when clicking + Додати канал) -->
+          <div class="add-channel-box" id="addChannelBox" hidden>
+            <label class="add-channel-label" for="newChannelInput">Посилання на публічний канал або @username:</label>
+            <div class="input-wrap">
+              <svg class="icon"><use href="#i-send" /></svg>
+              <input id="newChannelInput" type="text" inputmode="url" placeholder="https://t.me/s/назва або @канал" />
+            </div>
+            <div class="add-channel-buttons">
+              <button type="button" class="btn-cancel" id="cancelAddChannelBtn">Скасувати</button>
+              <button type="button" class="btn-confirm" id="confirmAddChannelBtn">Зберегти та обрати</button>
+            </div>
+          </div>
+
+          <!-- List of channels: Default channel is pre-populated, plus custom added channels -->
+          <div class="channels-list" id="channelsList" role="radiogroup" aria-label="Список каналів"></div>
+
+          <div class="dialog-section">
+            <label class="field-label">Частота перевірки графіка</label>
+            <div class="interval-options">
+              <label class="radio-chip"><input type="radio" name="interval" value="5" /><span>5 хв</span></label>
+              <label class="radio-chip"><input type="radio" name="interval" value="15" /><span>15 хв</span></label>
+              <label class="radio-chip"><input type="radio" name="interval" value="30" /><span>30 хв</span></label>
+            </div>
+          </div>
+        </div>
+
+        <div class="dialog-footer">
+          <button type="button" class="dialog-btn-primary" id="saveIntervalBtn">Зберегти налаштування</button>
+        </div>
+      </div>
     </dialog>
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
-    <script src="/config.js"></script>
+
     <script type="module" src="/js/app.js"></script>
+    <script>
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker.register("/sw.js").catch(() => {});
+        });
+      }
+    </script>
   </body>
 </html>
