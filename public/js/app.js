@@ -7,7 +7,7 @@ const QUEUES = Array.from({ length: 6 }, (_, index) => [`${index + 1}.1`, `${ind
 const DEFAULTS = { channel: DEFAULT_CHANNEL, workerUrl: DEFAULT_WORKER_URL, queue: "6.2", intervalMinutes: 5 };
 const $ = (id) => document.getElementById(id);
 const els = {
-  queueSelect: $("queueSelect"), todayTab: $("todayTab"), tomorrowTab: $("tomorrowTab"), scheduleDate: $("scheduleDate"), heroDate: $("heroDate"),
+  queueSelect: $("queueSelect"), homeQueue: $("homeQueue"), heroDayLabel: $("heroDayLabel"), todayTab: $("todayTab"), tomorrowTab: $("tomorrowTab"), scheduleDate: $("scheduleDate"), heroDate: $("heroDate"),
   statusCard: $("statusCard"), statusKicker: $("statusKicker"), statusTitle: $("statusTitle"), statusDetail: $("statusDetail"), statusMeta: $("statusMeta"),
   nextTitle: $("nextTitle"), nextDetail: $("nextDetail"), countdown: $("countdown"), timelineTrack: $("timelineTrack"), nowMarker: $("nowMarker"), currentTime: $("currentTime"),
   timelineNote: $("timelineNote"), outageList: $("outageList"), outageCount: $("outageCount"), sourceLink: $("sourceLink"), sourceName: $("sourceName"), sourceHandle: $("sourceHandle"),
@@ -15,7 +15,7 @@ const els = {
   sourceStatus: $("sourceStatus"), errorBanner: $("errorBanner"), errorTitle: $("errorTitle"), errorText: $("errorText"),
   settingsButton: $("settingsButton"), settingsDialog: $("settingsDialog"), settingsForm: $("settingsForm"), channelInput: $("channelInput"),
   cancelSettings: $("cancelSettings"), closeSettings: $("closeSettings"), errorRetry: $("errorRetry"), toast: $("toast"),
-  openScheduleButton: $("openScheduleButton"), editSourceButton: $("editSourceButton"), navButtons: [...document.querySelectorAll(".nav-item")],
+  editSourceButton: $("editSourceButton"), navButtons: [...document.querySelectorAll(".nav-item")],
 };
 
 function readStoredSettings() {
@@ -111,7 +111,9 @@ function setActiveScreen(name) {
 function renderHeaderDate() {
   const date = activeDay === "today" ? todayFromData() : tomorrowFromData();
   els.scheduleDate.textContent = date ? formatDate(date) : activeDay === "today" ? "Графік на сьогодні" : "Графік на завтра";
+  els.heroDayLabel.textContent = activeDay === "today" ? "СЬОГОДНІ" : "ЗАВТРА";
   els.heroDate.textContent = date ? formatDate(date) : "";
+  els.homeQueue.textContent = settings.queue;
   els.todayTab.classList.toggle("is-active", activeDay === "today");
   els.tomorrowTab.classList.toggle("is-active", activeDay === "tomorrow");
   els.todayTab.setAttribute("aria-selected", String(activeDay === "today"));
@@ -180,10 +182,10 @@ function renderView() {
   } else {
     els.statusCard.dataset.state = state.powered ? "on" : "off";
     els.statusKicker.textContent = "СТАН ЗА ОПУБЛІКОВАНИМ ГРАФІКОМ";
-    els.statusTitle.textContent = state.powered ? "За графіком світло є" : "За графіком світла немає";
+    els.statusTitle.textContent = state.powered ? "Є світло" : "Світла немає";
     els.statusDetail.textContent = state.powered
-      ? state.changeAt === null ? "Планових відключень до кінця доби більше немає." : `Світло має бути до ${formatClock(state.changeAt)}.`
-      : `Планове відключення з ${formatClock(state.period.start)} до ${formatClock(state.period.end)}.`;
+      ? state.changeAt === null ? "За графіком до кінця доби без відключень." : `За графіком до ${formatClock(state.changeAt)}.`
+      : `Відключення за графіком: ${formatClock(state.period.start)}–${formatClock(state.period.end)}.`;
     els.statusMeta.textContent = data.stale ? "Останні збережені дані · можуть застаріти" : `Черга ${settings.queue} · перевірено ${formatTimestamp(data.fetchedAt)}`;
     els.nextTitle.textContent = state.changeAt === null ? "Змін до кінця доби немає" : state.changeType === "off" ? `Відключення о ${formatClock(state.changeAt)}` : `Світло очікується о ${formatClock(state.changeAt)}`;
     els.nextDetail.textContent = state.changeAt === null ? "Графік на сьогодні" : state.changeType === "off" ? "Початок планового відключення" : "Завершення планового відключення";
@@ -264,7 +266,6 @@ els.queueSelect.addEventListener("change", () => { settings.queue = els.queueSel
 els.todayTab.addEventListener("click", () => { activeDay = "today"; renderView(); });
 els.tomorrowTab.addEventListener("click", () => { activeDay = "tomorrow"; renderView(); });
 els.settingsButton.addEventListener("click", () => setActiveScreen("source"));
-els.openScheduleButton.addEventListener("click", () => setActiveScreen("schedule"));
 els.editSourceButton.addEventListener("click", openSettings);
 els.navButtons.forEach((button) => button.addEventListener("click", () => setActiveScreen(button.dataset.screenTarget)));
 els.cancelSettings.addEventListener("click", closeSettings);

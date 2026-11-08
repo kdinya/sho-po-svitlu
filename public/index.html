@@ -40,8 +40,8 @@
       <main id="mainContent">
         <section class="page-screen is-active" id="homeScreen" data-screen="home">
           <div class="page-heading home-heading">
-            <p class="eyebrow">СТАН ЗА ОБРАНИМ ГРАФІКОМ <span class="heading-date" id="heroDate"></span></p>
-            <h1>Привіт, твоя <span>черга.</span></h1>
+            <p class="eyebrow"><span id="heroDayLabel">СЬОГОДНІ</span> · <span class="heading-date" id="heroDate"></span></p>
+            <h1>Черга <span id="homeQueue">6.2</span></h1>
           </div>
           <article class="status-card" id="statusCard" data-state="unknown" aria-live="polite">
             <div class="status-topline"><span class="live-pill"><i></i><span id="statusKicker">СТАН ЗА ГРАФІКОМ</span></span></div>
@@ -70,7 +70,9 @@
             <div class="countdown" id="countdown" aria-label="Час до найближчої зміни">—</div>
           </article>
 
-          <button class="page-link-button" id="openScheduleButton" type="button"><span class="page-link-icon"><svg class="icon"><use href="#i-calendar" /></svg></span><span><strong>Повний графік</strong><small>Шкала доби та періоди відключень</small></span><span class="page-link-arrow">›</span></button>
+          <div class="home-actions">
+            <button class="refresh-button" id="refreshButton" type="button"><svg class="icon"><use href="#i-refresh" /></svg><span>Оновити</span></button>
+          </div>
         </section>
 
         <section class="page-screen" id="scheduleScreen" data-screen="schedule" hidden>
@@ -113,7 +115,7 @@
               <svg class="icon source-open"><use href="#i-open" /></svg>
             </a>
             <div class="source-divider"></div>
-            <div class="update-row"><span class="update-icon" id="updateIcon"><svg class="icon"><use href="#i-refresh" /></svg></span><span class="update-copy"><small>ОСТАННЄ ОНОВЛЕННЯ</small><strong id="updatedAt">Ще не оновлювали</strong></span><button class="refresh-button" id="refreshButton" type="button"><svg class="icon"><use href="#i-refresh" /></svg><span>Оновити</span></button></div>
+            <div class="update-row"><span class="update-icon" id="updateIcon"><svg class="icon"><use href="#i-refresh" /></svg></span><span class="update-copy"><small>ОСТАННЄ ОНОВЛЕННЯ</small><strong id="updatedAt">Ще не оновлювали</strong></span></div>
             <p class="source-disclaimer">Як часто перевіряти канал: кожні 5, 15 або 30 хвилин.</p>
             <button class="edit-source-button" id="editSourceButton" type="button"><svg class="icon"><use href="#i-settings" /></svg> Змінити канал та інтервал</button>
           </article>
