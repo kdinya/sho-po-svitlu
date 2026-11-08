@@ -15,6 +15,7 @@ const els = {
   sourceStatus: $("sourceStatus"), errorBanner: $("errorBanner"), errorTitle: $("errorTitle"), errorText: $("errorText"),
   settingsButton: $("settingsButton"), settingsDialog: $("settingsDialog"), settingsForm: $("settingsForm"), channelInput: $("channelInput"),
   cancelSettings: $("cancelSettings"), closeSettings: $("closeSettings"), errorRetry: $("errorRetry"), toast: $("toast"),
+  openScheduleButton: $("openScheduleButton"), editSourceButton: $("editSourceButton"), navButtons: [...document.querySelectorAll(".nav-item")],
 };
 
 function readStoredSettings() {
@@ -87,6 +88,21 @@ function showToast(message) {
   els.toast.classList.add("is-visible");
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => els.toast.classList.remove("is-visible"), 3000);
+}
+
+function setActiveScreen(name) {
+  document.querySelectorAll(".page-screen").forEach((screen) => {
+    const active = screen.dataset.screen === name;
+    screen.hidden = !active;
+    screen.classList.toggle("is-active", active);
+  });
+  els.navButtons.forEach((button) => {
+    const active = button.dataset.screenTarget === name;
+    button.classList.toggle("is-active", active);
+    if (active) button.setAttribute("aria-current", "page");
+    else button.removeAttribute("aria-current");
+  });
+  if (name === "schedule") renderView();
 }
 
 function renderHeaderDate() {
@@ -244,7 +260,10 @@ function tickClock() {
 els.queueSelect.addEventListener("change", () => { settings.queue = els.queueSelect.value; saveSettings(); renderView(); });
 els.todayTab.addEventListener("click", () => { activeDay = "today"; renderView(); });
 els.tomorrowTab.addEventListener("click", () => { activeDay = "tomorrow"; renderView(); });
-els.settingsButton.addEventListener("click", openSettings);
+els.settingsButton.addEventListener("click", () => setActiveScreen("source"));
+els.openScheduleButton.addEventListener("click", () => setActiveScreen("schedule"));
+els.editSourceButton.addEventListener("click", openSettings);
+els.navButtons.forEach((button) => button.addEventListener("click", () => setActiveScreen(button.dataset.screenTarget)));
 els.cancelSettings.addEventListener("click", closeSettings);
 els.closeSettings.addEventListener("click", closeSettings);
 els.refreshButton.addEventListener("click", () => refresh({ manual: true, force: true }));
@@ -272,6 +291,7 @@ window.addEventListener("online", () => { if (settings.workerUrl) refresh(); });
 window.addEventListener("offline", () => showError("Пристрій офлайн. Показано останні збережені дані, якщо вони є.", { stale: Boolean(data) }));
 
 initQueueOptions();
+setActiveScreen("home");
 renderView();
 scheduleAutoRefresh();
 clockTimer = setInterval(tickClock, 30_000);
@@ -280,7 +300,7 @@ if (data) {
   if (data.stale) showError(data.warning || "Показано останні збережені дані.", { stale: true });
 }
 if (settings.workerUrl) refresh({ manual: false, force: false });
-else if (!data) showError("Відкрийте налаштування та додайте адресу вашого Cloudflare Worker.", { title: "Підключіть джерело даних" });
+else if (!data) showError("Власнику сайту потрібно один раз підключити Cloudflare Worker API.", { title: "Спільний API ще не налаштований" });
 
 if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
   window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}), { once: true });
