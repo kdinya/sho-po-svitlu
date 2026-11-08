@@ -3,11 +3,11 @@ import { formatCountdown, formatDate, getLocalClock, getScheduleState, renderOut
 
 const STORAGE_KEY = "sho-po-svitlu.settings.v1";
 const DATA_KEY = "sho-po-svitlu.last-data.v1";
-const QUEUES = Array.from({ length: 6 }, (_, index) => [`${index + 1}.1`, `${index + 1}.2`]).flat();
+let QUEUES = [];
 const DEFAULTS = { channel: DEFAULT_CHANNEL, workerUrl: DEFAULT_WORKER_URL, queue: "6.2", intervalMinutes: 5 };
 const $ = (id) => document.getElementById(id);
 const els = {
-  queueSelect: $("queueSelect"), queueValue: $("queueValue"), queueMenu: $("queueMenu"), queuePicker: $("queuePicker"), homeQueue: $("homeQueue"), heroDayLabel: $("heroDayLabel"), todayTab: $("todayTab"), tomorrowTab: $("tomorrowTab"), scheduleDate: $("scheduleDate"), heroDate: $("heroDate"),
+  queueSelect: $("queueSelect"), queueValue: $("queueValue"), queueMenu: $("queueMenu"), queuePicker: $("queuePicker"), homeTimelineTrack: $("homeTimelineTrack"), homeNowMarker: $("homeNowMarker"), homeCurrentTime: $("homeCurrentTime"), homeOutageList: $("homeOutageList"), homeOutageCount: $("homeOutageCount"), homeTodayTab: $("homeTodayTab"), homeTomorrowTab: $("homeTomorrowTab"), homeOverviewDate: $("homeOverviewDate"), homeSourceName: $("homeSourceName"), homeSourceUpdate: $("homeSourceUpdate"), homeQueue: $("homeQueue"), heroDayLabel: $("heroDayLabel"), todayTab: $("todayTab"), tomorrowTab: $("tomorrowTab"), scheduleDate: $("scheduleDate"), heroDate: $("heroDate"),
   statusCard: $("statusCard"), statusKicker: $("statusKicker"), statusTitle: $("statusTitle"), statusDetail: $("statusDetail"), statusMeta: $("statusMeta"),
   nextTitle: $("nextTitle"), nextDetail: $("nextDetail"), countdown: $("countdown"), timelineTrack: $("timelineTrack"), nowMarker: $("nowMarker"), currentTime: $("currentTime"),
   timelineNote: $("timelineNote"), outageList: $("outageList"), outageCount: $("outageCount"), sourceLink: $("sourceLink"), sourceName: $("sourceName"), sourceHandle: $("sourceHandle"),
@@ -47,7 +47,17 @@ let currentController = null;
 function saveSettings() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(settings)); } catch { showToast("Не вдалося зберегти налаштування в цьому браузері."); } }
 function saveData(value) { try { localStorage.setItem(DATA_KEY, JSON.stringify(value)); } catch { /* The app remains usable for this visit. */ } }
 
+function availableQueues(scheduleData = data) {
+  const queues = new Set();
+  Object.values(scheduleData?.schedules || {}).forEach((day) => Object.keys(day?.queues || {}).forEach((queue) => queues.add(queue)));
+  return [...queues].sort((a, b) => {
+    const [ag, as] = a.split(".").map(Number); const [bg, bs] = b.split(".").map(Number);
+    return ag - bg || as - bs;
+  });
+}
+
 function initQueueOptions() {
+  QUEUES = availableQueues();
   els.queueMenu.replaceChildren(...QUEUES.map((queue) => {
     const option = document.createElement("button");
     option.type = "button";
@@ -63,7 +73,8 @@ function initQueueOptions() {
 
 function updateQueuePicker() {
   els.queueValue.textContent = settings.queue;
-  els.queueSelect.setAttribute("aria-label", `Обрана черга ${settings.queue}. Натисніть, щоб змінити`);
+  els.queueSelect.setAttribute("aria-label", QUEUES.length ? `Обрана черга ${settings.queue}. Натисніть, щоб змінити` : "Очікуємо список черг з Telegram");
+  els.queueSelect.disabled = QUEUES.length === 0;
   els.queueMenu.querySelectorAll(".queue-option").forEach((option) => {
     const selected = option.dataset.queue === settings.queue;
     option.classList.toggle("is-selected", selected);
@@ -150,6 +161,13 @@ function renderHeaderDate() {
   els.tomorrowTab.classList.toggle("is-active", activeDay === "tomorrow");
   els.todayTab.setAttribute("aria-selected", String(activeDay === "today"));
   els.tomorrowTab.setAttribute("aria-selected", String(activeDay === "tomorrow"));
+  if (els.homeOverviewDate) els.homeOverviewDate.textContent = date ? formatDate(date) : activeDay === "today" ? "сьогодні" : "завтра";
+  if (els.homeTodayTab) {
+    els.homeTodayTab.classList.toggle("is-active", activeDay === "today");
+    els.homeTomorrowTab.classList.toggle("is-active", activeDay === "tomorrow");
+    els.homeTodayTab.setAttribute("aria-selected", String(activeDay === "today"));
+    els.homeTomorrowTab.setAttribute("aria-selected", String(activeDay === "tomorrow"));
+  }
 }
 
 function updateSource() {
@@ -157,6 +175,7 @@ function updateSource() {
   els.sourceLink.href = normalized.url;
   els.sourceName.textContent = data?.title || normalized.username;
   els.sourceHandle.textContent = `t.me/s/${normalized.username}`;
+  if (els.homeSourceName) els.homeSourceName.textContent = data?.title || normalized.username;
 }
 
 function renderView() {
@@ -165,6 +184,8 @@ function renderView() {
   if (!data) {
     renderTimeline(els.timelineTrack, els.nowMarker, els.currentTime, [], new Date(), { showNow: activeDay === "today" });
     renderOutages(els.outageList, els.outageCount, [], 0, { highlightPast: false });
+    renderTimeline(els.homeTimelineTrack, els.homeNowMarker, els.homeCurrentTime, [], new Date(), { showNow: activeDay === "today" });
+    renderOutages(els.homeOutageList, els.homeOutageCount, [], 0, { highlightPast: false });
     els.statusCard.dataset.state = "unknown";
     els.statusKicker.textContent = "ГРАФІК НЕ ЗАВАНТАЖЕНО";
     els.statusTitle.textContent = "Підключаємо світло";
@@ -190,6 +211,8 @@ function renderView() {
 
   renderTimeline(els.timelineTrack, els.nowMarker, els.currentTime, hasSchedule ? queuePeriods : [], now, { showNow: isCurrentDay });
   renderOutages(els.outageList, els.outageCount, hasSchedule ? queuePeriods : [], isCurrentDay ? nowMinutes : 0, { highlightPast: isCurrentDay });
+  renderTimeline(els.homeTimelineTrack, els.homeNowMarker, els.homeCurrentTime, hasSchedule ? queuePeriods : [], now, { showNow: isCurrentDay });
+  renderOutages(els.homeOutageList, els.homeOutageCount, hasSchedule ? queuePeriods : [], isCurrentDay ? nowMinutes : 0, { highlightPast: isCurrentDay });
 
   if (!hasSchedule) {
     els.statusCard.dataset.state = "unknown";
@@ -227,6 +250,7 @@ function renderView() {
 
   els.updatedAt.textContent = formatTimestamp(data.fetchedAt);
   els.footerUpdate.textContent = `Оновлено ${formatTimestamp(data.fetchedAt)}`;
+  if (els.homeSourceUpdate) els.homeSourceUpdate.textContent = `Оновлено · ${formatTimestamp(data.fetchedAt)}`;
   if (data.warning || data.stale) showError(data.warning || "Показано останню збережену копію графіка.", { stale: true });
   else { clearError(); setNetwork("online", `дані оновлено ${new Intl.DateTimeFormat("uk-UA", { hour: "2-digit", minute: "2-digit" }).format(new Date(data.fetchedAt))}`); }
 }
@@ -252,6 +276,13 @@ async function refresh({ manual = false, force = false } = {}) {
     const minimumSpinner = manual ? 1200 : 450;
     await new Promise((resolve) => setTimeout(resolve, Math.max(0, minimumSpinner - (Date.now() - started))));
     data = result;
+    const available = availableQueues(data);
+    QUEUES = available;
+    if (available.length && !available.includes(settings.queue)) {
+      settings.queue = available[0];
+      saveSettings();
+    }
+    initQueueOptions();
     saveData(data);
     renderView();
     if (result.warning) showError(result.warning, { stale: true });
@@ -312,8 +343,12 @@ els.queueMenu.addEventListener("keydown", (event) => {
 document.addEventListener("pointerdown", (event) => {
   if (!els.queuePicker.contains(event.target)) setQueueMenu(false);
 });
-els.todayTab.addEventListener("click", () => { activeDay = "today"; renderView(); });
-els.tomorrowTab.addEventListener("click", () => { activeDay = "tomorrow"; renderView(); });
+const selectDay = (day) => { activeDay = day; renderView(); };
+els.todayTab.addEventListener("click", () => selectDay("today"));
+els.tomorrowTab.addEventListener("click", () => selectDay("tomorrow"));
+els.homeTodayTab?.addEventListener("click", () => selectDay("today"));
+els.homeTomorrowTab?.addEventListener("click", () => selectDay("tomorrow"));
+$("homeSourceCard")?.addEventListener("click", (event) => { event.preventDefault(); setActiveScreen("source"); });
 els.settingsButton.addEventListener("click", () => setActiveScreen("source"));
 els.editSourceButton.addEventListener("click", openSettings);
 els.navButtons.forEach((button) => button.addEventListener("click", () => setActiveScreen(button.dataset.screenTarget)));
@@ -342,6 +377,43 @@ document.addEventListener("visibilitychange", () => {
 });
 window.addEventListener("online", () => { if (settings.workerUrl) refresh(); });
 window.addEventListener("offline", () => showError("Пристрій офлайн. Показано останні збережені дані, якщо вони є.", { stale: Boolean(data) }));
+
+
+let deferredInstallPrompt = null;
+const installButton = $("installButton");
+window.addEventListener("beforeinstallprompt", (event) => {
+  event.preventDefault();
+  deferredInstallPrompt = event;
+});
+window.addEventListener("appinstalled", () => {
+  deferredInstallPrompt = null;
+  installButton.disabled = true;
+  installButton.querySelector("span").textContent = "Встановлено";
+  showToast("Додаток встановлено на пристрій.");
+});
+installButton?.addEventListener("click", async () => {
+  if (!deferredInstallPrompt) {
+    showToast(/iPhone|iPad|iPod/i.test(navigator.userAgent) ? "Щоб встановити: у Safari натисніть «Поділитися», потім «На початковий екран»." : "У меню браузера оберіть «Встановити додаток» або «Додати на головний екран».");
+    return;
+  }
+  deferredInstallPrompt.prompt();
+  await deferredInstallPrompt.userChoice;
+  deferredInstallPrompt = null;
+  installButton.disabled = true;
+  installButton.querySelector("span").textContent = "Встановлено";
+});
+$("shareAppButton")?.addEventListener("click", async () => {
+  const shareData = { title: "ШоПоСвітлу", text: "Графік світла та відключень для своєї черги.", url: location.href };
+  try {
+    if (navigator.share) await navigator.share(shareData);
+    else if (navigator.clipboard?.writeText) { await navigator.clipboard.writeText(shareData.url); showToast("Посилання скопійовано. Можна надсилати друзям."); }
+    else {
+      const field = document.createElement("textarea"); field.value = shareData.url; field.setAttribute("readonly", ""); field.style.position = "fixed"; field.style.opacity = "0";
+      document.body.append(field); field.select(); const copied = document.execCommand("copy"); field.remove();
+      showToast(copied ? "Посилання скопійовано. Можна надсилати друзям." : `Посилання: ${shareData.url}`);
+    }
+  } catch (error) { if (error.name !== "AbortError") showToast("Не вдалося поділитися посиланням."); }
+});
 
 initQueueOptions();
 setActiveScreen("home");
