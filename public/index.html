@@ -30,7 +30,14 @@
           <span class="brand-mark"><svg class="icon"><use href="#i-bolt" /></svg></span>
           <span class="brand-copy"><strong>ШоПоСвітлу</strong><small>світло під контролем</small></span>
         </a>
-        <label class="queue-picker"><span>МОЯ ЧЕРГА</span><select id="queueSelect" aria-label="Оберіть чергу"></select></label>
+        <div class="queue-picker" id="queuePicker">
+          <span class="queue-label">МОЯ ЧЕРГА</span>
+          <button class="queue-trigger" id="queueSelect" type="button" aria-label="Оберіть чергу" aria-haspopup="listbox" aria-expanded="false" aria-controls="queueMenu">
+            <span id="queueValue">6.2</span>
+            <svg class="queue-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+          </button>
+          <div class="queue-menu" id="queueMenu" role="listbox" aria-label="Доступні черги" hidden></div>
+        </div>
         <div class="top-actions">
           <span class="network-indicator" id="networkIndicator"><i></i><span>очікуємо дані</span></span>
           <button class="icon-button" id="settingsButton" type="button" aria-label="Відкрити джерело та налаштування" title="Джерело та налаштування"><svg class="icon"><use href="#i-settings" /></svg></button>

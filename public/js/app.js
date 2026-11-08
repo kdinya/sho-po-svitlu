@@ -7,7 +7,7 @@ const QUEUES = Array.from({ length: 6 }, (_, index) => [`${index + 1}.1`, `${ind
 const DEFAULTS = { channel: DEFAULT_CHANNEL, workerUrl: DEFAULT_WORKER_URL, queue: "6.2", intervalMinutes: 5 };
 const $ = (id) => document.getElementById(id);
 const els = {
-  queueSelect: $("queueSelect"), homeQueue: $("homeQueue"), heroDayLabel: $("heroDayLabel"), todayTab: $("todayTab"), tomorrowTab: $("tomorrowTab"), scheduleDate: $("scheduleDate"), heroDate: $("heroDate"),
+  queueSelect: $("queueSelect"), queueValue: $("queueValue"), queueMenu: $("queueMenu"), queuePicker: $("queuePicker"), homeQueue: $("homeQueue"), heroDayLabel: $("heroDayLabel"), todayTab: $("todayTab"), tomorrowTab: $("tomorrowTab"), scheduleDate: $("scheduleDate"), heroDate: $("heroDate"),
   statusCard: $("statusCard"), statusKicker: $("statusKicker"), statusTitle: $("statusTitle"), statusDetail: $("statusDetail"), statusMeta: $("statusMeta"),
   nextTitle: $("nextTitle"), nextDetail: $("nextDetail"), countdown: $("countdown"), timelineTrack: $("timelineTrack"), nowMarker: $("nowMarker"), currentTime: $("currentTime"),
   timelineNote: $("timelineNote"), outageList: $("outageList"), outageCount: $("outageCount"), sourceLink: $("sourceLink"), sourceName: $("sourceName"), sourceHandle: $("sourceHandle"),
@@ -48,10 +48,42 @@ function saveSettings() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify
 function saveData(value) { try { localStorage.setItem(DATA_KEY, JSON.stringify(value)); } catch { /* The app remains usable for this visit. */ } }
 
 function initQueueOptions() {
-  els.queueSelect.replaceChildren(...QUEUES.map((queue) => {
-    const option = document.createElement("option"); option.value = queue; option.textContent = queue; return option;
+  els.queueMenu.replaceChildren(...QUEUES.map((queue) => {
+    const option = document.createElement("button");
+    option.type = "button";
+    option.className = "queue-option";
+    option.setAttribute("role", "option");
+    option.dataset.queue = queue;
+    option.textContent = queue;
+    option.addEventListener("click", () => selectQueue(queue));
+    return option;
   }));
-  els.queueSelect.value = settings.queue;
+  updateQueuePicker();
+}
+
+function updateQueuePicker() {
+  els.queueValue.textContent = settings.queue;
+  els.queueSelect.setAttribute("aria-label", `Обрана черга ${settings.queue}. Натисніть, щоб змінити`);
+  els.queueMenu.querySelectorAll(".queue-option").forEach((option) => {
+    const selected = option.dataset.queue === settings.queue;
+    option.classList.toggle("is-selected", selected);
+    option.setAttribute("aria-selected", String(selected));
+  });
+}
+
+function setQueueMenu(open) {
+  els.queueMenu.hidden = !open;
+  els.queueSelect.setAttribute("aria-expanded", String(open));
+}
+
+function selectQueue(queue) {
+  if (!QUEUES.includes(queue)) return;
+  settings.queue = queue;
+  saveSettings();
+  updateQueuePicker();
+  setQueueMenu(false);
+  renderView(); // Recompute the status for this queue before any network refresh.
+  if (settings.workerUrl) refresh({ manual: false, force: false });
 }
 
 function scheduleDateForView() {
@@ -262,7 +294,24 @@ function tickClock() {
   }
 }
 
-els.queueSelect.addEventListener("change", () => { settings.queue = els.queueSelect.value; saveSettings(); renderView(); });
+els.queueSelect.addEventListener("click", () => setQueueMenu(els.queueMenu.hidden));
+els.queueSelect.addEventListener("keydown", (event) => {
+  if (event.key === "ArrowDown" || event.key === "Enter" || event.key === " ") {
+    event.preventDefault();
+    setQueueMenu(true);
+    els.queueMenu.querySelector(`[data-queue="${settings.queue}"]`)?.focus();
+  }
+});
+els.queueMenu.addEventListener("keydown", (event) => {
+  const options = [...els.queueMenu.querySelectorAll(".queue-option")];
+  const index = options.indexOf(document.activeElement);
+  if (event.key === "Escape") { setQueueMenu(false); els.queueSelect.focus(); }
+  if (event.key === "ArrowDown" || event.key === "ArrowRight") { event.preventDefault(); options[(index + 1) % options.length]?.focus(); }
+  if (event.key === "ArrowUp" || event.key === "ArrowLeft") { event.preventDefault(); options[(index - 1 + options.length) % options.length]?.focus(); }
+});
+document.addEventListener("pointerdown", (event) => {
+  if (!els.queuePicker.contains(event.target)) setQueueMenu(false);
+});
 els.todayTab.addEventListener("click", () => { activeDay = "today"; renderView(); });
 els.tomorrowTab.addEventListener("click", () => { activeDay = "tomorrow"; renderView(); });
 els.settingsButton.addEventListener("click", () => setActiveScreen("source"));
