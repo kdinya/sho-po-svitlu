@@ -1,5 +1,5 @@
-const CACHE_NAME = "sho-po-svitlu-shell-v5";
-const APP_SHELL = ["/", "/index.html", "/config.js", "/css/style.css", "/js/app.js", "/js/api.js", "/js/timeline.js", "/manifest.json", "/icons/icon.svg", "/icons/icon-192.png", "/icons/icon-512.png", "/images/mascot-lightbulb.webp", "/images/hero-skyline-clean.webp", "/images/night-city-header.webp"];
+const CACHE_NAME = "sho-po-svitlu-shell-v7";
+const APP_SHELL = ["/", "/index.html", "/config.js", "/css/style.css", "/js/app.js", "/js/api.js", "/js/timeline.js", "/manifest.json", "/icons/icon.svg", "/icons/icon-192.png", "/icons/icon-512.png", "/icons/apple-touch-icon.png", "/icons/favicon-32.png", "/images/mascot-lightbulb.webp", "/images/mascot-lightbulb-off.webp", "/images/skyline.svg", "/images/skyline-lights.svg"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)).then(() => self.skipWaiting()));

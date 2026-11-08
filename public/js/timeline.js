@@ -61,31 +61,59 @@ export function formatDuration(start, end) {
   return `${hours} год ${mins} хв`;
 }
 
-export function renderOutages(container, countNode, periods = [], nowMinutes = 0, { highlightPast = true } = {}) {
+const SVG_NS = "http://www.w3.org/2000/svg";
+
+function svgIcon(id) {
+  const icon = document.createElementNS(SVG_NS, "svg");
+  icon.setAttribute("class", "icon");
+  icon.setAttribute("aria-hidden", "true");
+  const use = document.createElementNS(SVG_NS, "use");
+  use.setAttribute("href", `#${id}`);
+  icon.append(use);
+  return icon;
+}
+
+export function totalMinutes(periods = []) {
+  return periods.reduce((sum, period) => sum + Math.max(0, period.end - period.start), 0);
+}
+
+export function formatHours(minutes) {
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  if (!hours) return `${mins} хв`;
+  return mins ? `${hours} год ${mins} хв` : `${hours} год`;
+}
+
+export function renderOutages(container, countNode, periods = [], nowMinutes = 0, { highlightPast = true, hidePast = false, emptyText } = {}) {
   container.replaceChildren();
-  countNode.textContent = String(periods.length);
-  if (!periods.length) {
+  const visible = hidePast ? periods.filter((period) => period.end > nowMinutes) : periods;
+  countNode.textContent = String(visible.length);
+  if (!visible.length) {
     const empty = document.createElement("div");
     empty.className = "empty-state";
-    const orb = document.createElement("span"); orb.className = "empty-orb";
-    const text = document.createElement("p"); text.textContent = "За цю добу планових відключень\nдля обраної черги не опубліковано.";
+    const orb = document.createElement("span");
+    orb.className = "empty-orb";
+    const text = document.createElement("p");
+    text.textContent = emptyText || (periods.length ? "На сьогодні більше відключень не планується." : "Планових відключень немає — світло за графіком увесь день.");
     empty.append(orb, text);
     container.append(empty);
     return;
   }
-  for (const period of periods) {
+  for (const period of visible) {
     const item = document.createElement("div");
     item.className = "outage-item";
+    const isCurrent = highlightPast && nowMinutes >= period.start && nowMinutes < period.end;
     if (highlightPast && period.end <= nowMinutes) item.classList.add("is-past");
-    const icon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-    icon.setAttribute("class", "icon"); icon.setAttribute("aria-hidden", "true");
-    const use = document.createElementNS("http://www.w3.org/2000/svg", "use"); use.setAttribute("href", "#i-clock"); icon.append(use);
+    if (isCurrent) item.classList.add("is-current");
+    const bolt = document.createElement("span");
+    bolt.className = "outage-bolt";
+    bolt.append(svgIcon("i-bolt"));
     const time = document.createElement("time");
-    time.textContent = `${minutesToTime(period.start)} — ${minutesToTime(period.end)}`;
+    time.textContent = `${minutesToTime(period.start)} – ${minutesToTime(period.end)}`;
     const duration = document.createElement("span");
     duration.className = "outage-duration";
-    duration.textContent = `⏳ ${formatDuration(period.start, period.end)}`;
-    item.append(icon, time, duration);
+    duration.append(svgIcon("i-clock"), document.createTextNode(formatDuration(period.start, period.end)));
+    item.append(bolt, time, duration);
     container.append(item);
   }
 }

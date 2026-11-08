@@ -1,9 +1,10 @@
 import { DEFAULT_CHANNEL, DEFAULT_WORKER_URL, fetchSchedule, normalizeChannelInput } from "./api.js";
-import { formatCountdown, formatDate, getLocalClock, getScheduleState, renderOutages, renderTimeline } from "./timeline.js";
+import { formatDate, formatHours, getLocalClock, getScheduleState, renderOutages, renderTimeline, totalMinutes } from "./timeline.js";
 
 const STORAGE_KEY = "sho-po-svitlu.settings.v1";
 const DATA_KEY = "sho-po-svitlu.last-data.v1";
 const CHANNELS_KEY = "sho-po-svitlu.channels.v1";
+const ONBOARD_KEY = "sho-po-svitlu.onboarded.v1";
 
 const DEFAULT_CHANNELS = [
   {
@@ -40,6 +41,19 @@ const els = {
   statusMeta: $("statusMeta"),
   nextCard: $("nextCard"),
   nextTitle: $("nextTitle"),
+  nextTime: $("nextTime"),
+  statOn: $("statOn"),
+  statOff: $("statOff"),
+  onboardDialog: $("onboardDialog"),
+  onboardStepChannel: $("onboardStepChannel"),
+  onboardStepQueue: $("onboardStepQueue"),
+  onboardUseDefault: $("onboardUseDefault"),
+  onboardUseCustom: $("onboardUseCustom"),
+  onboardChannelInput: $("onboardChannelInput"),
+  onboardError: $("onboardError"),
+  onboardQueueGrid: $("onboardQueueGrid"),
+  onboardDone: $("onboardDone"),
+  onboardBack: $("onboardBack"),
   countdown: $("countdown"),
   refreshButton: $("refreshButton"),
   updateIcon: $("updateIcon"),
@@ -73,6 +87,10 @@ const els = {
   cancelAddChannelBtn: $("cancelAddChannelBtn"),
   confirmAddChannelBtn: $("confirmAddChannelBtn"),
   saveIntervalBtn: $("saveIntervalBtn"),
+  homeInstallBanner: $("homeInstallBanner"),
+  homeInstallBtn: $("homeInstallBtn"),
+  homeDismissInstallBtn: $("homeDismissInstallBtn"),
+  pwaPanel: $("pwaPanel"),
   installButton: $("installButton"),
   shareAppButton: $("shareAppButton"),
   toast: $("toast"),
@@ -167,7 +185,8 @@ function initQueueOptions() {
       option.className = "queue-option";
       option.setAttribute("role", "option");
       option.dataset.queue = queue;
-      option.textContent = `Черга ${queue}`;
+      option.textContent = queue;
+      option.setAttribute("aria-label", `Черга ${queue}`);
       option.addEventListener("click", () => selectQueue(queue));
       return option;
     })
@@ -212,7 +231,8 @@ function formatHeroDate(isoDate, isToday) {
 
 function formatTimestamp(value) {
   if (!value || Number.isNaN(Date.parse(value))) return "Ще не оновлювали";
-  return new Intl.DateTimeFormat("uk-UA", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" }).format(new Date(value)).replace(",", " ·");
+  const text = new Intl.DateTimeFormat("uk-UA", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" }).format(new Date(value));
+  return text.replace(/\s+о\s+/, ", ");
 }
 
 function formatClock(minutes) {
@@ -260,7 +280,11 @@ function renderChannelsList() {
 
     const info = document.createElement("div");
     info.className = "channel-info";
-    info.innerHTML = `<strong>${ch.name}</strong><small>t.me/s/${ch.username}</small>`;
+    const infoName = document.createElement("strong");
+    infoName.textContent = ch.name;
+    const infoHandle = document.createElement("small");
+    infoHandle.textContent = `t.me/s/${ch.username}`;
+    info.append(infoName, infoHandle);
 
     item.append(radio, info);
 
@@ -330,10 +354,34 @@ function closeSettings() {
 function updateSource() {
   const normalized = normalizeChannelInput(settings.channel);
   els.sourceLink.href = normalized.url;
-  const channelTitle = data?.title || normalized.username;
+  const known = channels.find((ch) => ch.username.toLowerCase() === normalized.username.toLowerCase());
+  const channelTitle = data?.title || known?.name || normalized.username;
   els.sourceName.textContent = channelTitle;
   els.sourceHandle.textContent = `t.me/s/${normalized.username}`;
   els.homeSourceName.textContent = channelTitle;
+}
+
+function setStatusTitle(before, accent = "", after = "") {
+  const parts = [document.createTextNode(before)];
+  if (accent) {
+    const em = document.createElement("em");
+    em.textContent = accent;
+    parts.push(em);
+  }
+  if (after) parts.push(document.createTextNode(after));
+  els.statusTitle.replaceChildren(...parts);
+}
+
+function setPower(power) {
+  document.body.dataset.power = power;
+  els.statusCard.dataset.state = power;
+}
+
+function setNext(label, time = "", hint = "") {
+  els.nextTitle.textContent = label;
+  els.nextTime.textContent = time;
+  els.countdown.textContent = hint;
+  els.countdown.hidden = !hint;
 }
 
 function renderView() {
@@ -344,59 +392,62 @@ function renderView() {
   const now = new Date();
   const { minutes: nowMinutes } = getLocalClock(now);
   const isCurrentDay = activeDay === "today";
-  const state = hasSchedule && isCurrentDay ? getScheduleState(queuePeriods, nowMinutes) : null;
+  const periods = hasSchedule ? queuePeriods : [];
 
-  els.heroDate.textContent = formatHeroDate(selectedDate, isCurrentDay);
+  const todayQueue = data?.today ? data?.schedules?.[data.today]?.queues?.[settings.queue] : null;
+  const hasToday = Boolean(todayQueue);
+  const state = hasToday ? getScheduleState(todayQueue, nowMinutes) : null;
+
+  els.heroDate.textContent = formatHeroDate(data?.today, true);
   els.scheduleDate.textContent = selectedDate ? formatDate(selectedDate) : isCurrentDay ? "сьогодні" : "завтра";
-  els.homeOverviewHeading.textContent = isCurrentDay ? "Графік на сьогодні" : "Графік на завтра";
+  els.homeOverviewHeading.querySelector("span").textContent = isCurrentDay ? "Графік на сьогодні" : "Графік на завтра";
 
-  els.todayTab.classList.toggle("is-active", isCurrentDay);
-  els.tomorrowTab.classList.toggle("is-active", !isCurrentDay);
-  els.homeTodayTab.classList.toggle("is-active", isCurrentDay);
-  els.homeTomorrowTab.classList.toggle("is-active", !isCurrentDay);
+  for (const [tab, active] of [[els.todayTab, isCurrentDay], [els.tomorrowTab, !isCurrentDay], [els.homeTodayTab, isCurrentDay], [els.homeTomorrowTab, !isCurrentDay]]) {
+    tab.classList.toggle("is-active", active);
+    tab.setAttribute("aria-selected", String(active));
+  }
 
   updateSource();
 
-  renderTimeline(els.timelineTrack, els.nowMarker, els.currentTime, hasSchedule ? queuePeriods : [], now, { showNow: isCurrentDay });
-  renderOutages(els.outageList, els.outageCount, hasSchedule ? queuePeriods : [], isCurrentDay ? nowMinutes : 0, { highlightPast: isCurrentDay });
-  renderTimeline(els.homeTimelineTrack, els.homeNowMarker, els.homeCurrentTime, hasSchedule ? queuePeriods : [], now, { showNow: isCurrentDay });
-  renderOutages(els.homeOutageList, els.homeOutageCount, hasSchedule ? queuePeriods : [], isCurrentDay ? nowMinutes : 0, { highlightPast: isCurrentDay });
+  renderTimeline(els.timelineTrack, els.nowMarker, els.currentTime, periods, now, { showNow: isCurrentDay });
+  renderOutages(els.outageList, els.outageCount, periods, isCurrentDay ? nowMinutes : 0, { highlightPast: isCurrentDay });
+  renderTimeline(els.homeTimelineTrack, els.homeNowMarker, els.homeCurrentTime, periods, now, { showNow: isCurrentDay });
+  renderOutages(els.homeOutageList, els.homeOutageCount, periods, isCurrentDay ? nowMinutes : 0, {
+    highlightPast: isCurrentDay,
+    hidePast: isCurrentDay,
+    emptyText: data && !hasSchedule ? `У каналі немає графіка для черги ${settings.queue}.` : data ? undefined : "Завантажуємо графік…",
+  });
+
+  for (const track of [els.timelineTrack, els.homeTimelineTrack]) track.classList.toggle("is-empty", !data || !hasSchedule);
+
+  const off = hasSchedule ? totalMinutes(queuePeriods) : null;
+  els.statOff.textContent = off === null ? "—" : formatHours(off);
+  els.statOn.textContent = off === null ? "—" : formatHours(1440 - off);
 
   if (!data) {
-    els.statusCard.dataset.state = "unknown";
-    els.statusTitle.textContent = "Перевіряємо графік";
-    els.nextTitle.textContent = "Очікуємо дані";
-    els.countdown.textContent = "";
+    setPower("unknown");
+    setStatusTitle("Перевіряємо графік");
+    setNext("Очікуємо дані");
     els.statusMeta.textContent = "Оновлюємо дані з Telegram...";
     els.homeSourceUpdate.textContent = "Оновлено: очікуємо";
     els.footerUpdate.textContent = "Очікуємо перше оновлення";
     return;
   }
 
-  if (!hasSchedule) {
-    els.statusCard.dataset.state = "unknown";
-    els.statusTitle.textContent = isCurrentDay ? "Поки без графіка" : "Графік на завтра";
-    els.nextTitle.textContent = `Черга ${settings.queue} відсутня`;
-    els.countdown.textContent = "";
+  if (!hasToday) {
+    setPower("unknown");
+    setStatusTitle("Поки без графіка");
+    setNext(`Черга ${settings.queue} відсутня в каналі`);
     els.statusMeta.textContent = `У каналі не знайдено графік для черги ${settings.queue}`;
-  } else if (!isCurrentDay) {
-    els.statusCard.dataset.state = "unknown";
-    els.statusTitle.textContent = "Графік на завтра";
-    els.nextTitle.textContent = queuePeriods.length ? `Перше відключення о ${formatClock(queuePeriods[0].start)}` : "Планових відключень немає";
-    els.countdown.textContent = "";
-    els.statusMeta.textContent = `Черга ${settings.queue} · план на ${formatDate(selectedDate)}`;
   } else {
-    els.statusCard.dataset.state = state.powered ? "on" : "off";
-    els.statusTitle.textContent = state.powered ? "Зараз є світло!" : "Зараз немає світла!";
+    setPower(state.powered ? "on" : "off");
+    if (state.powered) setStatusTitle("Зараз є ", "світло", "!");
+    else setStatusTitle("Зараз немає ", "світла", "!");
     if (state.changeAt === null) {
-      els.nextTitle.textContent = "Змін до кінця доби немає";
-      els.countdown.textContent = "";
-    } else if (state.changeType === "off") {
-      els.nextTitle.textContent = `Відключення о ${formatClock(state.changeAt)}`;
-      els.countdown.textContent = `(через ${formatCountdown(state.changeAt, nowMinutes)})`;
+      setNext("Змін до кінця доби немає");
     } else {
-      els.nextTitle.textContent = `Світло буде о ${formatClock(state.changeAt)}`;
-      els.countdown.textContent = `(через ${formatCountdown(state.changeAt, nowMinutes)})`;
+      const left = formatHours(Math.max(0, state.changeAt - nowMinutes));
+      setNext("Наступна зміна: о", formatClock(state.changeAt), `через ${left}`);
     }
     els.statusMeta.textContent = data.stale ? "Показано збережену копію графіка" : `Черга ${settings.queue} · оновлено ${formatTimestamp(data.fetchedAt)}`;
   }
@@ -531,37 +582,190 @@ els.saveIntervalBtn.addEventListener("click", () => {
   showToast("Налаштування збережено.");
 });
 
-// PWA Install
-if (window.matchMedia?.("(display-mode: standalone)").matches || window.navigator.standalone) {
-  if (els.installButton) {
-    els.installButton.disabled = true;
-    els.installButton.querySelector("span").textContent = "Вже встановлено";
+// Перший запуск: вибір каналу та черги
+let onboardChannel = null;
+let onboardQueue = settings.queue;
+let onboardCompleted = false;
+
+function needsOnboarding() {
+  try {
+    return localStorage.getItem(STORAGE_KEY) === null && localStorage.getItem(ONBOARD_KEY) === null;
+  } catch {
+    return false;
   }
 }
+
+function markOnboarded() {
+  try {
+    localStorage.setItem(ONBOARD_KEY, "1");
+  } catch {}
+}
+
+function showOnboardStep(step) {
+  els.onboardStepChannel.hidden = step !== "channel";
+  els.onboardStepQueue.hidden = step !== "queue";
+}
+
+function renderOnboardQueues() {
+  const list = availableQueues(onboardChannel?.isDefault ? data : null);
+  if (!list.includes(onboardQueue)) onboardQueue = list[0];
+  els.onboardQueueGrid.replaceChildren(
+    ...list.map((queue) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "queue-pick";
+      button.setAttribute("role", "radio");
+      const selected = queue === onboardQueue;
+      button.classList.toggle("is-selected", selected);
+      button.setAttribute("aria-checked", String(selected));
+      button.textContent = queue;
+      button.addEventListener("click", () => {
+        onboardQueue = queue;
+        renderOnboardQueues();
+      });
+      return button;
+    })
+  );
+}
+
+function openOnboarding() {
+  onboardChannel = null;
+  onboardQueue = settings.queue;
+  els.onboardError.hidden = true;
+  els.onboardChannelInput.value = "";
+  showOnboardStep("channel");
+  els.onboardDialog.showModal();
+}
+
+function pickOnboardChannel(channel) {
+  onboardChannel = channel;
+  renderOnboardQueues();
+  showOnboardStep("queue");
+}
+
+function finishOnboarding() {
+  if (!onboardChannel) return;
+  const changed = normalizeChannelInput(onboardChannel.url).url !== normalizeChannelInput(settings.channel).url;
+  if (!channels.some((ch) => ch.username.toLowerCase() === onboardChannel.username.toLowerCase())) {
+    channels.push(onboardChannel);
+    saveChannels();
+  }
+  settings.channel = normalizeChannelInput(onboardChannel.url).url;
+  settings.queue = onboardQueue;
+  saveSettings();
+  markOnboarded();
+  onboardCompleted = true;
+  els.onboardDialog.close();
+  if (changed) data = null;
+  initQueueOptions();
+  renderChannelsList();
+  renderView();
+  if (settings.workerUrl) refresh({ manual: true, force: true });
+}
+
+els.onboardUseDefault.addEventListener("click", () => pickOnboardChannel(DEFAULT_CHANNELS[0]));
+els.onboardUseCustom.addEventListener("click", () => {
+  try {
+    const normalized = normalizeChannelInput(els.onboardChannelInput.value);
+    const existing = channels.find((ch) => ch.username.toLowerCase() === normalized.username.toLowerCase());
+    els.onboardError.hidden = true;
+    pickOnboardChannel(existing || { name: normalized.username, url: normalized.url, username: normalized.username, isDefault: false });
+  } catch (err) {
+    els.onboardError.textContent = err.message;
+    els.onboardError.hidden = false;
+    els.onboardChannelInput.focus();
+  }
+});
+els.onboardChannelInput.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") els.onboardUseCustom.click();
+});
+els.onboardBack.addEventListener("click", () => showOnboardStep("channel"));
+els.onboardDone.addEventListener("click", finishOnboarding);
+els.onboardDialog.addEventListener("close", () => {
+  if (!onboardCompleted) markOnboarded();
+});
+
+// PWA Install
+function isAppInstalled() {
+  const isStandalone = window.matchMedia?.("(display-mode: standalone)").matches ||
+                       window.navigator.standalone === true ||
+                       document.referrer.includes("android-app://");
+  let stored = false;
+  try {
+    stored = localStorage.getItem("sho-po-svitlu.installed") === "true";
+  } catch {}
+  return Boolean(isStandalone || stored);
+}
+
+function updateInstallUI() {
+  const installed = isAppInstalled();
+  const dismissed = sessionStorage.getItem("sho-po-svitlu.install-dismissed") === "1";
+  document.documentElement.dataset.installed = String(installed);
+
+  if (installed) {
+    if (els.homeInstallBanner) els.homeInstallBanner.hidden = true;
+    if (els.pwaPanel) els.pwaPanel.hidden = true;
+    return;
+  }
+
+  // На веб-сайті: показуємо банер вгорі головної сторінки, якщо користувач не приховав його у поточній сесії
+  if (els.homeInstallBanner) {
+    els.homeInstallBanner.hidden = dismissed;
+  }
+  if (els.pwaPanel) {
+    els.pwaPanel.hidden = false;
+  }
+}
+
+async function triggerInstallPrompt() {
+  if (deferredInstallPrompt) {
+    deferredInstallPrompt.prompt();
+    try {
+      const choice = await deferredInstallPrompt.userChoice;
+      if (choice && choice.outcome === "accepted") {
+        localStorage.setItem("sho-po-svitlu.installed", "true");
+        updateInstallUI();
+      }
+    } catch {}
+    deferredInstallPrompt = null;
+    return;
+  }
+
+  const isIos = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+  if (isIos) {
+    showToast("На iPhone/iPad: натисніть «Поділитися» ⎙ внизу Safari, потім «На початковий екран» ⊞.");
+  } else {
+    showToast("У меню вашого браузера (⋮) оберіть «Встановити додаток» або «Додати на головний екран».");
+  }
+}
+
 window.addEventListener("beforeinstallprompt", (event) => {
   event.preventDefault();
   deferredInstallPrompt = event;
-  els.installButton.hidden = false;
+  updateInstallUI();
 });
+
 window.addEventListener("appinstalled", () => {
   deferredInstallPrompt = null;
-  els.installButton.disabled = true;
-  els.installButton.querySelector("span").textContent = "Встановлено";
-  showToast("Додаток встановлено!");
+  try {
+    localStorage.setItem("sho-po-svitlu.installed", "true");
+  } catch {}
+  updateInstallUI();
+  showToast("Додаток успішно встановлено на робочий стіл!");
 });
-els.installButton.addEventListener("click", async () => {
-  if (!deferredInstallPrompt) {
-    showToast(
-      /iPhone|iPad|iPod/i.test(navigator.userAgent)
-        ? "Щоб встановити: у Safari натисніть «Поділитися» ⎙, потім «На початковий екран» ⊞."
-        : "У меню браузера оберіть «Встановити додаток» або «Додати на головний екран»."
-    );
-    return;
-  }
-  deferredInstallPrompt.prompt();
-  await deferredInstallPrompt.userChoice;
-  deferredInstallPrompt = null;
+
+els.homeInstallBtn?.addEventListener("click", triggerInstallPrompt);
+els.installButton?.addEventListener("click", triggerInstallPrompt);
+
+els.homeDismissInstallBtn?.addEventListener("click", () => {
+  if (els.homeInstallBanner) els.homeInstallBanner.hidden = true;
+  try {
+    sessionStorage.setItem("sho-po-svitlu.install-dismissed", "1");
+  } catch {}
 });
+
+// Первинна ініціалізація стану встановлення
+updateInstallUI();
 
 // Share
 els.shareAppButton.addEventListener("click", async () => {
@@ -608,3 +812,4 @@ clockTimer = setInterval(() => {
 if (settings.workerUrl && !data) {
   refresh({ manual: false, force: false });
 }
+if (needsOnboarding()) openOnboarding();
