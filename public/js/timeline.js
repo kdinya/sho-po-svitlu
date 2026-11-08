@@ -52,6 +52,15 @@ export function renderTimeline(track, marker, currentTimeNode, periods = [], now
   currentTimeNode.textContent = time;
 }
 
+export function formatDuration(start, end) {
+  const diff = Math.max(0, end - start);
+  const hours = Math.floor(diff / 60);
+  const mins = diff % 60;
+  if (!hours) return `${mins} хв`;
+  if (!mins) return `${hours} год`;
+  return `${hours} год ${mins} хв`;
+}
+
 export function renderOutages(container, countNode, periods = [], nowMinutes = 0, { highlightPast = true } = {}) {
   container.replaceChildren();
   countNode.textContent = String(periods.length);
@@ -73,7 +82,10 @@ export function renderOutages(container, countNode, periods = [], nowMinutes = 0
     const use = document.createElementNS("http://www.w3.org/2000/svg", "use"); use.setAttribute("href", "#i-clock"); icon.append(use);
     const time = document.createElement("time");
     time.textContent = `${minutesToTime(period.start)} — ${minutesToTime(period.end)}`;
-    item.append(icon, time);
+    const duration = document.createElement("span");
+    duration.className = "outage-duration";
+    duration.textContent = `⏳ ${formatDuration(period.start, period.end)}`;
+    item.append(icon, time, duration);
     container.append(item);
   }
 }
