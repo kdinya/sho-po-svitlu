@@ -19,15 +19,15 @@ npm run dev
 
 У Cloudflare Workers Builds підключіть `kdinya/sho-po-svitlu` до Worker `sho-po-svitlu-api`, production branch `main`. Залиште Root directory порожнім (корінь репозиторію), Build command порожнім, а Deploy command — `npx wrangler deploy`. Якщо перший деплой показав Framework `Static` та Output Directory `public`, він опублікував фронтенд замість API; після додавання кореневого Wrangler config наступний деплой має використати правильний Worker.
 
-Після успішного API-деплою Worker матиме адресу на зразок `https://sho-po-svitlu-api.<ваш-акаунт>.workers.dev`. Один раз вставте її в `public/config.js`:
+Поточна адреса Worker: `https://sho-po-svitlu-api.k-dinya.workers.dev`. Вона вже записана у спільний конфіг сайту `public/config.js`:
 
 ```js
 window.SHO_PO_SVITLU_CONFIG = Object.freeze({
-  workerUrl: "https://sho-po-svitlu-api.<ваш-акаунт>.workers.dev",
+  workerUrl: "https://sho-po-svitlu-api.k-dinya.workers.dev",
 });
 ```
 
-Збережіть зміну в GitHub. Worker URL публічний і однаковий для всіх; **не додавайте у цей файл секрети чи токени**. Cron оновлює типовий канал із `DEFAULT_CHANNEL`; вибрані користувачами канали Worker отримує під час запитів і кешує у KV. Кожен push до `main` запускає автоматичний деплой Worker та оновлення фронтенду на Vercel.
+Worker URL публічний і однаковий для всіх; **не додавайте у цей файл секрети чи токени**. Cron оновлює типовий канал із `DEFAULT_CHANNEL`; вибрані користувачами канали Worker отримує під час запитів і кешує у KV. Кожен push до `main` запускає автоматичний деплой Worker та оновлення фронтенду на Vercel.
 
 ## Одноразова публікація на Vercel
 
