@@ -1,0 +1,11 @@
+{
+  "name": "sho-po-svitlu",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test worker/*.test.js",
+    "dev": "npx serve public",
+    "deploy:worker": "cd worker && npx wrangler deploy"
+  }
+}
