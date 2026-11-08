@@ -8,6 +8,7 @@
     <meta name="color-scheme" content="dark" />
     <link rel="manifest" href="/manifest.json" />
     <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
     <link rel="stylesheet" href="/css/style.css" />
     <title>ШоПоСвітлу — графік світла</title>
   </head>
@@ -51,6 +52,7 @@
             <h1>Черга <span id="homeQueue">6.2</span></h1>
           </div>
           <article class="status-card" id="statusCard" data-state="unknown" aria-live="polite">
+            <img class="mascot-art" src="/images/mascot-lightbulb.webp" alt="Мультяшна усміхнена лампочка показує великий палець вгору" width="160" height="184" />
             <div class="status-topline"><span class="live-pill"><i></i><span id="statusKicker">СТАН ЗА ГРАФІКОМ</span></span></div>
             <div class="status-main">
               <div class="lamp-scene" id="lampScene" aria-hidden="true">
@@ -80,6 +82,33 @@
           <div class="home-actions">
             <button class="refresh-button" id="refreshButton" type="button"><svg class="icon"><use href="#i-refresh" /></svg><span>Оновити</span></button>
           </div>
+          <section class="home-overview panel" aria-labelledby="homeOverviewHeading">
+            <div class="overview-heading">
+              <div class="section-heading"><div><p class="eyebrow">СЬОГОДНІ · <span id="homeOverviewDate">—</span></p><h2 id="homeOverviewHeading">Графік на сьогодні</h2></div></div>
+              <div class="overview-day-switch" role="tablist" aria-label="Оберіть день графіка">
+                <button class="overview-day is-active" id="homeTodayTab" type="button" role="tab" aria-selected="true" data-day="today">Сьогодні</button>
+                <button class="overview-day" id="homeTomorrowTab" type="button" role="tab" aria-selected="false" data-day="tomorrow">Завтра</button>
+              </div>
+            </div>
+            <div class="overview-legend"><span><i class="legend-on"></i> Є світло</span><span><i class="legend-off"></i> Немає світла</span></div>
+            <div class="timeline-wrap overview-timeline" id="homeTimelineWrap">
+              <div class="timeline-track" id="homeTimelineTrack" aria-label="Графік відключень за добу"></div>
+              <div class="now-marker" id="homeNowMarker" aria-label="Поточний час"><span>ЗАРАЗ <b id="homeCurrentTime">--:--</b></span><i></i></div>
+              <div class="timeline-ticks" aria-hidden="true"><span>00:00</span><span>06:00</span><span>12:00</span><span>18:00</span><span>24:00</span></div>
+            </div>
+            <div class="overview-outages">
+              <div class="overview-outages-heading"><h3>Найближчі відключення</h3><span class="outage-count" id="homeOutageCount">—</span></div>
+              <div class="outage-list overview-outage-list" id="homeOutageList"><div class="empty-state"><span class="empty-orb"></span><p>Завантажуємо графік…</p></div></div>
+            </div>
+          </section>
+
+          <a class="home-source-card" href="#" id="homeSourceCard" aria-label="Налаштування джерела даних">
+            <span class="home-source-mark"><svg class="icon"><use href="#i-send" /></svg></span>
+            <span class="home-source-copy"><small>ДЖЕРЕЛО ДАНИХ</small><strong id="homeSourceName">Світло Маловисківського району</strong><span id="homeSourceUpdate">Очікуємо оновлення</span></span>
+            <span class="home-source-action" aria-hidden="true"><svg class="icon"><use href="#i-settings" /></svg></span>
+          </a>
+          <button class="install-button home-install-button" id="installButton" type="button"><svg class="icon"><use href="#i-bolt" /></svg><span>Встановити на пристрій</span></button>
+          <p class="home-safety-note">Графік є планом і може відрізнятися від фактичного електропостачання.</p>
         </section>
 
         <section class="page-screen" id="scheduleScreen" data-screen="schedule" hidden>
@@ -126,6 +155,7 @@
             <p class="source-disclaimer">Як часто перевіряти канал: кожні 5, 15 або 30 хвилин.</p>
             <button class="edit-source-button" id="editSourceButton" type="button"><svg class="icon"><use href="#i-settings" /></svg> Змінити канал та інтервал</button>
           </article>
+          <button class="share-app-button" id="shareAppButton" type="button"><svg class="icon"><use href="#i-open" /></svg><span><strong>Поділитися додатком</strong><small>Надішліть посилання друзям</small></span><span class="share-arrow" aria-hidden="true">↗</span></button>
           <div class="honesty-note"><span class="honesty-icon"><svg class="icon"><use href="#i-sun" /></svg></span><p><strong>Це план, а не датчик.</strong><br />Фактичне електропостачання може відрізнятися від графіка. Перевіряйте повідомлення у першоджерелі.</p></div>
         </section>
 
@@ -138,7 +168,7 @@
     <nav class="bottom-nav" aria-label="Основна навігація">
       <button class="nav-item is-active" type="button" data-screen-target="home" aria-current="page"><svg class="icon"><use href="#i-bolt" /></svg><span>Стан</span></button>
       <button class="nav-item" type="button" data-screen-target="schedule"><svg class="icon"><use href="#i-calendar" /></svg><span>Графік</span></button>
-      <button class="nav-item" type="button" data-screen-target="source"><svg class="icon"><use href="#i-send" /></svg><span>Джерело</span></button>
+      <button class="nav-item" type="button" data-screen-target="source"><svg class="icon"><use href="#i-settings" /></svg><span>Налаштування</span></button>
     </nav>
 
     <dialog class="settings-dialog" id="settingsDialog" aria-labelledby="settingsTitle">
