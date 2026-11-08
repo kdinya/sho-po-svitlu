@@ -1,0 +1,23 @@
+{
+  // Cloudflare Workers Builds currently runs from the repository root.
+  // Point it at the API source instead of auto-detecting the Vercel static frontend.
+  "name": "sho-po-svitlu-api",
+  "main": "worker/index.js",
+  "compatibility_date": "2026-11-01",
+  "workers_dev": true,
+  "observability": {
+    "enabled": true
+  },
+  "vars": {
+    "DEFAULT_CHANNEL": "SvitloMalovyskivskohoRaionu"
+  },
+  "kv_namespaces": [
+    {
+      "binding": "KV_BINDING",
+      "id": "2c01d95203644d18b5091ebc1427b55a"
+    }
+  ],
+  "triggers": {
+    "crons": ["*/5 * * * *"]
+  }
+}

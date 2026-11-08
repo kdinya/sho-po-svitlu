@@ -13,18 +13,13 @@ npm test
 npm run dev
 ```
 
-## Одноразове налаштування Cloudflare власником сайту
+## Cloudflare Worker і автоматичний деплой із GitHub
 
-1. KV namespace `sho-po-svitlu-schedules` уже підключений: `worker/wrangler.toml` містить його Namespace ID та binding `KV_BINDING`. Назва namespace — це мітка в Cloudflare; Worker звертається до нього через binding.
-2. Розгорніть Worker:
+Кореневий `wrangler.jsonc` налаштований для Cloudflare Builds: він вказує API Worker на `worker/index.js`, підключає KV `sho-po-svitlu-schedules` через binding `KV_BINDING` та задає Cron раз на п'ять хвилин. Вкладений `worker/wrangler.toml` лишається для локальної розробки.
 
-```bash
-cd worker
-npx wrangler login
-npx wrangler deploy
-```
+У Cloudflare Workers Builds підключіть `kdinya/sho-po-svitlu` до Worker `sho-po-svitlu-api`, production branch `main`. Залиште Root directory порожнім (корінь репозиторію), Build command порожнім, а Deploy command — `npx wrangler deploy`. Якщо перший деплой показав Framework `Static` та Output Directory `public`, він опублікував фронтенд замість API; після додавання кореневого Wrangler config наступний деплой має використати правильний Worker.
 
-3. Wrangler покаже адресу на зразок `https://sho-po-svitlu-api.<ваш-акаунт>.workers.dev`. Один раз вставте її в `public/config.js`:
+Після успішного API-деплою Worker матиме адресу на зразок `https://sho-po-svitlu-api.<ваш-акаунт>.workers.dev`. Один раз вставте її в `public/config.js`:
 
 ```js
 window.SHO_PO_SVITLU_CONFIG = Object.freeze({
@@ -32,7 +27,7 @@ window.SHO_PO_SVITLU_CONFIG = Object.freeze({
 });
 ```
 
-Збережіть зміну в GitHub. Worker URL публічний і однаковий для всіх; **не додавайте у цей файл секрети чи токени**. Cron `*/5 * * * *` уже прописаний у `worker/wrangler.toml`; у Cloudflare перевірте **Workers & Pages → Settings → Triggers → Cron Triggers**. Cron оновлює типовий канал із `DEFAULT_CHANNEL`; вибрані користувачами канали Worker отримує під час запитів і кешує у KV.
+Збережіть зміну в GitHub. Worker URL публічний і однаковий для всіх; **не додавайте у цей файл секрети чи токени**. Cron оновлює типовий канал із `DEFAULT_CHANNEL`; вибрані користувачами канали Worker отримує під час запитів і кешує у KV. Кожен push до `main` запускає автоматичний деплой Worker та оновлення фронтенду на Vercel.
 
 ## Одноразова публікація на Vercel
 
