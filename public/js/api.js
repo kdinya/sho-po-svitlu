@@ -1,4 +1,5 @@
 export const DEFAULT_CHANNEL = "https://t.me/s/SvitloMalovyskivskohoRaionu";
+export const DEFAULT_WORKER_URL = normalizeWorkerUrl(globalThis.SHO_PO_SVITLU_CONFIG?.workerUrl ?? "");
 
 export function normalizeWorkerUrl(input) {
   const value = String(input ?? "").trim();
@@ -24,7 +25,7 @@ export function normalizeChannelInput(input) {
 
 export async function fetchSchedule({ workerUrl, channel, refresh = false, signal } = {}) {
   const base = normalizeWorkerUrl(workerUrl);
-  if (!base) throw new Error("Додайте адресу Cloudflare Worker у налаштуваннях, щоб отримувати графік.");
+  if (!base) throw new Error("Власнику сайту потрібно один раз задати адресу Cloudflare Worker у public/config.js.");
   const normalized = normalizeChannelInput(channel);
   const endpoint = new URL(`${base}/api/schedule`);
   endpoint.searchParams.set("channel", normalized.url);

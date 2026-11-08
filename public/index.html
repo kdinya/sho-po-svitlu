@@ -133,21 +133,19 @@
         <label class="field-label" for="channelInput">Посилання на Telegram-канал</label>
         <div class="input-wrap"><svg class="icon"><use href="#i-send" /></svg><input id="channelInput" name="channel" type="text" inputmode="url" autocomplete="url" placeholder="https://t.me/s/назва_каналу" required /></div>
         <p class="field-help">Публічне посилання на канал або його @назва.</p>
-        <label class="field-label" for="workerInput">Cloudflare Worker API</label>
-        <div class="input-wrap"><svg class="icon"><use href="#i-bolt" /></svg><input id="workerInput" name="worker" type="url" inputmode="url" placeholder="https://назва.акаунт.workers.dev" /></div>
-        <p class="field-help">Вкажіть Worker URL після його розгортання. Шлях `/api/schedule` додасться автоматично.</p>
         <label class="field-label" for="intervalInput">Як часто перевіряти канал</label>
         <div class="interval-options" role="radiogroup" aria-label="Інтервал оновлення">
           <label><input id="intervalInput" type="radio" name="interval" value="5" /><span>5 хв</span></label>
           <label><input type="radio" name="interval" value="15" /><span>15 хв</span></label>
           <label><input type="radio" name="interval" value="30" /><span>30 хв</span></label>
         </div>
-        <div class="settings-callout"><svg class="icon"><use href="#i-sun" /></svg><p>Періодичність стосується цього пристрою. Фоновий Worker оновлює типове джерело раз на 5 хвилин.</p></div>
+        <div class="settings-callout"><svg class="icon"><use href="#i-sun" /></svg><p>Періодичність стосується цього пристрою. API підключений власником застосунку один раз; вам достатньо вказати канал.</p></div>
         <div class="dialog-actions"><button class="text-button" id="cancelSettings" type="button">Скасувати</button><button class="primary-button" type="submit">Зберегти й оновити</button></div>
       </form>
     </dialog>
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script src="/config.js"></script>
     <script type="module" src="/js/app.js"></script>
   </body>
 </html>

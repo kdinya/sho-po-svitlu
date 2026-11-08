@@ -1,10 +1,10 @@
-import { DEFAULT_CHANNEL, fetchSchedule, normalizeChannelInput, normalizeWorkerUrl } from "./api.js";
+import { DEFAULT_CHANNEL, DEFAULT_WORKER_URL, fetchSchedule, normalizeChannelInput } from "./api.js";
 import { formatCountdown, formatDate, getLocalClock, getScheduleState, renderOutages, renderTimeline } from "./timeline.js";
 
 const STORAGE_KEY = "sho-po-svitlu.settings.v1";
 const DATA_KEY = "sho-po-svitlu.last-data.v1";
 const QUEUES = Array.from({ length: 6 }, (_, index) => [`${index + 1}.1`, `${index + 1}.2`]).flat();
-const DEFAULTS = { channel: DEFAULT_CHANNEL, workerUrl: "", queue: "6.2", intervalMinutes: 5 };
+const DEFAULTS = { channel: DEFAULT_CHANNEL, workerUrl: DEFAULT_WORKER_URL, queue: "6.2", intervalMinutes: 5 };
 const $ = (id) => document.getElementById(id);
 const els = {
   queueSelect: $("queueSelect"), todayTab: $("todayTab"), tomorrowTab: $("tomorrowTab"), scheduleDate: $("scheduleDate"), heroDate: $("heroDate"),
@@ -13,7 +13,7 @@ const els = {
   timelineNote: $("timelineNote"), outageList: $("outageList"), outageCount: $("outageCount"), sourceLink: $("sourceLink"), sourceName: $("sourceName"), sourceHandle: $("sourceHandle"),
   updatedAt: $("updatedAt"), footerUpdate: $("footerUpdate"), networkIndicator: $("networkIndicator"), updateIcon: $("updateIcon"), refreshButton: $("refreshButton"),
   sourceStatus: $("sourceStatus"), errorBanner: $("errorBanner"), errorTitle: $("errorTitle"), errorText: $("errorText"),
-  settingsButton: $("settingsButton"), settingsDialog: $("settingsDialog"), settingsForm: $("settingsForm"), channelInput: $("channelInput"), workerInput: $("workerInput"),
+  settingsButton: $("settingsButton"), settingsDialog: $("settingsDialog"), settingsForm: $("settingsForm"), channelInput: $("channelInput"),
   cancelSettings: $("cancelSettings"), closeSettings: $("closeSettings"), errorRetry: $("errorRetry"), toast: $("toast"),
 };
 
@@ -21,6 +21,7 @@ function readStoredSettings() {
   try {
     const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
     const result = { ...DEFAULTS, ...stored };
+    if (DEFAULT_WORKER_URL) result.workerUrl = DEFAULT_WORKER_URL;
     if (!QUEUES.includes(result.queue)) result.queue = DEFAULTS.queue;
     if (![5, 15, 30].includes(Number(result.intervalMinutes))) result.intervalMinutes = DEFAULTS.intervalMinutes;
     return result;
@@ -114,10 +115,10 @@ function renderView() {
     els.statusCard.dataset.state = "unknown";
     els.statusKicker.textContent = "ГРАФІК НЕ ЗАВАНТАЖЕНО";
     els.statusTitle.textContent = "Підключаємо світло";
-    els.statusDetail.textContent = "Додайте Worker у налаштуваннях, щоб отримати графік.";
+    els.statusDetail.textContent = DEFAULT_WORKER_URL ? "Зараз перевіримо останні дописи каналу." : "Власник сайту ще не підключив спільний Worker API.";
     els.statusMeta.textContent = "Очікуємо джерело даних";
     els.nextTitle.textContent = "Ще немає графіка";
-    els.nextDetail.textContent = "Під'єднайте Cloudflare Worker";
+    els.nextDetail.textContent = DEFAULT_WORKER_URL ? "Під'єднайте Telegram-канал" : "API налаштовується власником сайту";
     els.countdown.innerHTML = "—";
     els.updatedAt.textContent = "Ще не оновлювали";
     els.footerUpdate.textContent = "Очікуємо перше оновлення";
@@ -182,7 +183,7 @@ function formatClock(minutes) { return `${String(Math.floor(minutes / 60)).padSt
 async function refresh({ manual = false, force = false } = {}) {
   if (!settings.workerUrl) {
     renderView();
-    showError("Додайте Cloudflare Worker URL у налаштуваннях, щоб підключити канал.", { title: "Потрібно підключити API" });
+    showError("Власнику сайту потрібно один раз додати адресу розгорнутого Worker у public/config.js.", { title: "Спільний API ще не підключено" });
     return;
   }
   currentController?.abort();
@@ -220,7 +221,6 @@ async function refresh({ manual = false, force = false } = {}) {
 
 function openSettings() {
   els.channelInput.value = settings.channel;
-  els.workerInput.value = settings.workerUrl;
   const selected = document.querySelector(`input[name="interval"][value="${settings.intervalMinutes}"]`);
   if (selected) selected.checked = true;
   els.settingsDialog.showModal();
@@ -253,16 +253,15 @@ els.settingsForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   try {
     const channel = normalizeChannelInput(els.channelInput.value);
-    const workerUrl = normalizeWorkerUrl(els.workerInput.value);
     const intervalMinutes = Number(document.querySelector('input[name="interval"]:checked')?.value || 5);
-    settings = { ...settings, channel: channel.url, workerUrl, intervalMinutes };
+    settings = { ...settings, channel: channel.url, workerUrl: DEFAULT_WORKER_URL || settings.workerUrl, intervalMinutes };
     saveSettings();
     scheduleAutoRefresh();
     closeSettings();
     data = null;
     renderView();
-    if (workerUrl) await refresh({ manual: true, force: true });
-    else showError("Щоб отримувати реальні дані, спочатку розгорніть Worker та додайте його URL.", { title: "Налаштування збережено" });
+    if (settings.workerUrl) await refresh({ manual: true, force: true });
+    else showError("Власнику сайту потрібно один раз додати адресу розгорнутого Worker у public/config.js.", { title: "Канал збережено, API ще не підключено" });
   } catch (error) { showToast(error.message); }
 });
 

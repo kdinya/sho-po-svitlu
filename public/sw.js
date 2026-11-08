@@ -1,5 +1,5 @@
 const CACHE_NAME = "sho-po-svitlu-shell-v1";
-const APP_SHELL = ["/", "/index.html", "/css/style.css", "/js/app.js", "/js/api.js", "/js/timeline.js", "/manifest.json", "/icons/icon.svg"];
+const APP_SHELL = ["/", "/index.html", "/config.js", "/css/style.css", "/js/app.js", "/js/api.js", "/js/timeline.js", "/manifest.json", "/icons/icon.svg"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)).then(() => self.skipWaiting()));
