@@ -1,4 +1,4 @@
-const CACHE_NAME = "sho-po-svitlu-shell-v4";
+const CACHE_NAME = "sho-po-svitlu-shell-v5";
 const APP_SHELL = ["/", "/index.html", "/config.js", "/css/style.css", "/js/app.js", "/js/api.js", "/js/timeline.js", "/manifest.json", "/icons/icon.svg", "/icons/icon-192.png", "/icons/icon-512.png", "/images/mascot-lightbulb.webp", "/images/hero-skyline-clean.webp", "/images/night-city-header.webp"];
 
 self.addEventListener("install", (event) => {

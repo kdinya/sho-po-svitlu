@@ -30,7 +30,10 @@
       <header class="topbar">
         <a class="brand" href="/" aria-label="ШоПоСвітлу — на головну">
           <span class="brand-mark"><svg class="icon"><use href="#i-bolt" /></svg></span>
-          <span class="brand-copy"><strong>ШоПоСвітлу</strong></span>
+          <span class="brand-copy">
+            <strong class="brand-title">ШоПоСвітлу</strong>
+            <span class="brand-subtitle">Графік відключень електроенергії</span>
+          </span>
         </a>
         <div class="queue-picker" id="queuePicker">
           <button class="queue-trigger" id="queueSelect" type="button" aria-label="Оберіть чергу" aria-haspopup="listbox" aria-expanded="false" aria-controls="queueMenu">
@@ -47,30 +50,31 @@
           <!-- Hero Status Card directly matching the mockup -->
           <article class="status-card" id="statusCard" data-state="unknown" aria-live="polite">
             <div class="status-card-inner">
-              <div class="status-left">
-                <p class="hero-eyebrow">Графік відключень електроенергії</p>
+              <div class="status-mascot-col">
+                <img class="mascot-art" src="/images/mascot-lightbulb.webp" alt="Усміхнена лампочка ШоПоСвітлу" width="124" height="142" fetchpriority="high" />
+              </div>
+              <div class="status-info-col">
                 <h1 class="hero-status-title" id="statusTitle">Зараз є світло!</h1>
-                <p class="hero-date" id="heroDate">Сьогодні, 9 листопада</p>
+                <div class="hero-date-refresh-row">
+                  <p class="hero-date-wrap">
+                    <svg class="icon hero-date-icon"><use href="#i-calendar" /></svg>
+                    <span class="hero-date" id="heroDate">Сьогодні, 9 листопада</span>
+                  </p>
+                  <button class="hero-refresh-btn" id="refreshButton" type="button" aria-label="Оновити дані" title="Оновити дані">
+                    <svg class="icon" id="updateIcon"><use href="#i-refresh" /></svg>
+                    <span>Оновити</span>
+                  </button>
+                </div>
                 <div class="hero-next-pill" id="nextCard">
                   <svg class="icon"><use href="#i-clock" /></svg>
                   <span id="nextTitle">Наступна зміна: о 18:00</span>
                   <span class="hero-countdown" id="countdown"></span>
                 </div>
               </div>
-              <div class="status-right">
-                <img class="mascot-art" src="/images/mascot-lightbulb.webp" alt="Усміхнена лампочка ШоПоСвітлу" width="160" height="184" fetchpriority="high" />
-                <button class="hero-refresh-btn" id="refreshButton" type="button" aria-label="Оновити дані">
-                  <svg class="icon" id="updateIcon"><use href="#i-refresh" /></svg>
-                  <span>Оновити</span>
-                </button>
-              </div>
-            </div>
-            <div class="status-bottom-meta">
-              <span class="meta-dot"></span>
-              <span id="statusMeta">Оновлюємо дані</span>
             </div>
             <!-- Keep hidden fallback nodes for script compatibility -->
             <div hidden>
+              <span id="statusMeta"></span>
               <span id="statusKicker"></span>
               <p id="statusDetail"></p>
               <span id="nextDetail"></span>
@@ -138,17 +142,7 @@
             </button>
           </div>
 
-          <!-- Install & Share quick buttons -->
-          <div class="home-utility-actions">
-            <button class="utility-btn install-btn" id="installButton" type="button">
-              <svg class="icon"><use href="#i-bolt" /></svg>
-              <span>Встановити додаток</span>
-            </button>
-            <button class="utility-btn share-btn" id="shareAppButton" type="button">
-              <svg class="icon"><use href="#i-open" /></svg>
-              <span>Поділитися</span>
-            </button>
-          </div>
+
 
           <p class="home-safety-note">Графік є планом і може відрізнятися від фактичного електропостачання.</p>
         </section>
@@ -213,6 +207,27 @@
               <svg class="icon"><use href="#i-settings" /></svg> Змінити або додати канал
             </button>
           </article>
+          <article class="panel pwa-panel" id="pwaPanel">
+            <div class="pwa-heading">
+              <span class="pwa-mark"><svg class="icon"><use href="#i-bolt" /></svg></span>
+              <div>
+                <p class="eyebrow">ДОДАТОК НА ЕКРАНІ</p>
+                <h2>Встановити на робочий стіл</h2>
+              </div>
+            </div>
+            <p class="pwa-desc">Встановіть іконку ШоПоСвітлу на робочий стіл смартфона чи комп’ютера для швидкого відкриття без пошуку в браузері.</p>
+            <div class="pwa-buttons">
+              <button class="utility-btn install-btn" id="installButton" type="button">
+                <svg class="icon"><use href="#i-bolt" /></svg>
+                <span>Встановити на робочий стіл</span>
+              </button>
+              <button class="utility-btn share-btn" id="shareAppButton" type="button">
+                <svg class="icon"><use href="#i-open" /></svg>
+                <span>Поділитися додатком</span>
+              </button>
+            </div>
+          </article>
+
           <div class="honesty-note">
             <span class="honesty-icon"><svg class="icon"><use href="#i-sun" /></svg></span>
             <p><strong>Це план, а не датчик.</strong><br />Фактичне електропостачання може відрізнятися від графіка. Перевіряйте повідомлення у першоджерелі.</p>

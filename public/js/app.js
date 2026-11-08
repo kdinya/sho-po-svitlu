@@ -141,11 +141,16 @@ function saveChannels() {
   } catch {}
 }
 
+const DEFAULT_FALLBACK_QUEUES = ["1.1", "1.2", "2.1", "2.2", "3.1", "3.2", "4.1", "4.2", "5.1", "5.2", "6.1", "6.2"];
+
 function availableQueues(scheduleData = data) {
   const queues = new Set();
   Object.values(scheduleData?.schedules || {}).forEach((day) => {
     Object.keys(day?.queues || {}).forEach((queue) => queues.add(queue));
   });
+  if (queues.size === 0) {
+    DEFAULT_FALLBACK_QUEUES.forEach((q) => queues.add(q));
+  }
   return [...queues].sort((a, b) => {
     const [ag, as] = a.split(".").map(Number);
     const [bg, bs] = b.split(".").map(Number);
@@ -168,6 +173,7 @@ function initQueueOptions() {
     })
   );
   updateQueuePicker();
+  setQueueMenu(false);
 }
 
 function updateQueuePicker() {
@@ -451,9 +457,15 @@ function scheduleAutoRefresh() {
 }
 
 // Event Listeners
-els.queueSelect.addEventListener("click", () => setQueueMenu(els.queueMenu.hidden));
+els.queueSelect.addEventListener("click", (e) => {
+  e.stopPropagation();
+  setQueueMenu(els.queueMenu.hidden);
+});
 document.addEventListener("pointerdown", (event) => {
   if (!els.queuePicker.contains(event.target)) setQueueMenu(false);
+});
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") setQueueMenu(false);
 });
 
 const selectDay = (day) => {
@@ -520,6 +532,12 @@ els.saveIntervalBtn.addEventListener("click", () => {
 });
 
 // PWA Install
+if (window.matchMedia?.("(display-mode: standalone)").matches || window.navigator.standalone) {
+  if (els.installButton) {
+    els.installButton.disabled = true;
+    els.installButton.querySelector("span").textContent = "Вже встановлено";
+  }
+}
 window.addEventListener("beforeinstallprompt", (event) => {
   event.preventDefault();
   deferredInstallPrompt = event;
