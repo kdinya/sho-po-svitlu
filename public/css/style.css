@@ -537,3 +537,165 @@ main { padding-top: 30px; }
   .queue-chevron { width: 17px; height: 17px; }
   .queue-menu { top: calc(100% + 9px); }
 }
+
+/* Exact-reference art direction: night skyline, expressive bulb mascot, and warm outage colors. */
+.app-shell { position: relative; isolation: isolate; }
+.app-shell::before {
+  position: absolute; z-index: -1; top: -18px; left: 50%;
+  width: max(100vw, 1024px); height: 370px;
+  content: ""; pointer-events: none; transform: translateX(-50%);
+  background-image:
+    linear-gradient(180deg, rgba(3,8,22,.10) 0%, rgba(4,10,27,.22) 45%, rgba(5,11,28,.82) 84%, var(--bg) 100%),
+    url("/images/night-city-header.webp");
+  background-position: center, center 58%; background-size: cover; background-repeat: no-repeat;
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 67%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 0%, #000 67%, transparent 100%);
+  opacity: .78;
+}
+.topbar { position: relative; background: linear-gradient(180deg, rgba(4,10,27,.12), rgba(4,10,27,.04)); }
+.status-card { min-height: 286px; }
+.status-card[data-state="on"] {
+  background: radial-gradient(ellipse 54% 92% at 100% 0%, rgba(255,209,46,.15), transparent 70%),
+    linear-gradient(135deg, #1b2037, #10182f 76%);
+}
+.status-card[data-state="off"] {
+  background: radial-gradient(ellipse 65% 100% at 0 100%, rgba(255,92,32,.19), transparent 76%),
+    linear-gradient(140deg, #291d2c, #10182f 80%);
+}
+.mascot-art {
+  position: absolute; z-index: 0; top: -19px; right: 10px;
+  width: clamp(112px, 23vw, 178px); height: 194px; object-fit: contain;
+  object-position: center top; filter: drop-shadow(0 6px 18px rgba(255,194,30,.30));
+  pointer-events: none; user-select: none;
+}
+.status-topline, .status-main, .status-bottom { position: relative; z-index: 1; }
+.status-topline { padding-right: 122px; }
+.status-main { padding-right: 126px; }
+.status-copy { position: relative; z-index: 1; }
+.status-copy h2 { max-width: 100%; font-size: clamp(30px, 6vw, 43px); }
+.status-copy p { max-width: 38ch; }
+.status-card[data-state="on"] .status-copy h2 { color: #fff6d2; }
+.status-card[data-state="on"] .status-copy p { color: #d8ceab; }
+.status-card[data-state="on"] .status-meta { color: #d5c99d; }
+.status-card[data-state="on"] .live-pill { color: #ffe885; background: rgba(255,211,41,.10); }
+.status-card[data-state="on"] .status-bottom { color: #d0c590; }
+.status-card[data-state="on"] .lamp-scene { background: radial-gradient(circle, #fff5bf 0%, rgba(255,212,52,.52) 48%, rgba(255,190,32,.12) 76%); }
+.status-card[data-state="on"] .lamp-svg { color: #9e5700; }
+.status-card[data-state="unknown"] .lamp-svg { color: var(--sun); }
+.nav-item.is-active { color: var(--sun); }
+.nav-item.is-active .icon { color: var(--sun); }
+@media (min-width: 680px) {
+  .app-shell::before { height: 430px; background-position: center, center 54%; }
+  .mascot-art { top: -22px; right: 25px; width: 180px; height: 210px; }
+  .status-main { padding-right: 150px; }
+  .status-topline { padding-right: 150px; }
+}
+@media (max-width: 430px) {
+  .app-shell::before { height: 310px; top: -10px; background-position: center, center 58%; }
+  .topbar { background: linear-gradient(180deg, rgba(4,10,27,.08), rgba(4,10,27,.04)); }
+  .status-card { min-height: 275px; }
+  .mascot-art { top: -14px; right: 2px; width: 115px; height: 158px; }
+  .status-main { padding-right: 76px; gap: 11px; }
+  .status-topline { padding-right: 76px; }
+  .status-copy h2 { font-size: clamp(27px, 7.4vw, 33px); }
+  .status-copy p { max-width: 29ch; font-size: 14px; }
+  .status-meta { font-size: 12px; }
+}
+
+
+/* Reference dashboard: illustrated city night, warm bulb mascot and compact live schedule. */
+:root { --bg: #06122d; --surface: #111d3b; --surface-raised: #1a2a53; --line: rgba(126,148,223,.24); --sun: #ffce36; --sun-deep: #ffad17; }
+body { background: radial-gradient(ellipse 100% 420px at 50% -20px, rgba(34,70,139,.35), transparent 74%), #030b20; }
+.app-shell { position: relative; isolation: isolate; }
+.app-shell::before { position:absolute; z-index:-1; content:""; top:-18px; left:50%; width:max(100vw,1024px); height:430px; transform:translateX(-50%); pointer-events:none; background:linear-gradient(180deg,rgba(3,9,28,.08),rgba(4,12,34,.12) 36%,rgba(5,12,34,.72) 77%,var(--bg) 100%),url("/images/night-city-header.webp") center 56%/cover no-repeat; opacity:.78; -webkit-mask-image:linear-gradient(#000 0%,#000 65%,transparent 100%); mask-image:linear-gradient(#000 0%,#000 65%,transparent 100%); }
+.topbar { border-color:rgba(126,148,223,.16); background:linear-gradient(180deg,rgba(5,12,32,.06),rgba(5,12,32,.04)); }
+.brand-mark { color:var(--sun); border-color:rgba(255,207,61,.3); background:rgba(255,207,61,.12); }
+.queue-picker { border-color:rgba(126,148,223,.34); background:rgba(13,25,57,.88); }
+.queue-trigger { border:0; background:transparent; color:var(--sun); font-size:20px; font-weight:850; cursor:pointer; display:flex; align-items:center; justify-content:space-between; gap:9px; }
+.queue-trigger:disabled { opacity:.6; cursor:wait; }
+.queue-menu { max-height:min(45vh,360px); overflow-y:auto; background:#121e41; border-color:#6278c3; }
+.status-card { min-height:286px; border-color:rgba(126,148,223,.3); background:radial-gradient(ellipse 55% 96% at 100% 0%,rgba(255,207,61,.14),transparent 76%),linear-gradient(140deg,#1a2546,#101a36 80%); }
+.status-card[data-state="on"] { color:var(--text); border-color:rgba(255,213,86,.46); background:radial-gradient(ellipse 58% 95% at 100% 0%,rgba(255,207,61,.20),transparent 76%),linear-gradient(140deg,#202748,#111b39 80%); }
+.status-card[data-state="on"] .status-copy h2 { color:#fff6d2; }
+.status-card[data-state="on"] .status-copy p,.status-card[data-state="on"] .status-meta,.status-card[data-state="on"] .status-bottom { color:#d8d1b8; }
+.status-card[data-state="on"] .live-pill { color:#ffe885; background:rgba(255,211,41,.10); border-color:rgba(255,222,86,.26); }
+.mascot-art { position:absolute; z-index:0; top:-18px; right:10px; width:clamp(112px,24vw,176px); height:190px; object-fit:contain; object-position:center top; filter:drop-shadow(0 6px 19px rgba(255,194,30,.35)); pointer-events:none; user-select:none; }
+.status-topline,.status-main,.status-bottom { position:relative; z-index:1; }
+.status-topline,.status-main { padding-right:122px; }
+.status-main { padding-top:16px; }
+.status-card .lamp-scene { width:96px; height:96px; }
+.status-card .lamp-svg { width:57px; height:68px; }
+.home-actions { display:flex; justify-content:flex-end; margin:12px 2px 16px; }
+.home-actions .refresh-button { min-height:42px; padding:9px 15px; border-radius:14px; }
+.home-overview { margin-top:0; padding:19px; border-color:rgba(126,148,223,.25); background:linear-gradient(145deg,rgba(22,34,70,.92),rgba(10,19,45,.96)); }
+.overview-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.overview-heading h2 { margin:5px 0 0; font-size:21px; letter-spacing:-.035em; }
+.overview-day-switch { display:flex; flex:none; gap:3px; padding:4px; border:1px solid rgba(126,148,223,.25); border-radius:13px; background:rgba(5,12,32,.56); }
+.overview-day { border:0; padding:8px 10px; border-radius:9px; color:#b8c4e5; background:transparent; font-size:12px; font-weight:750; cursor:pointer; }
+.overview-day.is-active { color:#211a03; background:linear-gradient(180deg,#ffe774,#ffbd22); box-shadow:0 3px 12px rgba(255,197,37,.2); }
+.overview-legend { display:flex; gap:15px; margin:16px 0 12px; color:#b7c3e4; font-size:12px; }
+.overview-legend span { display:flex; align-items:center; gap:7px; }
+.overview-legend i { width:9px; height:9px; border-radius:3px; }
+.overview-timeline .timeline-track { height:35px; border-radius:11px; }
+.overview-timeline .timeline-segment { border-radius:7px; }
+.overview-timeline .timeline-ticks { top:43px; }
+.overview-timeline .now-marker { top:-6px; }
+.overview-timeline .now-marker > i { height:40px; }
+.overview-timeline .timeline-ticks { color:#99a8d1; }
+.overview-outages { margin-top:19px; }
+.overview-outages-heading { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:9px; }
+.overview-outages-heading h3 { margin:0; font-size:15px; }
+.overview-outage-list { display:grid; gap:7px; }
+.overview-outage-list .outage-item { padding:10px 12px; }
+.home-source-card { display:flex; align-items:center; gap:13px; margin-top:13px; padding:14px; border:1px solid rgba(126,148,223,.24); border-radius:18px; color:inherit; text-decoration:none; background:linear-gradient(135deg,rgba(21,34,68,.92),rgba(11,20,46,.95)); }
+.home-source-card:hover { border-color:rgba(255,207,61,.42); }
+.home-source-mark,.home-source-action { display:grid; place-items:center; width:42px; height:42px; flex:none; border-radius:14px; color:#ffcf45; background:rgba(255,207,61,.1); }
+.home-source-copy { display:grid; gap:3px; min-width:0; flex:1; }
+.home-source-copy small { color:#9faed4; font-size:10px; font-weight:850; letter-spacing:.08em; }
+.home-source-copy strong { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:14px; }
+.home-source-copy span { color:#aab8dd; font-size:12px; }
+.home-source-action { width:34px; height:34px; color:#b8c5e6; background:rgba(126,148,223,.1); }
+.home-install-button { width:100%; justify-content:center; margin-top:13px; min-height:48px; border-radius:15px; color:#211a03; border:1px solid #ffe98a; background:linear-gradient(180deg,#ffe46a,#ffba21); font-weight:850; box-shadow:0 7px 18px rgba(255,187,31,.16); }
+.home-install-button:hover { filter:brightness(1.06); }
+.home-install-button:disabled { opacity:.72; }
+.home-safety-note { color:#9aa9d0; text-align:center; font-size:12px; line-height:1.45; }
+.share-app-button { width:100%; display:flex; align-items:center; gap:13px; margin-top:15px; padding:15px; color:var(--text); border:1px solid rgba(126,148,223,.28); border-radius:18px; text-align:left; background:linear-gradient(145deg,rgba(24,39,78,.9),rgba(12,22,51,.96)); cursor:pointer; }
+.share-app-button:hover { border-color:rgba(255,207,61,.46); }
+.share-app-button > .icon { color:var(--sun); }
+.share-app-button > span:nth-child(2) { display:grid; gap:4px; flex:1; }
+.share-app-button small { color:#aebcdf; }
+.share-arrow { color:#ffd34f; font-size:21px; }
+.install-button { display:flex; align-items:center; gap:9px; }
+@media(max-width:480px) {
+ .app-shell::before { top:-8px; height:350px; background-position:center 56%; }
+ .topbar { gap:8px; min-height:72px; }
+ .brand { gap:8px; }
+ .brand-mark { width:38px; height:38px; border-radius:13px; }
+ .brand-copy strong { font-size:14px; }
+ .brand-copy small { display:none; }
+ .queue-picker { min-width:74px; padding:6px 8px; }
+ .queue-picker > span { font-size:9px; }
+ .queue-trigger { font-size:18px; }
+ .top-actions { gap:5px; }
+ .network-indicator { font-size:10px; gap:4px; }
+ .network-indicator span { max-width:69px; overflow:hidden; text-overflow:ellipsis; }
+ .top-actions .icon-button { width:40px; height:40px; border-radius:13px; }
+ .status-card { min-height:276px; padding:18px 17px 14px; }
+ .mascot-art { top:-10px; right:1px; width:116px; height:156px; }
+ .status-topline,.status-main { padding-right:67px; }
+ .status-main { gap:9px; }
+ .status-card .lamp-scene { width:70px; height:70px; }
+ .status-card .lamp-svg { width:44px; height:52px; }
+ .status-copy h2 { font-size:clamp(26px,7.3vw,32px); }
+ .status-copy p { max-width:27ch; font-size:13px; }
+ .status-meta { font-size:11px; }
+ .status-bottom { font-size:11px; }
+ .home-overview { padding:14px; }
+ .overview-heading { align-items:flex-start; flex-direction:column; }
+ .overview-heading h2 { font-size:19px; }
+ .overview-day-switch { width:100%; }
+ .overview-day { flex:1; }
+ .home-source-card { gap:10px; padding:12px; }
+ .home-source-copy strong { font-size:13px; }
+}
+@media(prefers-reduced-motion:reduce) { .mascot-art { filter:none; } }
