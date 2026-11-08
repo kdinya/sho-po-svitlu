@@ -6,6 +6,7 @@ workers_dev = true
 [vars]
 DEFAULT_CHANNEL = "SvitloMalovyskivskohoRaionu"
 
+# Namespace in Cloudflare Dashboard: sho-po-svitlu-schedules
 [[kv_namespaces]]
 binding = "KV_BINDING"
 id = "2c01d95203644d18b5091ebc1427b55a"

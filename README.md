@@ -15,7 +15,7 @@ npm run dev
 
 ## Одноразове налаштування Cloudflare власником сайту
 
-1. KV namespace уже підключений: `worker/wrangler.toml` містить наданий Namespace ID та binding `KV_BINDING`; Worker читає й записує кеш через цей binding.
+1. KV namespace `sho-po-svitlu-schedules` уже підключений: `worker/wrangler.toml` містить його Namespace ID та binding `KV_BINDING`. Назва namespace — це мітка в Cloudflare; Worker звертається до нього через binding.
 2. Розгорніть Worker:
 
 ```bash
