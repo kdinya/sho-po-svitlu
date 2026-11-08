@@ -3,19 +3,80 @@ import { formatCountdown, formatDate, getLocalClock, getScheduleState, renderOut
 
 const STORAGE_KEY = "sho-po-svitlu.settings.v1";
 const DATA_KEY = "sho-po-svitlu.last-data.v1";
-let QUEUES = [];
+const CHANNELS_KEY = "sho-po-svitlu.channels.v1";
+
+const DEFAULT_CHANNELS = [
+  {
+    name: "Світло Маловисківського району",
+    url: DEFAULT_CHANNEL,
+    username: "SvitloMalovyskivskohoRaionu",
+    isDefault: true,
+  },
+];
+
 const DEFAULTS = { channel: DEFAULT_CHANNEL, workerUrl: DEFAULT_WORKER_URL, queue: "6.2", intervalMinutes: 5 };
+let QUEUES = [];
+
 const $ = (id) => document.getElementById(id);
+
 const els = {
-  queueSelect: $("queueSelect"), queueValue: $("queueValue"), queueMenu: $("queueMenu"), queuePicker: $("queuePicker"), homeTimelineTrack: $("homeTimelineTrack"), homeNowMarker: $("homeNowMarker"), homeCurrentTime: $("homeCurrentTime"), homeOutageList: $("homeOutageList"), homeOutageCount: $("homeOutageCount"), homeTodayTab: $("homeTodayTab"), homeTomorrowTab: $("homeTomorrowTab"), homeOverviewDate: $("homeOverviewDate"), homeSourceName: $("homeSourceName"), homeSourceUpdate: $("homeSourceUpdate"), homeQueue: $("homeQueue"), heroDayLabel: $("heroDayLabel"), todayTab: $("todayTab"), tomorrowTab: $("tomorrowTab"), scheduleDate: $("scheduleDate"), heroDate: $("heroDate"),
-  statusCard: $("statusCard"), statusKicker: $("statusKicker"), statusTitle: $("statusTitle"), statusDetail: $("statusDetail"), statusMeta: $("statusMeta"),
-  nextTitle: $("nextTitle"), nextDetail: $("nextDetail"), countdown: $("countdown"), timelineTrack: $("timelineTrack"), nowMarker: $("nowMarker"), currentTime: $("currentTime"),
-  timelineNote: $("timelineNote"), outageList: $("outageList"), outageCount: $("outageCount"), sourceLink: $("sourceLink"), sourceName: $("sourceName"), sourceHandle: $("sourceHandle"),
-  updatedAt: $("updatedAt"), footerUpdate: $("footerUpdate"), networkIndicator: $("networkIndicator"), updateIcon: $("updateIcon"), refreshButton: $("refreshButton"),
-  sourceStatus: $("sourceStatus"), errorBanner: $("errorBanner"), errorTitle: $("errorTitle"), errorText: $("errorText"),
-  settingsButton: $("settingsButton"), settingsDialog: $("settingsDialog"), settingsForm: $("settingsForm"), channelInput: $("channelInput"),
-  cancelSettings: $("cancelSettings"), closeSettings: $("closeSettings"), errorRetry: $("errorRetry"), toast: $("toast"),
-  editSourceButton: $("editSourceButton"), navButtons: [...document.querySelectorAll(".nav-item")],
+  queueSelect: $("queueSelect"),
+  queueValue: $("queueValue"),
+  queueMenu: $("queueMenu"),
+  queuePicker: $("queuePicker"),
+  homeTimelineTrack: $("homeTimelineTrack"),
+  homeNowMarker: $("homeNowMarker"),
+  homeCurrentTime: $("homeCurrentTime"),
+  homeOutageList: $("homeOutageList"),
+  homeOutageCount: $("homeOutageCount"),
+  homeTodayTab: $("homeTodayTab"),
+  homeTomorrowTab: $("homeTomorrowTab"),
+  homeOverviewHeading: $("homeOverviewHeading"),
+  homeSourceName: $("homeSourceName"),
+  homeSourceUpdate: $("homeSourceUpdate"),
+  heroDate: $("heroDate"),
+  statusCard: $("statusCard"),
+  statusTitle: $("statusTitle"),
+  statusMeta: $("statusMeta"),
+  nextCard: $("nextCard"),
+  nextTitle: $("nextTitle"),
+  countdown: $("countdown"),
+  refreshButton: $("refreshButton"),
+  updateIcon: $("updateIcon"),
+  todayTab: $("todayTab"),
+  tomorrowTab: $("tomorrowTab"),
+  scheduleDate: $("scheduleDate"),
+  timelineTrack: $("timelineTrack"),
+  nowMarker: $("nowMarker"),
+  currentTime: $("currentTime"),
+  timelineNote: $("timelineNote"),
+  outageList: $("outageList"),
+  outageCount: $("outageCount"),
+  sourceLink: $("sourceLink"),
+  sourceName: $("sourceName"),
+  sourceHandle: $("sourceHandle"),
+  sourceStatus: $("sourceStatus"),
+  updatedAt: $("updatedAt"),
+  footerUpdate: $("footerUpdate"),
+  errorBanner: $("errorBanner"),
+  errorTitle: $("errorTitle"),
+  errorText: $("errorText"),
+  errorRetry: $("errorRetry"),
+  settingsDialog: $("settingsDialog"),
+  closeSettings: $("closeSettings"),
+  editSourceButton: $("editSourceButton"),
+  openSourceSettingsBtn: $("openSourceSettingsBtn"),
+  channelsList: $("channelsList"),
+  toggleAddChannelBtn: $("toggleAddChannelBtn"),
+  addChannelBox: $("addChannelBox"),
+  newChannelInput: $("newChannelInput"),
+  cancelAddChannelBtn: $("cancelAddChannelBtn"),
+  confirmAddChannelBtn: $("confirmAddChannelBtn"),
+  saveIntervalBtn: $("saveIntervalBtn"),
+  installButton: $("installButton"),
+  shareAppButton: $("shareAppButton"),
+  toast: $("toast"),
+  navButtons: [...document.querySelectorAll(".nav-item")],
 };
 
 function readStoredSettings() {
@@ -23,51 +84,89 @@ function readStoredSettings() {
     const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
     const result = { ...DEFAULTS, ...stored };
     if (DEFAULT_WORKER_URL) result.workerUrl = DEFAULT_WORKER_URL;
-    if (!QUEUES.includes(result.queue)) result.queue = DEFAULTS.queue;
     if (![5, 15, 30].includes(Number(result.intervalMinutes))) result.intervalMinutes = DEFAULTS.intervalMinutes;
     return result;
-  } catch { return { ...DEFAULTS }; }
+  } catch {
+    return { ...DEFAULTS };
+  }
 }
 
 function readStoredData() {
   try {
     const data = JSON.parse(localStorage.getItem(DATA_KEY) || "null");
     return data?.schedules ? data : null;
-  } catch { return null; }
+  } catch {
+    return null;
+  }
+}
+
+function readStoredChannels() {
+  try {
+    const list = JSON.parse(localStorage.getItem(CHANNELS_KEY) || "[]");
+    if (!Array.isArray(list) || !list.length) return [...DEFAULT_CHANNELS];
+    const hasDefault = list.some((ch) => ch.username?.toLowerCase() === "svitlomalovyskivskohoraionu");
+    return hasDefault ? list : [...DEFAULT_CHANNELS, ...list];
+  } catch {
+    return [...DEFAULT_CHANNELS];
+  }
 }
 
 let settings = readStoredSettings();
 let data = readStoredData();
+let channels = readStoredChannels();
 let activeDay = "today";
 let timer = null;
 let clockTimer = null;
 let toastTimer = null;
 let currentController = null;
+let deferredInstallPrompt = null;
 
-function saveSettings() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(settings)); } catch { showToast("Не вдалося зберегти налаштування в цьому браузері."); } }
-function saveData(value) { try { localStorage.setItem(DATA_KEY, JSON.stringify(value)); } catch { /* The app remains usable for this visit. */ } }
+function saveSettings() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+  } catch {
+    showToast("Не вдалося зберегти налаштування в браузері.");
+  }
+}
+
+function saveData(value) {
+  try {
+    localStorage.setItem(DATA_KEY, JSON.stringify(value));
+  } catch {}
+}
+
+function saveChannels() {
+  try {
+    localStorage.setItem(CHANNELS_KEY, JSON.stringify(channels));
+  } catch {}
+}
 
 function availableQueues(scheduleData = data) {
   const queues = new Set();
-  Object.values(scheduleData?.schedules || {}).forEach((day) => Object.keys(day?.queues || {}).forEach((queue) => queues.add(queue)));
+  Object.values(scheduleData?.schedules || {}).forEach((day) => {
+    Object.keys(day?.queues || {}).forEach((queue) => queues.add(queue));
+  });
   return [...queues].sort((a, b) => {
-    const [ag, as] = a.split(".").map(Number); const [bg, bs] = b.split(".").map(Number);
+    const [ag, as] = a.split(".").map(Number);
+    const [bg, bs] = b.split(".").map(Number);
     return ag - bg || as - bs;
   });
 }
 
 function initQueueOptions() {
   QUEUES = availableQueues();
-  els.queueMenu.replaceChildren(...QUEUES.map((queue) => {
-    const option = document.createElement("button");
-    option.type = "button";
-    option.className = "queue-option";
-    option.setAttribute("role", "option");
-    option.dataset.queue = queue;
-    option.textContent = queue;
-    option.addEventListener("click", () => selectQueue(queue));
-    return option;
-  }));
+  els.queueMenu.replaceChildren(
+    ...QUEUES.map((queue) => {
+      const option = document.createElement("button");
+      option.type = "button";
+      option.className = "queue-option";
+      option.setAttribute("role", "option");
+      option.dataset.queue = queue;
+      option.textContent = `Черга ${queue}`;
+      option.addEventListener("click", () => selectQueue(queue));
+      return option;
+    })
+  );
   updateQueuePicker();
 }
 
@@ -93,47 +192,32 @@ function selectQueue(queue) {
   saveSettings();
   updateQueuePicker();
   setQueueMenu(false);
-  renderView(); // Recompute the status for this queue before any network refresh.
+  renderView();
   if (settings.workerUrl) refresh({ manual: false, force: false });
 }
 
-function scheduleDateForView() {
-  const dateKey = activeDay === "today" ? data?.today : data?.tomorrow;
-  return dateKey ? data?.schedules?.[dateKey] ?? null : null;
+function formatHeroDate(isoDate, isToday) {
+  const prefix = isToday ? "Сьогодні" : "Завтра";
+  if (!isoDate || !/^\d{4}-\d{2}-\d{2}$/.test(isoDate)) return isToday ? "Сьогодні" : "Завтра";
+  const [year, month, day] = isoDate.split("-");
+  const formatted = new Intl.DateTimeFormat("uk-UA", { day: "numeric", month: "long" }).format(new Date(Number(year), Number(month) - 1, Number(day)));
+  return `${prefix}, ${formatted}`;
 }
-function todayFromData() { return data?.today ?? null; }
-function tomorrowFromData() { return data?.tomorrow ?? null; }
 
 function formatTimestamp(value) {
   if (!value || Number.isNaN(Date.parse(value))) return "Ще не оновлювали";
-  return new Intl.DateTimeFormat("uk-UA", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit", year: "numeric" }).format(new Date(value)).replace(",", " ·");
+  return new Intl.DateTimeFormat("uk-UA", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" }).format(new Date(value)).replace(",", " ·");
 }
 
-function setNetwork(state, text) {
-  els.networkIndicator.classList.remove("is-online", "is-loading", "is-offline");
-  if (state === "online") els.networkIndicator.classList.add("is-online");
-  if (state === "loading") els.networkIndicator.classList.add("is-loading");
-  if (state === "offline") els.networkIndicator.classList.add("is-offline");
-  const label = els.networkIndicator.querySelector("span");
-  if (label) label.textContent = text;
-  els.sourceStatus.classList.toggle("is-online", state === "online");
-  els.sourceStatus.classList.toggle("is-offline", state === "offline");
-  els.sourceStatus.innerHTML = `<i></i> ${state === "online" ? "актуальне" : state === "loading" ? "оновлюємо" : state === "offline" ? "немає зв'язку" : "очікуємо"}`;
+function formatClock(minutes) {
+  return `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
 }
-
-function showError(message, { title = "Немає зв'язку з каналом", stale = false } = {}) {
-  els.errorBanner.hidden = false;
-  els.errorTitle.textContent = stale ? "Показуємо збережений графік" : title;
-  els.errorText.textContent = message;
-  setNetwork(stale ? "offline" : "offline", stale ? "дані можуть застаріти" : "канал недоступний");
-}
-function clearError() { els.errorBanner.hidden = true; els.errorText.textContent = ""; }
 
 function showToast(message) {
   els.toast.textContent = message;
   els.toast.classList.add("is-visible");
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => els.toast.classList.remove("is-visible"), 3000);
+  toastTimer = setTimeout(() => els.toast.classList.remove("is-visible"), 3200);
 }
 
 function setActiveScreen(name) {
@@ -151,57 +235,104 @@ function setActiveScreen(name) {
   if (name === "schedule") renderView();
 }
 
-function renderHeaderDate() {
-  const date = activeDay === "today" ? todayFromData() : tomorrowFromData();
-  els.scheduleDate.textContent = date ? formatDate(date) : activeDay === "today" ? "Графік на сьогодні" : "Графік на завтра";
-  els.heroDayLabel.textContent = activeDay === "today" ? "СЬОГОДНІ" : "ЗАВТРА";
-  els.heroDate.textContent = date ? formatDate(date) : "";
-  els.homeQueue.textContent = settings.queue;
-  els.todayTab.classList.toggle("is-active", activeDay === "today");
-  els.tomorrowTab.classList.toggle("is-active", activeDay === "tomorrow");
-  els.todayTab.setAttribute("aria-selected", String(activeDay === "today"));
-  els.tomorrowTab.setAttribute("aria-selected", String(activeDay === "tomorrow"));
-  if (els.homeOverviewDate) els.homeOverviewDate.textContent = date ? formatDate(date) : activeDay === "today" ? "сьогодні" : "завтра";
-  if (els.homeTodayTab) {
-    els.homeTodayTab.classList.toggle("is-active", activeDay === "today");
-    els.homeTomorrowTab.classList.toggle("is-active", activeDay === "tomorrow");
-    els.homeTodayTab.setAttribute("aria-selected", String(activeDay === "today"));
-    els.homeTomorrowTab.setAttribute("aria-selected", String(activeDay === "tomorrow"));
+function renderChannelsList() {
+  if (!els.channelsList) return;
+  els.channelsList.replaceChildren();
+  const currentNormalized = normalizeChannelInput(settings.channel).username.toLowerCase();
+
+  channels.forEach((ch, index) => {
+    const isSelected = ch.username.toLowerCase() === currentNormalized;
+    const item = document.createElement("div");
+    item.className = `channel-item ${isSelected ? "is-selected" : ""}`;
+    item.setAttribute("role", "radio");
+    item.setAttribute("aria-checked", String(isSelected));
+    item.setAttribute("tabindex", "0");
+
+    const radio = document.createElement("span");
+    radio.className = "channel-radio";
+    radio.innerHTML = "<i></i>";
+
+    const info = document.createElement("div");
+    info.className = "channel-info";
+    info.innerHTML = `<strong>${ch.name}</strong><small>t.me/s/${ch.username}</small>`;
+
+    item.append(radio, info);
+
+    if (!ch.isDefault) {
+      const del = document.createElement("button");
+      del.type = "button";
+      del.className = "channel-delete-btn";
+      del.setAttribute("aria-label", "Видалити канал зі списку");
+      del.innerHTML = `<svg class="icon"><use href="#i-trash" /></svg>`;
+      del.addEventListener("click", (e) => {
+        e.stopPropagation();
+        deleteChannel(index);
+      });
+      item.append(del);
+    }
+
+    item.addEventListener("click", () => {
+      selectChannel(ch);
+    });
+
+    els.channelsList.append(item);
+  });
+}
+
+function selectChannel(ch) {
+  try {
+    const normalized = normalizeChannelInput(ch.url);
+    settings.channel = normalized.url;
+    saveSettings();
+    renderChannelsList();
+    updateSource();
+    closeSettings();
+    data = null;
+    renderView();
+    if (settings.workerUrl) refresh({ manual: true, force: true });
+    showToast(`Обрано канал: ${ch.name}`);
+  } catch (err) {
+    showToast(err.message);
   }
+}
+
+function deleteChannel(index) {
+  const removed = channels[index];
+  if (!removed || removed.isDefault) return;
+  channels.splice(index, 1);
+  saveChannels();
+  if (settings.channel === removed.url) {
+    selectChannel(channels[0]);
+  } else {
+    renderChannelsList();
+  }
+}
+
+function openSettings() {
+  renderChannelsList();
+  els.addChannelBox.hidden = true;
+  els.newChannelInput.value = "";
+  const intervalRadio = document.querySelector(`input[name="interval"][value="${settings.intervalMinutes}"]`);
+  if (intervalRadio) intervalRadio.checked = true;
+  els.settingsDialog.showModal();
+}
+
+function closeSettings() {
+  els.settingsDialog.close();
 }
 
 function updateSource() {
   const normalized = normalizeChannelInput(settings.channel);
   els.sourceLink.href = normalized.url;
-  els.sourceName.textContent = data?.title || normalized.username;
+  const channelTitle = data?.title || normalized.username;
+  els.sourceName.textContent = channelTitle;
   els.sourceHandle.textContent = `t.me/s/${normalized.username}`;
-  if (els.homeSourceName) els.homeSourceName.textContent = data?.title || normalized.username;
+  els.homeSourceName.textContent = channelTitle;
 }
 
 function renderView() {
-  renderHeaderDate();
-  updateSource();
-  if (!data) {
-    renderTimeline(els.timelineTrack, els.nowMarker, els.currentTime, [], new Date(), { showNow: activeDay === "today" });
-    renderOutages(els.outageList, els.outageCount, [], 0, { highlightPast: false });
-    renderTimeline(els.homeTimelineTrack, els.homeNowMarker, els.homeCurrentTime, [], new Date(), { showNow: activeDay === "today" });
-    renderOutages(els.homeOutageList, els.homeOutageCount, [], 0, { highlightPast: false });
-    els.statusCard.dataset.state = "unknown";
-    els.statusKicker.textContent = "ГРАФІК НЕ ЗАВАНТАЖЕНО";
-    els.statusTitle.textContent = "Підключаємо світло";
-    els.statusDetail.textContent = DEFAULT_WORKER_URL ? "Зараз перевіримо останні дописи каналу." : "Власник сайту ще не підключив спільний Worker API.";
-    els.statusMeta.textContent = "Очікуємо джерело даних";
-    els.nextTitle.textContent = "Ще немає графіка";
-    els.nextDetail.textContent = DEFAULT_WORKER_URL ? "Під'єднайте Telegram-канал" : "API налаштовується власником сайту";
-    els.countdown.innerHTML = "—";
-    els.updatedAt.textContent = "Ще не оновлювали";
-    els.footerUpdate.textContent = "Очікуємо перше оновлення";
-    els.timelineNote.lastElementChild.textContent = "Після підключення тут буде графік для вибраної черги.";
-    return;
-  }
-
-  const selectedDate = activeDay === "today" ? data.today : data.tomorrow;
-  const date = selectedDate ? data.schedules?.[selectedDate] ?? null : null;
+  const selectedDate = activeDay === "today" ? data?.today : data?.tomorrow;
+  const date = selectedDate ? data?.schedules?.[selectedDate] ?? null : null;
   const queuePeriods = date?.queues?.[settings.queue] ?? [];
   const hasSchedule = Boolean(date?.queues?.[settings.queue]);
   const now = new Date();
@@ -209,58 +340,70 @@ function renderView() {
   const isCurrentDay = activeDay === "today";
   const state = hasSchedule && isCurrentDay ? getScheduleState(queuePeriods, nowMinutes) : null;
 
+  els.heroDate.textContent = formatHeroDate(selectedDate, isCurrentDay);
+  els.scheduleDate.textContent = selectedDate ? formatDate(selectedDate) : isCurrentDay ? "сьогодні" : "завтра";
+  els.homeOverviewHeading.textContent = isCurrentDay ? "Графік на сьогодні" : "Графік на завтра";
+
+  els.todayTab.classList.toggle("is-active", isCurrentDay);
+  els.tomorrowTab.classList.toggle("is-active", !isCurrentDay);
+  els.homeTodayTab.classList.toggle("is-active", isCurrentDay);
+  els.homeTomorrowTab.classList.toggle("is-active", !isCurrentDay);
+
+  updateSource();
+
   renderTimeline(els.timelineTrack, els.nowMarker, els.currentTime, hasSchedule ? queuePeriods : [], now, { showNow: isCurrentDay });
   renderOutages(els.outageList, els.outageCount, hasSchedule ? queuePeriods : [], isCurrentDay ? nowMinutes : 0, { highlightPast: isCurrentDay });
   renderTimeline(els.homeTimelineTrack, els.homeNowMarker, els.homeCurrentTime, hasSchedule ? queuePeriods : [], now, { showNow: isCurrentDay });
   renderOutages(els.homeOutageList, els.homeOutageCount, hasSchedule ? queuePeriods : [], isCurrentDay ? nowMinutes : 0, { highlightPast: isCurrentDay });
 
+  if (!data) {
+    els.statusCard.dataset.state = "unknown";
+    els.statusTitle.textContent = "Перевіряємо графік";
+    els.nextTitle.textContent = "Очікуємо дані";
+    els.countdown.textContent = "";
+    els.statusMeta.textContent = "Оновлюємо дані з Telegram...";
+    els.homeSourceUpdate.textContent = "Оновлено: очікуємо";
+    els.footerUpdate.textContent = "Очікуємо перше оновлення";
+    return;
+  }
+
   if (!hasSchedule) {
     els.statusCard.dataset.state = "unknown";
-    els.statusKicker.textContent = isCurrentDay ? "ГРАФІК ЩЕ НЕ ОПУБЛІКОВАНО" : "ГРАФІК НА ЗАВТРА";
-    els.statusTitle.textContent = activeDay === "today" ? "Поки без графіка" : "Дані ще не надійшли";
-    els.statusDetail.textContent = `У повідомленнях каналу не знайдено чергу ${settings.queue} на ${formatDate(selectedDate || (isCurrentDay ? new Date().toISOString().slice(0, 10) : ""), { long: true })}.`;
-    els.statusMeta.textContent = "Перевірте канал або оновіть дані";
-    els.nextTitle.textContent = "Зміна невідома";
-    els.nextDetail.textContent = "План для цієї черги відсутній";
-    els.countdown.innerHTML = "—";
-    els.timelineNote.lastElementChild.textContent = "Немає опублікованого графіка для цієї черги та дати.";
+    els.statusTitle.textContent = isCurrentDay ? "Поки без графіка" : "Графік на завтра";
+    els.nextTitle.textContent = `Черга ${settings.queue} відсутня`;
+    els.countdown.textContent = "";
+    els.statusMeta.textContent = `У каналі не знайдено графік для черги ${settings.queue}`;
   } else if (!isCurrentDay) {
     els.statusCard.dataset.state = "unknown";
-    els.statusKicker.textContent = "ПЛАН НА ЗАВТРА";
-    els.statusTitle.textContent = `Черга ${settings.queue}`;
-    els.statusDetail.textContent = queuePeriods.length ? `Заплановано ${queuePeriods.length} періодів без електроенергії.` : "Планових відключень не опубліковано.";
-    els.statusMeta.textContent = `Графік на ${formatDate(selectedDate)}`;
-    els.nextTitle.textContent = queuePeriods.length ? `Перше відключення о ${formatClock(queuePeriods[0].start)}` : "Змін немає";
-    els.nextDetail.textContent = "Плановий час на завтра";
-    els.countdown.innerHTML = "ЗАВТРА";
-    els.timelineNote.lastElementChild.textContent = "Показано завтрашній план; поточний маркер часу приховано.";
+    els.statusTitle.textContent = "Графік на завтра";
+    els.nextTitle.textContent = queuePeriods.length ? `Перше відключення о ${formatClock(queuePeriods[0].start)}` : "Планових відключень немає";
+    els.countdown.textContent = "";
+    els.statusMeta.textContent = `Черга ${settings.queue} · план на ${formatDate(selectedDate)}`;
   } else {
     els.statusCard.dataset.state = state.powered ? "on" : "off";
-    els.statusKicker.textContent = "СТАН ЗА ОПУБЛІКОВАНИМ ГРАФІКОМ";
-    els.statusTitle.textContent = state.powered ? "Є світло" : "Світла немає";
-    els.statusDetail.textContent = state.powered
-      ? state.changeAt === null ? "За графіком до кінця доби без відключень." : `За графіком до ${formatClock(state.changeAt)}.`
-      : `Відключення за графіком: ${formatClock(state.period.start)}–${formatClock(state.period.end)}.`;
-    els.statusMeta.textContent = data.stale ? "Останні збережені дані · можуть застаріти" : `Черга ${settings.queue} · перевірено ${formatTimestamp(data.fetchedAt)}`;
-    els.nextTitle.textContent = state.changeAt === null ? "Змін до кінця доби немає" : state.changeType === "off" ? `Відключення о ${formatClock(state.changeAt)}` : `Світло очікується о ${formatClock(state.changeAt)}`;
-    els.nextDetail.textContent = state.changeAt === null ? "Графік на сьогодні" : state.changeType === "off" ? "Початок планового відключення" : "Завершення планового відключення";
-    els.countdown.innerHTML = state.changeAt === null ? "—" : `${formatCountdown(state.changeAt, nowMinutes).replace(":", "<small>год</small> : ")}<small>хв</small>`;
-    els.timelineNote.lastElementChild.textContent = `Помаранчеві ділянки — планові відключення для черги ${settings.queue}. Фактичний стан може відрізнятися.`;
+    els.statusTitle.textContent = state.powered ? "Зараз є світло!" : "Зараз немає світла!";
+    if (state.changeAt === null) {
+      els.nextTitle.textContent = "Змін до кінця доби немає";
+      els.countdown.textContent = "";
+    } else if (state.changeType === "off") {
+      els.nextTitle.textContent = `Відключення о ${formatClock(state.changeAt)}`;
+      els.countdown.textContent = `(через ${formatCountdown(state.changeAt, nowMinutes)})`;
+    } else {
+      els.nextTitle.textContent = `Світло буде о ${formatClock(state.changeAt)}`;
+      els.countdown.textContent = `(через ${formatCountdown(state.changeAt, nowMinutes)})`;
+    }
+    els.statusMeta.textContent = data.stale ? "Показано збережену копію графіка" : `Черга ${settings.queue} · оновлено ${formatTimestamp(data.fetchedAt)}`;
   }
 
   els.updatedAt.textContent = formatTimestamp(data.fetchedAt);
+  els.homeSourceUpdate.textContent = `Оновлено: ${formatTimestamp(data.fetchedAt)}`;
   els.footerUpdate.textContent = `Оновлено ${formatTimestamp(data.fetchedAt)}`;
-  if (els.homeSourceUpdate) els.homeSourceUpdate.textContent = `Оновлено · ${formatTimestamp(data.fetchedAt)}`;
-  if (data.warning || data.stale) showError(data.warning || "Показано останню збережену копію графіка.", { stale: true });
-  else { clearError(); setNetwork("online", `дані оновлено ${new Intl.DateTimeFormat("uk-UA", { hour: "2-digit", minute: "2-digit" }).format(new Date(data.fetchedAt))}`); }
 }
-
-function formatClock(minutes) { return `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`; }
 
 async function refresh({ manual = false, force = false } = {}) {
   if (!settings.workerUrl) {
     renderView();
-    showError("Власнику сайту потрібно один раз додати адресу розгорнутого Worker у public/config.js.", { title: "Спільний API ще не підключено" });
+    showToast("Вкажіть адресу Worker у public/config.js");
     return;
   }
   currentController?.abort();
@@ -269,11 +412,15 @@ async function refresh({ manual = false, force = false } = {}) {
   els.refreshButton.disabled = true;
   els.refreshButton.setAttribute("aria-busy", "true");
   els.updateIcon.classList.add("is-spinning");
-  setNetwork("loading", "отримуємо графік…");
-  els.statusMeta.textContent = "Перевіряємо останні повідомлення…";
+
   try {
-    const result = await fetchSchedule({ workerUrl: settings.workerUrl, channel: settings.channel, refresh: force, signal: currentController.signal });
-    const minimumSpinner = manual ? 1200 : 450;
+    const result = await fetchSchedule({
+      workerUrl: settings.workerUrl,
+      channel: settings.channel,
+      refresh: force,
+      signal: currentController.signal,
+    });
+    const minimumSpinner = manual ? 800 : 300;
     await new Promise((resolve) => setTimeout(resolve, Math.max(0, minimumSpinner - (Date.now() - started))));
     data = result;
     const available = availableQueues(data);
@@ -285,16 +432,11 @@ async function refresh({ manual = false, force = false } = {}) {
     initQueueOptions();
     saveData(data);
     renderView();
-    if (result.warning) showError(result.warning, { stale: true });
-    else if (!Object.keys(result.schedules).length) {
-      showError("У п'яти останніх дописах не знайдено графіків на сьогодні чи завтра.", { title: "Графік не знайдено" });
-      setNetwork("online", "канал доступний");
-    } else if (manual) showToast("Графік оновлено з Telegram.");
+    if (manual) showToast("Графік оновлено.");
   } catch (error) {
-    const minimumSpinner = manual ? 1200 : 450;
+    const minimumSpinner = manual ? 800 : 300;
     await new Promise((resolve) => setTimeout(resolve, Math.max(0, minimumSpinner - (Date.now() - started))));
-    showError(error.message, { title: error.message.includes("Worker") && !settings.workerUrl ? "Потрібно підключити API" : "Канал недоступний" });
-    if (manual) showToast("Не вдалося оновити графік.");
+    showToast(error.message || "Не вдалося оновити графік.");
   } finally {
     els.refreshButton.disabled = false;
     els.refreshButton.removeAttribute("aria-busy");
@@ -303,130 +445,148 @@ async function refresh({ manual = false, force = false } = {}) {
   }
 }
 
-function openSettings() {
-  els.channelInput.value = settings.channel;
-  const selected = document.querySelector(`input[name="interval"][value="${settings.intervalMinutes}"]`);
-  if (selected) selected.checked = true;
-  els.settingsDialog.showModal();
-}
-function closeSettings() { els.settingsDialog.close(); }
-
 function scheduleAutoRefresh() {
   clearInterval(timer);
   timer = setInterval(() => refresh({ manual: false, force: false }), Number(settings.intervalMinutes) * 60_000);
 }
 
-function tickClock() {
-  if (data) renderView();
-  else {
-    const { time } = getLocalClock();
-    els.currentTime.textContent = time;
-    els.nowMarker.style.left = `${(getLocalClock().minutes / 1440) * 100}%`;
-  }
-}
-
+// Event Listeners
 els.queueSelect.addEventListener("click", () => setQueueMenu(els.queueMenu.hidden));
-els.queueSelect.addEventListener("keydown", (event) => {
-  if (event.key === "ArrowDown" || event.key === "Enter" || event.key === " ") {
-    event.preventDefault();
-    setQueueMenu(true);
-    els.queueMenu.querySelector(`[data-queue="${settings.queue}"]`)?.focus();
-  }
-});
-els.queueMenu.addEventListener("keydown", (event) => {
-  const options = [...els.queueMenu.querySelectorAll(".queue-option")];
-  const index = options.indexOf(document.activeElement);
-  if (event.key === "Escape") { setQueueMenu(false); els.queueSelect.focus(); }
-  if (event.key === "ArrowDown" || event.key === "ArrowRight") { event.preventDefault(); options[(index + 1) % options.length]?.focus(); }
-  if (event.key === "ArrowUp" || event.key === "ArrowLeft") { event.preventDefault(); options[(index - 1 + options.length) % options.length]?.focus(); }
-});
 document.addEventListener("pointerdown", (event) => {
   if (!els.queuePicker.contains(event.target)) setQueueMenu(false);
 });
-const selectDay = (day) => { activeDay = day; renderView(); };
+
+const selectDay = (day) => {
+  activeDay = day;
+  renderView();
+};
 els.todayTab.addEventListener("click", () => selectDay("today"));
 els.tomorrowTab.addEventListener("click", () => selectDay("tomorrow"));
-els.homeTodayTab?.addEventListener("click", () => selectDay("today"));
-els.homeTomorrowTab?.addEventListener("click", () => selectDay("tomorrow"));
-$("homeSourceCard")?.addEventListener("click", (event) => { event.preventDefault(); setActiveScreen("source"); });
-els.settingsButton.addEventListener("click", () => setActiveScreen("source"));
-els.editSourceButton.addEventListener("click", openSettings);
-els.navButtons.forEach((button) => button.addEventListener("click", () => setActiveScreen(button.dataset.screenTarget)));
-els.cancelSettings.addEventListener("click", closeSettings);
-els.closeSettings.addEventListener("click", closeSettings);
+els.homeTodayTab.addEventListener("click", () => selectDay("today"));
+els.homeTomorrowTab.addEventListener("click", () => selectDay("tomorrow"));
+
 els.refreshButton.addEventListener("click", () => refresh({ manual: true, force: true }));
-els.errorRetry.addEventListener("click", () => refresh({ manual: true, force: true }));
-els.settingsForm.addEventListener("submit", async (event) => {
-  event.preventDefault();
+els.editSourceButton.addEventListener("click", openSettings);
+els.openSourceSettingsBtn.addEventListener("click", (e) => {
+  e.preventDefault();
+  openSettings();
+});
+els.closeSettings.addEventListener("click", closeSettings);
+
+els.toggleAddChannelBtn.addEventListener("click", () => {
+  els.addChannelBox.hidden = !els.addChannelBox.hidden;
+  if (!els.addChannelBox.hidden) els.newChannelInput.focus();
+});
+els.cancelAddChannelBtn.addEventListener("click", () => {
+  els.addChannelBox.hidden = true;
+  els.newChannelInput.value = "";
+});
+els.confirmAddChannelBtn.addEventListener("click", () => {
+  const val = els.newChannelInput.value.trim();
+  if (!val) {
+    showToast("Введіть посилання на Telegram-канал або його @username.");
+    return;
+  }
   try {
-    const channel = normalizeChannelInput(els.channelInput.value);
-    const intervalMinutes = Number(document.querySelector('input[name="interval"]:checked')?.value || 5);
-    settings = { ...settings, channel: channel.url, workerUrl: DEFAULT_WORKER_URL || settings.workerUrl, intervalMinutes };
+    const normalized = normalizeChannelInput(val);
+    const existing = channels.find((c) => c.username.toLowerCase() === normalized.username.toLowerCase());
+    if (existing) {
+      selectChannel(existing);
+    } else {
+      const newChannel = {
+        name: normalized.username,
+        url: normalized.url,
+        username: normalized.username,
+        isDefault: false,
+      };
+      channels.push(newChannel);
+      saveChannels();
+      selectChannel(newChannel);
+    }
+  } catch (err) {
+    showToast(err.message);
+  }
+});
+
+els.saveIntervalBtn.addEventListener("click", () => {
+  const selectedInterval = document.querySelector('input[name="interval"]:checked')?.value;
+  if (selectedInterval) {
+    settings.intervalMinutes = Number(selectedInterval);
     saveSettings();
     scheduleAutoRefresh();
-    closeSettings();
-    data = null;
-    renderView();
-    if (settings.workerUrl) await refresh({ manual: true, force: true });
-    else showError("Власнику сайту потрібно один раз додати адресу розгорнутого Worker у public/config.js.", { title: "Канал збережено, API ще не підключено" });
-  } catch (error) { showToast(error.message); }
+  }
+  closeSettings();
+  showToast("Налаштування збережено.");
 });
 
-document.addEventListener("visibilitychange", () => {
-  if (!document.hidden && settings.workerUrl) refresh({ manual: false, force: false });
-});
-window.addEventListener("online", () => { if (settings.workerUrl) refresh(); });
-window.addEventListener("offline", () => showError("Пристрій офлайн. Показано останні збережені дані, якщо вони є.", { stale: Boolean(data) }));
-
-
-let deferredInstallPrompt = null;
-const installButton = $("installButton");
+// PWA Install
 window.addEventListener("beforeinstallprompt", (event) => {
   event.preventDefault();
   deferredInstallPrompt = event;
+  els.installButton.hidden = false;
 });
 window.addEventListener("appinstalled", () => {
   deferredInstallPrompt = null;
-  installButton.disabled = true;
-  installButton.querySelector("span").textContent = "Встановлено";
-  showToast("Додаток встановлено на пристрій.");
+  els.installButton.disabled = true;
+  els.installButton.querySelector("span").textContent = "Встановлено";
+  showToast("Додаток встановлено!");
 });
-installButton?.addEventListener("click", async () => {
+els.installButton.addEventListener("click", async () => {
   if (!deferredInstallPrompt) {
-    showToast(/iPhone|iPad|iPod/i.test(navigator.userAgent) ? "Щоб встановити: у Safari натисніть «Поділитися», потім «На початковий екран»." : "У меню браузера оберіть «Встановити додаток» або «Додати на головний екран».");
+    showToast(
+      /iPhone|iPad|iPod/i.test(navigator.userAgent)
+        ? "Щоб встановити: у Safari натисніть «Поділитися» ⎙, потім «На початковий екран» ⊞."
+        : "У меню браузера оберіть «Встановити додаток» або «Додати на головний екран»."
+    );
     return;
   }
   deferredInstallPrompt.prompt();
   await deferredInstallPrompt.userChoice;
   deferredInstallPrompt = null;
-  installButton.disabled = true;
-  installButton.querySelector("span").textContent = "Встановлено";
-});
-$("shareAppButton")?.addEventListener("click", async () => {
-  const shareData = { title: "ШоПоСвітлу", text: "Графік світла та відключень для своєї черги.", url: location.href };
-  try {
-    if (navigator.share) await navigator.share(shareData);
-    else if (navigator.clipboard?.writeText) { await navigator.clipboard.writeText(shareData.url); showToast("Посилання скопійовано. Можна надсилати друзям."); }
-    else {
-      const field = document.createElement("textarea"); field.value = shareData.url; field.setAttribute("readonly", ""); field.style.position = "fixed"; field.style.opacity = "0";
-      document.body.append(field); field.select(); const copied = document.execCommand("copy"); field.remove();
-      showToast(copied ? "Посилання скопійовано. Можна надсилати друзям." : `Посилання: ${shareData.url}`);
-    }
-  } catch (error) { if (error.name !== "AbortError") showToast("Не вдалося поділитися посиланням."); }
 });
 
+// Share
+els.shareAppButton.addEventListener("click", async () => {
+  const shareData = {
+    title: "ШоПоСвітлу",
+    text: "Зручний графік відключень світла для своєї черги.",
+    url: window.location.href,
+  };
+  try {
+    if (navigator.share) {
+      await navigator.share(shareData);
+    } else if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(shareData.url);
+      showToast("Посилання скопійовано у буфер!");
+    } else {
+      showToast(`Посилання на додаток: ${shareData.url}`);
+    }
+  } catch (err) {
+    if (err.name !== "AbortError") showToast("Не вдалося поділитися.");
+  }
+});
+
+els.navButtons.forEach((btn) => {
+  btn.addEventListener("click", () => setActiveScreen(btn.dataset.screenTarget));
+});
+
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden && settings.workerUrl) refresh({ manual: false, force: false });
+});
+
+window.addEventListener("online", () => {
+  if (settings.workerUrl) refresh();
+});
+
+// Initialize
 initQueueOptions();
 setActiveScreen("home");
 renderView();
 scheduleAutoRefresh();
-clockTimer = setInterval(tickClock, 30_000);
-if (data) {
-  setNetwork(data.stale ? "offline" : "online", data.stale ? "показано кеш" : "збережені дані");
-  if (data.stale) showError(data.warning || "Показано останні збережені дані.", { stale: true });
-}
-if (settings.workerUrl) refresh({ manual: false, force: false });
-else if (!data) showError("Власнику сайту потрібно один раз підключити Cloudflare Worker API.", { title: "Спільний API ще не налаштований" });
+clockTimer = setInterval(() => {
+  if (data) renderView();
+}, 30_000);
 
-if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
-  window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}), { once: true });
+if (settings.workerUrl && !data) {
+  refresh({ manual: false, force: false });
 }
