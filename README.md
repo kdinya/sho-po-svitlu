@@ -15,9 +15,8 @@ npm run dev
 
 ## Одноразове налаштування Cloudflare власником сайту
 
-1. У [Cloudflare Dashboard](https://dash.cloudflare.com/) відкрийте **Workers & Pages → KV** і створіть namespace, наприклад `sho-po-svitlu-schedules`.
-2. Скопіюйте Namespace ID та замініть `REPLACE_WITH_KV_NAMESPACE_ID` у `worker/wrangler.toml`.
-3. Розгорніть Worker:
+1. KV namespace уже підключений: `worker/wrangler.toml` містить наданий Namespace ID та binding `KV_BINDING`; Worker читає й записує кеш через цей binding.
+2. Розгорніть Worker:
 
 ```bash
 cd worker
@@ -25,7 +24,7 @@ npx wrangler login
 npx wrangler deploy
 ```
 
-4. Wrangler покаже адресу на зразок `https://sho-po-svitlu-api.<ваш-акаунт>.workers.dev`. Один раз вставте її в `public/config.js`:
+3. Wrangler покаже адресу на зразок `https://sho-po-svitlu-api.<ваш-акаунт>.workers.dev`. Один раз вставте її в `public/config.js`:
 
 ```js
 window.SHO_PO_SVITLU_CONFIG = Object.freeze({

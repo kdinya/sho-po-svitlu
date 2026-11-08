@@ -166,13 +166,13 @@ async function channelKey(username) {
 }
 
 async function readCache(env, key) {
-  if (!env.SCHEDULES) return null;
-  try { return await env.SCHEDULES.get(key, "json"); } catch { return null; }
+  if (!env.KV_BINDING) return null;
+  try { return await env.KV_BINDING.get(key, "json"); } catch { return null; }
 }
 
 async function writeCache(env, key, value) {
-  if (!env.SCHEDULES) return;
-  try { await env.SCHEDULES.put(key, JSON.stringify(value), { expirationTtl: 86400 }); } catch { /* The live API still works if KV is temporarily unavailable. */ }
+  if (!env.KV_BINDING) return;
+  try { await env.KV_BINDING.put(key, JSON.stringify(value), { expirationTtl: 86400 }); } catch { /* The live API still works if KV is temporarily unavailable. */ }
 }
 
 async function fetchChannel(username, env, { force = false } = {}) {

@@ -75,3 +75,22 @@ test("Worker health endpoint повертає JSON і OPTIONS відповіда
   assert.equal(options.status, 204);
   assert.equal(options.headers.get("Access-Control-Allow-Methods"), "GET, OPTIONS");
 });
+
+test("Worker використовує KV namespace через binding KV_BINDING", async () => {
+  const entries = new Map();
+  const kv = {
+    async get(key) { return entries.get(key) ?? null; },
+    async put(key, value) { entries.set(key, value); },
+  };
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response(`<html><head><meta property="og:title" content="Тест"></head><body>${messageBlock("08.11.2026 графік\nЧерга 1.1: 02-04", "2026-11-08T12:00:00Z", 1)}</body></html>`);
+  try {
+    const response = await handleRequest(new Request("https://worker.example/api/schedule?channel=example_channel"), { KV_BINDING: kv });
+    assert.equal(response.status, 200);
+    assert.equal((await response.json()).channel, "example_channel");
+    assert.equal(entries.size, 1);
+    assert.match([...entries.keys()][0], /^channel:/);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
