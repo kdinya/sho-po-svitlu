@@ -54,7 +54,10 @@ function initQueueOptions() {
   els.queueSelect.value = settings.queue;
 }
 
-function scheduleDateForView() { return data?.[activeDay] ?? data?.schedules?.[activeDay === "today" ? data?.today : data?.tomorrow] ?? null; }
+function scheduleDateForView() {
+  const dateKey = activeDay === "today" ? data?.today : data?.tomorrow;
+  return dateKey ? data?.schedules?.[dateKey] ?? null : null;
+}
 function todayFromData() { return data?.today ?? null; }
 function tomorrowFromData() { return data?.tomorrow ?? null; }
 
@@ -142,8 +145,8 @@ function renderView() {
     return;
   }
 
-  const date = data[activeDay] ?? data.schedules?.[activeDay === "today" ? data.today : data.tomorrow];
   const selectedDate = activeDay === "today" ? data.today : data.tomorrow;
+  const date = selectedDate ? data.schedules?.[selectedDate] ?? null : null;
   const queuePeriods = date?.queues?.[settings.queue] ?? [];
   const hasSchedule = Boolean(date?.queues?.[settings.queue]);
   const now = new Date();
