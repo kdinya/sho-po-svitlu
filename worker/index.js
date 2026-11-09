@@ -236,6 +236,41 @@ function escapeHtml(text) {
     .replace(/'/g, "&#039;");
 }
 
+
+export function getTelegramBotToken(env = {}) {
+  if (!env || typeof env !== "object") return null;
+  const candidates = [
+    env.TELEGRAM_BOT_TOKEN,
+    env.telegram_bot_token,
+    env.TELEGRAM_TOKEN,
+    env.telegram_token,
+    env.BOT_TOKEN,
+    env.bot_token,
+    env.TG_BOT_TOKEN,
+    env.tg_bot_token,
+    env.TELEGRAM_API_KEY,
+    env.telegram_api_key,
+  ];
+  for (const raw of candidates) {
+    if (typeof raw === "string" && raw.trim()) {
+      return cleanBotToken(raw);
+    }
+  }
+  for (const [key, val] of Object.entries(env)) {
+    if (typeof val === "string" && val.trim() && /bot.*token|telegram.*token/i.test(key)) {
+      return cleanBotToken(val);
+    }
+  }
+  return null;
+}
+
+function cleanBotToken(raw) {
+  let token = String(raw).trim();
+  token = token.replace(/^["']|["']$/g, "").trim();
+  token = token.replace(/^bot(?=\d)/i, "");
+  return token || null;
+}
+
 export async function handleRequest(request, env = {}) {
   const url = new URL(request.url);
   const isPostRoute = url.pathname === "/api/request-channel";
@@ -244,7 +279,15 @@ export async function handleRequest(request, env = {}) {
 
   if (url.pathname === "/api/health") {
     if (request.method !== "GET") return json({ error: "method_not_allowed", message: "Дозволені лише GET-запити." }, request, 405);
-    return json({ ok: true, service: "sho-po-svitlu-api", timestamp: new Date().toISOString() }, request);
+    const hasToken = Boolean(getTelegramBotToken(env));
+    const envKeys = Object.keys(env || {}).map((k) => k);
+    return json({
+      ok: true,
+      service: "sho-po-svitlu-api",
+      telegramConfigured: hasToken,
+      availableKeys: envKeys,
+      timestamp: new Date().toISOString(),
+    }, request);
   }
 
   if (url.pathname === "/api/request-channel") {
@@ -274,8 +317,13 @@ export async function handleRequest(request, env = {}) {
     if (note != null && (typeof note !== "string" || note.length > 500)) {
       return json({ error: "invalid_note", message: "Коментар має бути до 500 символів." }, request, 400, "POST, OPTIONS");
     }
-    if (!env.TELEGRAM_BOT_TOKEN) {
-      return json({ error: "not_configured", message: "Надсилання запитів ще не налаштоване. Спробуйте пізніше." }, request, 503, "POST, OPTIONS");
+    const botToken = getTelegramBotToken(env);
+    if (!botToken) {
+      return json({
+        error: "not_configured",
+        message: "Надсилання запитів ще не налаштоване. Спробуйте пізніше.",
+        hint: "У Cloudflare Worker не знайдено TELEGRAM_BOT_TOKEN. Перевірте Settings -> Variables and Secrets та натисніть Save and Deploy."
+      }, request, 503, "POST, OPTIONS");
     }
 
     const typeLabel = requestType === "broken" ? "⚠️ Канал не працює / змінився формат" : "➕ Запит на додавання нового каналу";
@@ -295,11 +343,11 @@ export async function handleRequest(request, env = {}) {
       `📝 <b>Коментар:</b> ${escapeHtml(noteText)}\n` +
       `⏰ <b>Час:</b> ${kyivTime}`;
 
-    const targetChat = env.TELEGRAM_CHANNEL_ID || "@sho_po_svitlu";
+    const targetChat = env.TELEGRAM_REQUESTS_CHAT_ID || env.TELEGRAM_CHAT_ID || env.TELEGRAM_CHANNEL_ID || "@sho_po_svitlu";
     let sentToTelegram = false;
     let telegramError = null;
     try {
-      const tgRes = await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
+      const tgRes = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ chat_id: targetChat, text: messageText, parse_mode: "HTML", disable_web_page_preview: false }),
@@ -322,7 +370,8 @@ export async function handleRequest(request, env = {}) {
     }
 
     if (!sentToTelegram) {
-      return json({ error: "telegram_delivery_failed", message: "Не вдалося доставити запит у Telegram. Перевірте канал і спробуйте ще раз." }, request, 502, "POST, OPTIONS");
+      const detail = telegramError ? ` (${telegramError})` : "";
+      return json({ error: "telegram_delivery_failed", message: `Не вдалося доставити запит у Telegram${detail}. Перевірте права бота в каналі.` }, request, 502, "POST, OPTIONS");
     }
     return json({
       ok: true,
