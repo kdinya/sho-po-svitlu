@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="420" viewBox="0 0 600 420" role="img" aria-labelledby="title desc">
+  <title id="title">Прапор України — анімований шовковий прапор</title>
+  <desc id="desc">Синьо-жовтий прапор України з плавними хвилястими краями та м’якими складками тканини.</desc>
+  <defs>
+    <linearGradient id="blue" x1="0" y1="0" x2="0.08" y2="1">
+      <stop offset="0" stop-color="#1684e8"/>
+      <stop offset=".48" stop-color="#0870d0"/>
+      <stop offset="1" stop-color="#034a9e"/>
+    </linearGradient>
+    <linearGradient id="yellow" x1="0" y1="0" x2=".08" y2="1">
+      <stop offset="0" stop-color="#ffe66a"/>
+      <stop offset=".48" stop-color="#ffd52e"/>
+      <stop offset="1" stop-color="#e9a900"/>
+    </linearGradient>
+    <linearGradient id="silk" x1="0" y1="0" x2="1" y2=".12" gradientUnits="objectBoundingBox">
+      <stop offset="0" stop-color="#fff" stop-opacity=".28"/>
+      <stop offset=".13" stop-color="#fff" stop-opacity=".04"/>
+      <stop offset=".29" stop-color="#061c42" stop-opacity=".2"/>
+      <stop offset=".43" stop-color="#fff" stop-opacity=".17"/>
+      <stop offset=".59" stop-color="#061c42" stop-opacity=".28"/>
+      <stop offset=".76" stop-color="#fff" stop-opacity=".12"/>
+      <stop offset=".9" stop-color="#061c42" stop-opacity=".17"/>
+      <stop offset="1" stop-color="#fff" stop-opacity=".2"/>
+    </linearGradient>
+    <linearGradient id="edge" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff" stop-opacity=".45"/>
+      <stop offset=".5" stop-color="#fff" stop-opacity=".04"/>
+      <stop offset="1" stop-color="#061b40" stop-opacity=".36"/>
+    </linearGradient>
+    <linearGradient id="glint" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#fff" stop-opacity="0"/>
+      <stop offset=".48" stop-color="#fff" stop-opacity=".02"/>
+      <stop offset=".58" stop-color="#fff" stop-opacity=".48"/>
+      <stop offset=".7" stop-color="#fff" stop-opacity=".04"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </linearGradient>
+    <path id="cloth" d="M28 48 C82 27 125 58 183 43 C244 27 291 61 348 43 C405 25 463 34 572 50 C581 52 586 59 585 70 C580 126 593 164 581 214 C571 265 592 307 579 356 C576 369 569 374 557 371 C475 352 428 385 359 369 C294 354 246 385 183 369 C124 354 82 385 31 364 C19 359 15 350 18 337 C29 283 12 244 22 193 C32 143 12 101 19 62 C20 55 22 51 28 48 Z"/>
+    <clipPath id="clothClip"><use href="#cloth"/></clipPath>
+  </defs>
+  <g class="flag-shadow" opacity=".25">
+    <use href="#cloth" fill="#000" transform="translate(0 10)"/>
+  </g>
+  <g class="fabric">
+    <g clip-path="url(#clothClip)">
+      <rect x="0" y="0" width="600" height="210" fill="url(#blue)"/>
+      <rect x="0" y="210" width="600" height="210" fill="url(#yellow)"/>
+      <rect x="0" y="0" width="600" height="420" fill="url(#silk)"/>
+      <path class="fold fold-a" d="M-30 0 C90 80 62 170 150 235 S195 350 130 440 L205 440 C265 333 230 260 177 205 S138 72 40 0Z" fill="#071d43" opacity=".13"/>
+      <path class="fold fold-b" d="M155 -20 C230 75 205 142 285 212 S325 340 270 440 L330 440 C390 330 365 262 312 190 S280 55 225 -20Z" fill="#fff" opacity=".11"/>
+      <path class="fold fold-c" d="M365 -20 C430 68 400 145 478 220 S510 337 455 440 L510 440 C565 337 548 264 500 194 S485 62 430 -20Z" fill="#061b40" opacity=".16"/>
+      <path d="M-20 190 C80 166 130 211 200 191 S320 210 390 188 S510 184 620 204" fill="none" stroke="#fff" stroke-opacity=".12" stroke-width="10"/>
+      <rect class="glint" x="-600" y="0" width="600" height="420" fill="url(#glint)" opacity=".65"/>
+    </g>
+    <use href="#cloth" fill="none" stroke="url(#edge)" stroke-width="5"/>
+    <path d="M29 49 C83 29 126 60 184 45 C244 29 292 63 349 45 C407 27 464 36 571 52" fill="none" stroke="#fff" stroke-opacity=".42" stroke-width="3.5" stroke-linecap="round"/>
+    <path d="M30 365 C83 386 125 356 184 371 C246 387 294 356 359 371 C429 387 475 354 557 373" fill="none" stroke="#061b40" stroke-opacity=".22" stroke-width="3" stroke-linecap="round"/>
+  </g>
+  <style>
+    .fabric { transform-box: fill-box; transform-origin: 4% 50%; animation: flag-sail 4.8s ease-in-out infinite; }
+    .fold-a { animation: fold-a 4.8s ease-in-out infinite; }
+    .fold-b { animation: fold-b 4.8s ease-in-out infinite; }
+    .fold-c { animation: fold-c 4.8s ease-in-out infinite; }
+    .glint { animation: glimmer 6.4s ease-in-out infinite; }
+    @keyframes flag-sail {
+      0%,100% { transform: translateX(0) rotate(-.35deg) skewY(-.25deg) scaleX(.995); }
+      28% { transform: translateX(2px) rotate(.45deg) skewY(.45deg) scaleX(.985); }
+      56% { transform: translateX(0) rotate(-.2deg) skewY(-.5deg) scaleX(1); }
+      78% { transform: translateX(1px) rotate(.3deg) skewY(.25deg) scaleX(.99); }
+    }
+    @keyframes fold-a { 0%,100% { opacity:.12; transform:translateX(-5px); } 50% { opacity:.2; transform:translateX(8px); } }
+    @keyframes fold-b { 0%,100% { opacity:.1; transform:translateX(8px); } 50% { opacity:.18; transform:translateX(-8px); } }
+    @keyframes fold-c { 0%,100% { opacity:.15; transform:translateX(5px); } 50% { opacity:.22; transform:translateX(-6px); } }
+    @keyframes glimmer { 0%,25% { transform:translateX(-600px); opacity:0; } 45% { opacity:.5; } 75%,100% { transform:translateX(1200px); opacity:0; } }
+    @media (prefers-reduced-motion: reduce) {
+      .fabric,.fold-a,.fold-b,.fold-c,.glint { animation:none !important; }
+    }
+  </style>
+</svg>
