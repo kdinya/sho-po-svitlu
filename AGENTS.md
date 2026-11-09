@@ -5,7 +5,7 @@
 1. **Do not modify this file without the repository owner's explicit approval.** If a rule needs correction or expansion, propose the exact change first.
 2. **Follow the user's intent.** Carry out clear implementation requests directly. For critique or discussion without an explicit request to change code, analyze first and wait for authorization.
 3. **Communicate with the owner in Ukrainian.** Keep progress and completion reports concise and factual.
-4. **For app visits or tests, use the reserved nickname `shoposvitlu_bot`.** Completing setup with this nickname is excluded from the counter. Compare case-insensitively after trimming leading and trailing whitespace.
+4. **For app visits or tests, use the designated non-counted test profile.**
 5. **Keep repository history clean.** Do not add AI attribution, watermarks, generated-by notices, or AI-related commit trailers to source files or commit messages.
 6. **Use the owner's GitHub identity for commits:** `Denys <111563751+kdinya@users.noreply.github.com>`. Never invent or substitute another author identity.
 

@@ -212,11 +212,13 @@ test("кнопка підтримки доступна на всіх екран�
 });
 
 
-test("налаштування обов’язково запитують нік, завершуються кнопкою Зберегти й показують виключений нік AI", () => {
+test("налаштування доброзичливо пояснюють запит імені або ніку без технічних пояснень", () => {
   assert.match(html, /id="onboardNickname"[^>]*required/);
   assert.match(html, /id="onboardContinueNickname"/);
   assert.match(html, /id="onboardDone">Зберегти<\/button>/);
-  assert.match(html, /shoposvitlu_bot/);
+  assert.match(html, /Так спілкуватися приємніше/);
+  assert.doesNotMatch(html, /shoposvitlu_bot|службов(ий|ого) нік|технічних перевірок/iu);
+  assert.match(html, /Ваше ім’я або нік/);
   assert.match(appJs, /registerCompletedSetup\(/);
   assert.match(appJs, /fetchCompletedSetupsCount\(/);
   assert.match(appJs, /openOnboarding\(\{ nicknameOnly: true \}\)/);
