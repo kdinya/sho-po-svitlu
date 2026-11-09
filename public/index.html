@@ -45,7 +45,7 @@
           <span class="brand-mark"><svg class="icon"><use href="#i-bolt" /></svg></span>
           <span class="brand-copy">
             <strong class="brand-title">ШоПо<span>Світлу</span></strong>
-            <span class="brand-subtitle">Графік відключень електроенергії</span>
+            <span class="brand-subtitle" id="homeSourceName">Світло Маловисківського району</span>
           </span>
         </a>
         <div class="queue-picker" id="queuePicker">
@@ -131,18 +131,6 @@
             <span id="homeOutageCount" hidden></span>
           </section>
 
-          <div class="card source-card" id="homeSourceCard">
-            <span class="source-mark"><svg class="icon"><use href="#i-send" /></svg></span>
-            <span class="source-copy">
-              <small>Джерело даних</small>
-              <strong id="homeSourceName">Світло Маловисківського району</strong>
-              <span class="source-updated"><i class="ok-dot"><svg class="icon"><use href="#i-check" /></svg></i><span id="homeSourceUpdate">Оновлено: очікуємо</span></span>
-            </span>
-            <button class="ghost-btn" id="openSourceSettingsBtn" type="button" aria-label="Налаштування джерела">
-              <svg class="icon"><use href="#i-settings" /></svg><span>Налаштування</span>
-            </button>
-          </div>
-
           <p class="safety-note">Графік є планом і може відрізнятися від фактичного електропостачання.</p>
         </section>
 
@@ -202,6 +190,20 @@
               <span><small>Останнє оновлення</small><strong id="updatedAt">Ще не оновлювали</strong></span>
             </div>
             <button class="primary-btn" id="editSourceButton" type="button"><svg class="icon"><use href="#i-settings" /></svg>Змінити або додати канал</button>
+          </article>
+          <article class="card frequency-card" aria-labelledby="frequencyTitle">
+            <div class="share-head">
+              <span class="share-mark"><svg class="icon"><use href="#i-refresh" /></svg></span>
+              <div><small class="eyebrow">Автоматичне оновлення</small><h2 id="frequencyTitle">Частота перевірки графіка</h2></div>
+            </div>
+            <div class="sheet-section frequency-section">
+              <div class="chips" role="radiogroup" aria-labelledby="frequencyTitle">
+                <label class="chip"><input type="radio" name="interval" value="5" /><span>5 хв</span></label>
+                <label class="chip"><input type="radio" name="interval" value="15" /><span>15 хв</span></label>
+                <label class="chip"><input type="radio" name="interval" value="30" /><span>30 хв</span></label>
+              </div>
+            </div>
+            <button type="button" class="primary-btn" id="saveIntervalBtn">Зберегти налаштування</button>
           </article>
           <!-- Картка "Поділитися додатком" (завжди доступна в налаштуваннях) -->
           <article class="card share-card" id="shareCard">
@@ -263,7 +265,7 @@
     <dialog class="sheet" id="settingsDialog" aria-labelledby="settingsTitle">
       <div class="sheet-box">
         <div class="sheet-top">
-          <div><small class="eyebrow">Джерело даних</small><h2 id="settingsTitle">Оберіть Telegram-канал</h2></div>
+          <div><small class="eyebrow">Канали графіків</small><h2 id="settingsTitle">Оберіть Telegram-канал</h2></div>
           <button class="sheet-close" id="closeSettings" type="button" aria-label="Закрити">×</button>
         </div>
         <div class="sheet-body">
@@ -280,16 +282,7 @@
             </div>
           </div>
           <div class="channels-list" id="channelsList" role="radiogroup" aria-label="Список каналів"></div>
-          <div class="sheet-section">
-            <span class="field-label">Частота перевірки графіка</span>
-            <div class="chips">
-              <label class="chip"><input type="radio" name="interval" value="5" /><span>5 хв</span></label>
-              <label class="chip"><input type="radio" name="interval" value="15" /><span>15 хв</span></label>
-              <label class="chip"><input type="radio" name="interval" value="30" /><span>30 хв</span></label>
-            </div>
-          </div>
         </div>
-        <div class="sheet-foot"><button type="button" class="primary-btn" id="saveIntervalBtn">Зберегти налаштування</button></div>
       </div>
     </dialog>
 

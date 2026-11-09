@@ -64,3 +64,19 @@ test("public/index.html: містить ключові елементи вста
   assert.match(html, /id=["']copyShareLinkBtn["']/);
   assert.match(html, /id=["']tgShareBtn["']/);
 });
+
+test("головний екран показує назву каналу в шапці без окремої картки джерела", () => {
+  assert.match(html, /class=["'][^"']*brand-subtitle[^"']*["'][^>]*id=["']homeSourceName["']/);
+  assert.doesNotMatch(html, /id=["']homeSourceCard["']/);
+  assert.doesNotMatch(html, /<small>Джерело даних<\/small>/);
+});
+
+test("частота перевірки розміщена в налаштуваннях і збережена окремо від діалогу каналів", () => {
+  const settingsScreen = html.slice(html.indexOf('id="sourceScreen"'), html.indexOf('id="errorBanner"'));
+  const channelDialog = html.slice(html.indexOf('id="settingsDialog"'), html.indexOf('id="onboardDialog"'));
+  assert.match(settingsScreen, /id="frequencyTitle"/);
+  assert.match(settingsScreen, /id="saveIntervalBtn"/);
+  assert.match(settingsScreen, /name="interval" value="5"/);
+  assert.doesNotMatch(channelDialog, /name="interval"/);
+  assert.equal([...html.matchAll(/id="saveIntervalBtn"/g)].length, 1);
+});
