@@ -16,9 +16,9 @@
     <use href="#blue-field" fill="url(#blue)"/>
     <use href="#yellow-field" fill="url(#yellow)"/>
     <use href="#cloth" fill="url(#silk)"/>
-    <path class="fold fold-a" d="M75 78 C145 142 102 245 158 323" fill="none" stroke="#071d43" stroke-width="27" stroke-linecap="round" opacity=".12"/>
-    <path class="fold fold-b" d="M260 78 C320 145 282 245 335 325" fill="none" stroke="#fff" stroke-width="25" stroke-linecap="round" opacity=".1"/>
-    <path class="fold fold-c" d="M435 78 C493 145 450 245 493 325" fill="none" stroke="#061b40" stroke-width="29" stroke-linecap="round" opacity=".14"/>
+    <path class="fold fold-a" d="M75 78 C145 142 102 245 158 323" fill="none" stroke="#071d43" stroke-width="27" stroke-linecap="round" opacity=".08"/>
+    <path class="fold fold-b" d="M260 78 C320 145 282 245 335 325" fill="none" stroke="#fff" stroke-width="25" stroke-linecap="round" opacity=".07"/>
+    <path class="fold fold-c" d="M435 78 C493 145 450 245 493 325" fill="none" stroke="#061b40" stroke-width="29" stroke-linecap="round" opacity=".09"/>
     <path d="M30 198 C100 184 145 213 205 197 S320 213 390 196 S500 192 570 207" fill="none" stroke="#fff" stroke-opacity=".11" stroke-width="6"/>
     <path class="glint" d="M48 70 C140 145 78 252 145 350" fill="none" stroke="url(#shine)" stroke-width="25" stroke-linecap="round" opacity=".55"/>
     <use href="#cloth" fill="none" stroke="url(#edge)" stroke-width="3.5"/>
