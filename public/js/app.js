@@ -34,7 +34,6 @@ const els = {
   homeTomorrowTab: $("homeTomorrowTab"),
   homeOverviewHeading: $("homeOverviewHeading"),
   homeSourceName: $("homeSourceName"),
-  homeSourceUpdate: $("homeSourceUpdate"),
   heroDate: $("heroDate"),
   statusCard: $("statusCard"),
   statusTitle: $("statusTitle"),
@@ -79,7 +78,6 @@ const els = {
   settingsDialog: $("settingsDialog"),
   closeSettings: $("closeSettings"),
   editSourceButton: $("editSourceButton"),
-  openSourceSettingsBtn: $("openSourceSettingsBtn"),
   channelsList: $("channelsList"),
   toggleAddChannelBtn: $("toggleAddChannelBtn"),
   addChannelBox: $("addChannelBox"),
@@ -262,6 +260,10 @@ function setActiveScreen(name) {
     else button.removeAttribute("aria-current");
   });
   if (name === "schedule") renderView();
+  if (name === "source") {
+    const intervalRadio = document.querySelector(`input[name="interval"][value="${settings.intervalMinutes}"]`);
+    if (intervalRadio) intervalRadio.checked = true;
+  }
 }
 
 function renderChannelsList() {
@@ -345,8 +347,6 @@ function openSettings() {
   renderChannelsList();
   els.addChannelBox.hidden = true;
   els.newChannelInput.value = "";
-  const intervalRadio = document.querySelector(`input[name="interval"][value="${settings.intervalMinutes}"]`);
-  if (intervalRadio) intervalRadio.checked = true;
   els.settingsDialog.showModal();
 }
 
@@ -432,7 +432,6 @@ function renderView() {
     setStatusTitle("Перевіряємо графік");
     setNext("Очікуємо дані");
     els.statusMeta.textContent = "Оновлюємо дані з Telegram...";
-    els.homeSourceUpdate.textContent = "Оновлено: очікуємо";
     els.footerUpdate.textContent = "Очікуємо перше оновлення";
     return;
   }
@@ -456,7 +455,6 @@ function renderView() {
   }
 
   els.updatedAt.textContent = formatTimestamp(data.fetchedAt);
-  els.homeSourceUpdate.textContent = `Оновлено: ${formatTimestamp(data.fetchedAt)}`;
   els.footerUpdate.textContent = `Оновлено ${formatTimestamp(data.fetchedAt)}`;
 }
 
@@ -533,10 +531,6 @@ els.homeTomorrowTab.addEventListener("click", () => selectDay("tomorrow"));
 
 els.refreshButton.addEventListener("click", () => refresh({ manual: true, force: true }));
 els.editSourceButton.addEventListener("click", openSettings);
-els.openSourceSettingsBtn.addEventListener("click", (e) => {
-  e.preventDefault();
-  openSettings();
-});
 els.closeSettings.addEventListener("click", closeSettings);
 
 els.toggleAddChannelBtn.addEventListener("click", () => {
