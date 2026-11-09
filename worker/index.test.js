@@ -7,6 +7,12 @@ import {
   parseIntervals,
   parseQueues,
   parseTelegramHtml,
+  normalizeYasno,
+  parseCherkasyContent,
+  parseSumyOcr,
+  readSumySchedulePosts,
+  readLimitedResponseBytes,
+  callOcrSpace,
   getTelegramBotToken,
   recountUsers,
   normalizeSetupNickname,
@@ -25,8 +31,60 @@ test("нормалізує лише публічне ім'я Telegram-канал
     url: "https://t.me/s/SvitloMalovyskivskohoRaionu",
   });
   assert.equal(normalizeChannel("@my_channel").url, "https://t.me/s/my_channel");
+  assert.equal(normalizeChannel("https://app.yasno.ua/api/blackout-service/public/shutdowns/regions/3/dsos/301/planned-outages").sourceId, "source-dnipro-dtem");
+  assert.equal(normalizeChannel("https://www.cherkasyoblenergo.com/api/v1/posts/main?lang=uk&limit=10").sourceId, "source-cherkasy");
+  assert.equal(normalizeChannel("https://t.me/s/SumyEnergo").sourceId, "source-sumy");
   assert.throws(() => normalizeChannel("https://example.com/secret"), /публічний канал/);
   assert.throws(() => normalizeChannel("../../internal"), /публічний канал/);
+});
+
+
+function fullYasnoFixture(status = "ScheduleApplies") {
+  return Object.fromEntries(Array.from({ length: 12 }, (_, index) => {
+    const queue = `${Math.floor(index / 2) + 1}.${index % 2 + 1}`;
+    return [queue, {
+      today: { date: "2026-11-10T00:00:00+02:00", status, slots: [{ start: 0, end: 120, type: "NotPlanned" }, { start: 120, end: 180, type: "Definite" }, { start: 180, end: 1440, type: "NotPlanned" }] },
+      tomorrow: { date: "2026-11-11T00:00:00+02:00", status: "WaitingForSchedule", slots: [] },
+      updatedOn: "2026-11-10T04:00:00Z",
+    }];
+  }));
+}
+
+test("YASNO: normalizes only complete, valid 12-queue schedules", () => {
+  const result = normalizeYasno(fullYasnoFixture(), "source-dnipro-dtem", new Date("2026-11-10T04:00:00Z"));
+  assert.equal(Object.keys(result.schedules).length, 1, "WaitingForSchedule for tomorrow is not presented as a schedule");
+  assert.deepEqual(result.schedules["2026-11-10"].queues["1.1"], [{ start: 120, end: 180 }]);
+  const missing = fullYasnoFixture(); delete missing["6.2"];
+  assert.throws(() => normalizeYasno(missing, "source-dnipro-dtem"), /відсутні черги/);
+  const broken = fullYasnoFixture(); broken["1.1"].today.slots[0].end = 119;
+  assert.deepEqual(normalizeYasno(broken, "source-dnipro-dtem", new Date("2026-11-10T04:00:00Z")).schedules, {});
+  const unknown = fullYasnoFixture(); unknown["1.1"].today.slots[0].type = "Probable";
+  assert.deepEqual(normalizeYasno(unknown, "source-dnipro-dtem", new Date("2026-11-10T04:00:00Z")).schedules, {});
+});
+
+test("Cherkasy: parses all 12 official queue rows and rejects a missing row", () => {
+  const rows = Array.from({ length: 12 }, (_, index) => `<p>${Math.floor(index / 2) + 1}.${index % 2 + 1}&nbsp;<span>00</span><span>:00 - 02:00,&nbsp;</span><span>04</span><span>:00 - 06:00</span></p>`).join("");
+  const queues = parseCherkasyContent(rows);
+  assert.equal(Object.keys(queues).length, 12);
+  assert.deepEqual(queues["1.1"], [{ start: 0, end: 120 }, { start: 240, end: 360 }]);
+  assert.equal(parseCherkasyContent(rows.replace(/<p>6\.2[\s\S]*?<\/p>/, "")), null);
+});
+
+test("Sumy OCR fails closed unless all 12 subqueues have readable time ranges", () => {
+  const text = Array.from({ length: 12 }, (_, index) => `${Math.floor(index / 2) + 1}.${index % 2 + 1} | 00:00 - 02:00 | 04:00 - 06:00`).join("\n");
+  assert.equal(Object.keys(parseSumyOcr(text)).length, 12);
+  assert.equal(parseSumyOcr(text.split("\n").slice(0, 11).join("\n")), null);
+  assert.equal(parseSumyOcr(text.replace("1.1", "9.9")), null);
+  assert.equal(parseSumyOcr(text.replace("00:00 - 02:00 | 04:00 - 06:00", "00:00 - 05:00 | 04:00 - 06:00")), null, "overlapping intervals are rejected");
+});
+
+test("Sumy Telegram parser binds an image to its post and explicit date", () => {
+  const html = `<div class="tgme_widget_message_wrap"><div class="tgme_widget_message" data-post="SumyEnergo/3882"><a class="tgme_widget_message_photo_wrap" href="https://t.me/SumyEnergo/3882" style="background-image:url('https://cdn4.telesco.pe/file/schedule.jpg')"></a><div class="tgme_widget_message_text">Завтра, 10-11-2026, діятимуть графіки погодинних відключень</div><time datetime="2026-11-09T18:04:52+00:00"></time></div></div>`;
+  const posts = readSumySchedulePosts(html, "2026-11-10");
+  assert.equal(posts.length, 1);
+  assert.equal(posts[0].postId, "3882");
+  assert.equal(posts[0].date, "2026-11-10");
+  assert.equal(posts[0].photoUrl, "https://cdn4.telesco.pe/file/schedule.jpg");
 });
 
 test("розбирає інтервали з двокрапками, хвилинами та перевіряє межі доби", () => {
@@ -240,6 +298,27 @@ function memoryCompletedCounter() {
   };
 }
 
+
+test("OCR lock serializes same-image work and rotates the selected key", async () => {
+  const counter = memoryCompletedCounter();
+  const digest = "a".repeat(64);
+  const first = await (await counter.get("test").fetch(new Request("https://do/ocr/claim", {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ digest, keyCount: 2 }),
+  }))).json();
+  const blocked = await (await counter.get("test").fetch(new Request("https://do/ocr/claim", {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ digest, keyCount: 2 }),
+  }))).json();
+  assert.deepEqual(first, { claimed: true, keyIndex: 0 });
+  assert.deepEqual(blocked, { claimed: false });
+  await counter.get("test").fetch(new Request("https://do/ocr/release", {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ digest }),
+  }));
+  const next = await (await counter.get("test").fetch(new Request("https://do/ocr/claim", {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ digest: "b".repeat(64), keyCount: 2 }),
+  }))).json();
+  assert.deepEqual(next, { claimed: true, keyIndex: 1 });
+});
+
 function ping(id) {
   return new Request("https://worker.example/api/ping", { method: "POST", body: JSON.stringify({ id }) });
 }
@@ -376,4 +455,34 @@ test("recountUsers: точно перераховує користувачів �
   assert.equal(await recountUsers({ KV_BINDING: kv }), 5);
   assert.equal(kv.entries.get("stats:users"), "5");
   assert.equal(await recountUsers({}), null);
+});
+
+
+test("завантажувач зупиняє потік зображення, щойно перевищено межу розміру", async () => {
+  const response = new Response(new Uint8Array(10));
+  await assert.rejects(() => readLimitedResponseBytes(response, 5), /завелике/);
+});
+
+test("завантажувач повертає байти, якщо розмір зображення в межах ліміту", async () => {
+  const expected = new Uint8Array([1, 2, 3]);
+  const actual = await readLimitedResponseBytes(new Response(expected), 3);
+  assert.deepEqual([...actual], [...expected]);
+});
+
+
+test("OCR переходить на другий унікальний ключ, якщо перший текст не пройшов перевірку", async () => {
+  const acceptedText = Array.from({ length: 12 }, (_, index) => `${Math.floor(index / 2) + 1}.${index % 2 + 1} | 00:00 - 02:00 | 04:00 - 06:00`).join("\n");
+  const calls = [];
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (_url, options) => {
+    calls.push(options.headers.apikey);
+    return Response.json({ ParsedResults: [{ ParsedText: options.headers.apikey === "key-2" ? acceptedText : "unreadable" }] });
+  };
+  try {
+    const result = await callOcrSpace(new Uint8Array([1, 2, 3]), "image/jpeg", ["key-1", "key-2", "key-2"], 0, parseSumyOcr);
+    assert.deepEqual(calls, ["key-1", "key-2"]);
+    assert.equal(Object.keys(result.value).length, 12);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 });
