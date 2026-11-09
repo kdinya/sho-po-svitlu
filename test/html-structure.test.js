@@ -156,11 +156,14 @@ test("public/css/style.css: назва області збільшена і мо
 });
 
 
-test("бренд має анімований український прапор під назвою додатка", () => {
+test("бренд розміщує прапор праворуч під назвою окремим візуальним шаром", () => {
   const brand = html.match(/<a class="brand"[\s\S]*?<\/a>/)?.[0] ?? "";
   assert.match(brand, /ШоПо<span>Світлу<\/span>/);
   assert.match(brand, /aria-label="Прапор України"/);
   assert.match(brand, /class="brand-flag-cloth"/);
+  assert.match(css, /\.brand-copy \{[^}]*position:\s*relative/);
+  assert.match(css, /\.brand-flag \{[^}]*position:\s*absolute;[^}]*right:\s*0;[^}]*z-index:\s*1;[^}]*width:\s*75px;[^}]*height:\s*54px;/);
+  assert.match(css, /\.brand-title \{[^}]*position:\s*relative;[^}]*z-index:\s*2;/);
   assert.match(css, /@keyframes flagRipple/);
 });
 
