@@ -428,7 +428,7 @@ body[data-power="off"] .zzz { display: block; }
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 6px 0;
+  padding: 8px 0;
   width: 100%;
 }
 .outage-divider::before {
@@ -444,12 +444,12 @@ body[data-power="off"] .zzz { display: block; }
 .outage-divider-label {
   position: relative;
   z-index: 1;
-  padding: 3px 10px;
+  padding: 4px 12px;
   border-radius: 12px;
   background: #0d1a3a;
   border: 1px solid rgba(255, 106, 43, 0.35);
   color: #ff9e8a;
-  font-size: clamp(11.5px, 3vw, 13px);
+  font-size: 13.5px;
   font-weight: 750;
   white-space: nowrap;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
@@ -719,9 +719,6 @@ dialog.sheet[open] .sheet-box { animation: slide 0.28s cubic-bezier(0.2, 0.9, 0.
   .status-wrap { margin-top: 74px; }
   .status-title { max-width: calc(100% - 92px); }
   .status-card { -webkit-mask: radial-gradient(circle 54px at calc(100% - 47px) -8px, transparent 53px, #000 54px); mask: radial-gradient(circle 54px at calc(100% - 47px) -8px, transparent 53px, #000 54px); }
-  .outage-item time { font-size: 19px; }
-  .outage-duration { font-size: 14.5px; padding: 6px 11px; }
-  .outage-divider-label { font-size: 11px; padding: 2px 7px; }
 }
 
 @media (max-width: 360px) {
@@ -730,12 +727,6 @@ dialog.sheet[open] .sheet-box { animation: slide 0.28s cubic-bezier(0.2, 0.9, 0.
   .status-orb .icon { width: 36px; height: 36px; }
   .channel-headline { top: -48px; max-width: calc(100% - 94px); }
   .channel-headline .brand-subtitle { font-size: 12px; }
-  .outage-item { gap: 8px; }
-  .outage-bolt { width: 32px; height: 32px; }
-  .outage-bolt .icon { width: 17px; height: 17px; }
-  .outage-item time { font-size: 16.5px; }
-  .outage-duration { font-size: 13px; padding: 5px 8px; }
-  .outage-divider-label { font-size: 10px; padding: 2px 5px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
