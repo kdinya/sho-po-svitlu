@@ -5,6 +5,9 @@ import {
   fetchSchedule,
   fetchUsersCount,
   pingUsers,
+  normalizeSetupNickname,
+  registerCompletedSetup,
+  fetchCompletedSetupsCount,
   normalizeChannelInput,
   normalizeWorkerUrl,
 } from "../public/js/api.js";
@@ -188,6 +191,31 @@ test("pingUsers / fetchUsersCount: надсилають id POST-запитом, 
     reply = { ok: true, users: "many" };
     assert.equal(await fetchUsersCount({ workerUrl: "https://w.workers.dev" }), null);
     assert.equal(await pingUsers({ workerUrl: "", clientId: "abcdefabcdefabcdef" }), null);
+  } finally {
+    globalThis.fetch = original;
+  }
+});
+
+
+test("complete setup API: normalizes nicknames, registers by browser ID and fetches only completed setup count", async () => {
+  assert.equal(normalizeSetupNickname("  Олена  Тест "), "Олена Тест");
+  assert.throws(() => normalizeSetupNickname("x"), /2–24 символи/);
+  const original = globalThis.fetch;
+  const calls = [];
+  globalThis.fetch = async (url, options) => {
+    calls.push({ url: String(url), method: options.method, body: options.body });
+    return Response.json({ ok: true, users: 17, isNew: true, excluded: false });
+  };
+  try {
+    assert.deepEqual(await registerCompletedSetup({ workerUrl: "https://w.workers.dev", clientId: "abcdefabcdefabcdef", nickname: "Олена" }), { users: 17, isNew: true, excluded: false });
+    assert.deepEqual(calls[0], {
+      url: "https://w.workers.dev/api/complete-setup",
+      method: "POST",
+      body: JSON.stringify({ id: "abcdefabcdefabcdef", nickname: "Олена" }),
+    });
+    assert.equal(await fetchCompletedSetupsCount({ workerUrl: "https://w.workers.dev" }), 17);
+    assert.equal(calls[1].url, "https://w.workers.dev/api/completed-settings");
+    assert.equal(await registerCompletedSetup({ workerUrl: "", clientId: "abcdefabcdefabcdef", nickname: "Олена" }), null);
   } finally {
     globalThis.fetch = original;
   }

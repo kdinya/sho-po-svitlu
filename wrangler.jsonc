@@ -17,6 +17,25 @@
       "id": "2c01d95203644d18b5091ebc1427b55a"
     }
   ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "COMPLETED_SETUP_COUNTER",
+        "class_name": "CompletedSetupCounter"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["CompletedSetupCounter"]
+    }
+  ],
+  "previews": {
+    "vars": {
+      "DEFAULT_CHANNEL": "SvitloMalovyskivskohoRaionu"
+    }
+  },
   "triggers": {
     "crons": ["*/5 * * * *"]
   }

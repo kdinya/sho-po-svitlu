@@ -9,6 +9,8 @@ import {
   parseTelegramHtml,
   getTelegramBotToken,
   recountUsers,
+  normalizeSetupNickname,
+  CompletedSetupCounter,
 } from "./index.js";
 
 const NOW = new Date("2026-11-08T18:00:00.000Z");
@@ -204,6 +206,7 @@ function memoryKv() {
     entries,
     async get(key) { return entries.get(key) ?? null; },
     async put(key, value) { entries.set(key, value); },
+    async delete(key) { entries.delete(key); },
     async list({ prefix = "", cursor } = {}) {
       const keys = [...entries.keys()].filter((key) => key.startsWith(prefix)).map((name) => ({ name }));
       const start = Number(cursor ?? 0);
@@ -211,6 +214,29 @@ function memoryKv() {
       const done = start + 2 >= keys.length;
       return { keys: page, list_complete: done, cursor: done ? undefined : String(start + 2) };
     },
+  };
+}
+
+function memoryCompletedCounter() {
+  const entries = new Map();
+  let queue = Promise.resolve();
+  const storage = {
+    async get(key) { return entries.get(key); },
+    async put(key, value) { entries.set(key, value); },
+    async delete(key) { return entries.delete(key); },
+    async transaction(callback) {
+      let release;
+      const previous = queue;
+      queue = new Promise((resolve) => { release = resolve; });
+      await previous;
+      try { return await callback(storage); } finally { release(); }
+    },
+  };
+  const instance = new CompletedSetupCounter({ storage });
+  return {
+    entries,
+    idFromName(name) { return name; },
+    get(_id) { return { fetch: (request) => instance.fetch(request) }; },
   };
 }
 
@@ -232,6 +258,65 @@ test("/api/ping: рахує унікальні пристрої й не дубл
   assert.deepEqual(await stats.json(), { ok: true, users: 2 });
 });
 
+test("/api/complete-setup: рахує тільки завершення з ніком і дедуплікує за ID", async () => {
+  const env = { COMPLETED_SETUP_COUNTER: memoryCompletedCounter() };
+  const id = "aaaaaaaa-1111-4222-8333-bbbbbbbbbbbb";
+  const request = (nickname, clientId = id) => new Request("https://worker.example/api/complete-setup", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id: clientId, nickname }),
+  });
+  const first = await (await handleRequest(request("Олена"), env)).json();
+  assert.deepEqual({ users: first.users, isNew: first.isNew, excluded: first.excluded }, { users: 1, isNew: true, excluded: false });
+  const repeat = await (await handleRequest(request("Інший нік"), env)).json();
+  assert.deepEqual({ users: repeat.users, isNew: repeat.isNew }, { users: 1, isNew: false });
+  const second = await (await handleRequest(request("Тест", "cccccccc-1111-4222-8333-dddddddddddd"), env)).json();
+  assert.equal(second.users, 2);
+  assert.deepEqual(await (await handleRequest(new Request("https://worker.example/api/completed-settings"), env)).json(), { ok: true, users: 2 });
+  assert.equal(env.COMPLETED_SETUP_COUNTER.entries.has(`user:${id}`), true);
+});
+
+test("/api/complete-setup: виключає службовий нік без урахування регістру та прибирає попередній запис цього ID", async () => {
+  const env = { COMPLETED_SETUP_COUNTER: memoryCompletedCounter() };
+  const id = "aaaaaaaa-1111-4222-8333-bbbbbbbbbbbb";
+  const request = (nickname) => new Request("https://worker.example/api/complete-setup", {
+    method: "POST", body: JSON.stringify({ id, nickname }),
+  });
+  await handleRequest(request("Олена"), env);
+  const excluded = await (await handleRequest(request("  SHOPOSVITLU_BOT  "), env)).json();
+  assert.deepEqual({ users: excluded.users, isNew: excluded.isNew, excluded: excluded.excluded }, { users: 0, isNew: false, excluded: true });
+  assert.equal(env.COMPLETED_SETUP_COUNTER.entries.has(`user:${id}`), false);
+  assert.equal(env.COMPLETED_SETUP_COUNTER.entries.get("count"), 0);
+  const laterCounted = await (await handleRequest(request("Олена"), env)).json();
+  assert.equal(laterCounted.users, 1);
+});
+
+test("/api/complete-setup: відхиляє незавершені або некоректні дані та працює без Durable Object", async () => {
+  const env = { COMPLETED_SETUP_COUNTER: memoryCompletedCounter() };
+  const id = "aaaaaaaa-1111-4222-8333-bbbbbbbbbbbb";
+  for (const nickname of [undefined, "A", "<script>", "x".repeat(25)]) {
+    const response = await handleRequest(new Request("https://worker.example/api/complete-setup", {
+      method: "POST", body: JSON.stringify({ id, nickname }),
+    }), env);
+    assert.equal(response.status, 400);
+  }
+  const badId = await handleRequest(new Request("https://worker.example/api/complete-setup", {
+    method: "POST", body: JSON.stringify({ id: "short", nickname: "Олена" }),
+  }), env);
+  assert.equal(badId.status, 400);
+  const noKv = await handleRequest(new Request("https://worker.example/api/complete-setup", {
+    method: "POST", body: JSON.stringify({ id, nickname: "Олена" }),
+  }), {});
+  assert.equal((await noKv.json()).users, null);
+  const unavailable = { COMPLETED_SETUP_COUNTER: { idFromName: () => "counter", get: () => ({ fetch: async () => { throw new Error("Temporary storage error"); } }) } };
+  const failedWrite = await handleRequest(new Request("https://worker.example/api/complete-setup", {
+    method: "POST", body: JSON.stringify({ id, nickname: "Олена" }),
+  }), unavailable);
+  assert.equal((await failedWrite.json()).users, null, "помилка зберігання не повинна виглядати як успішна реєстрація");
+  assert.equal(await normalizeSetupNickname("  Олена  Тест "), "Олена Тест");
+  assert.throws(() => normalizeSetupNickname(" "), /Введіть свій нік/);
+});
+
 test("/api/ping: відхиляє некоректні id, не-POST запити та не ламається без KV", async () => {
   const env = { KV_BINDING: memoryKv() };
   for (const id of ["", "short", "has spaces in it 1234567", "../../etc/passwd-1234567", 12345678901234567, null]) {
@@ -249,6 +334,18 @@ test("/api/ping: відхиляє некоректні id, не-POST запит�
   const noKv = await handleRequest(ping("aaaaaaaa-1111-4222-8333-bbbbbbbbbbbb"), {});
   assert.equal(noKv.status, 200);
   assert.equal((await noKv.json()).users, null);
+});
+
+test("Durable Object serializes concurrent registrations for the same ID", async () => {
+  const env = { COMPLETED_SETUP_COUNTER: memoryCompletedCounter() };
+  const id = "aaaaaaaa-1111-4222-8333-bbbbbbbbbbbb";
+  const responses = await Promise.all(Array.from({ length: 20 }, () => handleRequest(new Request("https://worker.example/api/complete-setup", {
+    method: "POST", body: JSON.stringify({ id, nickname: "Олена" }),
+  }), env)));
+  const results = await Promise.all(responses.map((response) => response.json()));
+  assert.equal(results.filter((result) => result.isNew).length, 1);
+  assert.equal(results.at(-1).users, 1);
+  assert.equal(env.COMPLETED_SETUP_COUNTER.entries.get("count"), 1);
 });
 
 test("recountUsers: точно перераховує користувачів по сторінках KV і виправляє лічильник", async () => {
