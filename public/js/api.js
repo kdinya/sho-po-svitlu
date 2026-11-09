@@ -50,3 +50,75 @@ export async function fetchSchedule({ workerUrl, channel, refresh = false, signa
     signal?.removeEventListener("abort", abort);
   }
 }
+
+
+export const UKRAINE_REGIONS = [
+  "Кіровоградська область",
+  "Вінницька область",
+  "Волинська область",
+  "Дніпропетровська область",
+  "Донецька область",
+  "Житомирська область",
+  "Закарпатська область",
+  "Запорізька область",
+  "Івано-Франківська область",
+  "Київська область",
+  "м. Київ",
+  "Луганська область",
+  "Львівська область",
+  "Миколаївська область",
+  "Одеська область",
+  "Полтавська область",
+  "Рівненська область",
+  "Сумська область",
+  "Тернопільська область",
+  "Харківська область",
+  "Херсонська область",
+  "Хмельницька область",
+  "Черкаська область",
+  "Чернівецька область",
+  "Чернігівська область",
+];
+
+export async function sendChannelRequest({ workerUrl, region, channelUrl, senderName, requestType = "new", note = "", signal } = {}) {
+  const base = normalizeWorkerUrl(workerUrl);
+  if (!base) throw new Error("Адреса Cloudflare Worker не налаштована.");
+  const endpoint = `${base}/api/request-channel`;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(new DOMException("Час очікування минув.", "TimeoutError")), 10000);
+  const abort = () => controller.abort(signal?.reason);
+  signal?.addEventListener("abort", abort, { once: true });
+  try {
+    const response = await fetch(endpoint, {
+      method: "POST",
+      mode: "cors",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({ region, channelUrl, senderName, requestType, note }),
+      signal: controller.signal,
+    });
+    let data;
+    try {
+      data = await response.json();
+    } catch {
+      throw new Error("Worker повернув некоректну відповідь.");
+    }
+    if (!response.ok) {
+      throw new Error(data.message || `Помилка сервера (HTTP ${response.status}).`);
+    }
+    if (data?.sentToTelegram !== true) {
+      throw new Error(data?.message || "Сервер не підтвердив доставку запиту в Telegram.");
+    }
+    return data;
+  } catch (error) {
+    if (error.name === "AbortError" || error.name === "TimeoutError") {
+      throw new Error("Worker довго не відповідає. Спробуйте ще раз.");
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+    signal?.removeEventListener("abort", abort);
+  }
+}
