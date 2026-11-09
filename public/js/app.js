@@ -261,6 +261,11 @@ function setActiveScreen(name) {
     if (active) button.setAttribute("aria-current", "page");
     else button.removeAttribute("aria-current");
   });
+  window.scrollTo(0, 0);
+  document.documentElement.scrollTop = 0;
+  document.body.scrollTop = 0;
+  const mainContent = document.getElementById("mainContent");
+  if (mainContent) mainContent.scrollTop = 0;
   if (name === "schedule") renderView();
   if (name === "source") {
     const intervalRadio = document.querySelector(`input[name="interval"][value="${settings.intervalMinutes}"]`);
@@ -457,7 +462,8 @@ function renderView() {
       setNext("Змін до кінця доби немає");
     } else {
       const left = formatHours(Math.max(0, state.changeAt - nowMinutes));
-      setNext("Наступна зміна: о", formatClock(state.changeAt), `через ${left}`);
+      const nextAction = state.powered ? "Вимкнуть: о" : "Увімкнуть: о";
+      setNext(nextAction, formatClock(state.changeAt), `через ${left}`);
     }
     els.statusMeta.textContent = data.stale ? "Показано збережену копію графіка" : `Черга ${settings.queue} · оновлено ${formatTimestamp(data.fetchedAt)}`;
   }

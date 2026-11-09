@@ -97,3 +97,18 @@ test("головний екран містить блоки статистики
   assert.match(homeScreen, /id="homeStatOn"/);
   assert.match(homeScreen, /id="homeStatOff"/);
 });
+
+test("блоки статистики «Зі світлом» та «Без світла» містять відповідні лампочки на головній та в розкладі", () => {
+  const homeScreen = html.slice(html.indexOf('id="homeScreen"'), html.indexOf('id="scheduleScreen"'));
+  const scheduleScreen = html.slice(html.indexOf('id="scheduleScreen"'), html.indexOf('id="sourceScreen"'));
+
+  for (const [screenName, screenHtml] of [["home", homeScreen], ["schedule", scheduleScreen]]) {
+    assert.match(screenHtml, /class="stat stat-on"[\s\S]*?mascot-lightbulb\.webp/, `${screenName} stat-on має містити лампочку зі світлом`);
+    assert.match(screenHtml, /class="stat stat-off"[\s\S]*?mascot-lightbulb-off\.webp/, `${screenName} stat-off має містити лампочку без світла`);
+  }
+});
+
+test("app.js скидає прокрутку на початок сторінки та позначає наступну дію як Увімкнуть або Вимкнуть", () => {
+  assert.match(appJs, /window\.scrollTo\(0,\s*0\)/, "setActiveScreen має викликати scrollTo на початок");
+  assert.match(appJs, /state\.powered\s*\?\s*"Вимкнуть:\s*о"\s*:\s*"Увімкнуть:\s*о"/, "наступна дія має залежати від поточного стану мережі");
+});
