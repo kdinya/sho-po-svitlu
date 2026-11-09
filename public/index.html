@@ -14,6 +14,7 @@
     <link rel="icon" href="/icons/favicon-32.png" sizes="32x32" type="image/png" />
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
     <link rel="preload" as="image" href="/images/mascot-lightbulb.webp" />
+    <link rel="preload" as="image" href="/images/mascot-lightbulb-off.webp" />
     <link rel="stylesheet" href="/css/style.css" />
     <title>ШоПоСвітлу — графік світла</title>
   </head>
@@ -344,6 +345,35 @@
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
+    <script>
+      /* Одразу показуємо правильний стан за збереженим графіком, до запуску app.js */
+      (function () {
+        try {
+          var body = document.body;
+          var data = JSON.parse(localStorage.getItem("sho-po-svitlu.last-data.v1") || "null");
+          var settings = JSON.parse(localStorage.getItem("sho-po-svitlu.settings.v1") || "null") || {};
+          var day = data && data.schedules && data.today && data.schedules[data.today];
+          var periods = day && day.queues && day.queues[settings.queue || "6.2"];
+          if (!Array.isArray(periods)) {
+            if (!data) body.setAttribute("data-loading", "");
+            return;
+          }
+          var now = new Date();
+          var minutes = now.getHours() * 60 + now.getMinutes();
+          var off = periods.some(function (p) { return minutes >= p.start && minutes < p.end; });
+          var power = off ? "off" : "on";
+          body.dataset.power = power;
+          var card = document.getElementById("statusCard");
+          if (card) card.dataset.state = power;
+          var title = document.getElementById("statusTitle");
+          if (title) {
+            var em = document.createElement("em");
+            em.textContent = off ? "світла" : "світло";
+            title.replaceChildren(document.createTextNode(off ? "Зараз немає " : "Зараз є "), em, document.createTextNode("!"));
+          }
+        } catch (e) {}
+      })();
+    </script>
     <script src="/config.js"></script>
     <script type="module" src="/js/app.js"></script>
     <script>

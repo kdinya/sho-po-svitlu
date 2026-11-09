@@ -911,3 +911,7 @@ dialog.sheet[open] .sheet-box { animation: slide 0.28s cubic-bezier(0.2, 0.9, 0.
 .frequency-section { margin-top: 0; }
 .frequency-card .chips { margin-top: 0; }
 .frequency-card .primary-btn { width: 100%; }
+
+/* Без анімацій під час першого показу: правильний стан одразу, без перемикання */
+body:not(.is-ready) *, body:not(.is-ready) *::before, body:not(.is-ready) *::after { transition: none !important; }
+body[data-loading] .mascot-img { opacity: 0; }

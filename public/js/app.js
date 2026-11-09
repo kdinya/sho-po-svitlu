@@ -395,6 +395,7 @@ function setNext(label, time = "", hint = "") {
 }
 
 function renderView() {
+  document.body.toggleAttribute("data-loading", !data);
   const selectedDate = activeDay === "today" ? data?.today : data?.tomorrow;
   const date = selectedDate ? data?.schedules?.[selectedDate] ?? null : null;
   const queuePeriods = date?.queues?.[settings.queue] ?? [];
@@ -855,6 +856,7 @@ initQueueOptions();
 updateShareLinks();
 setActiveScreen("home");
 renderView();
+requestAnimationFrame(() => requestAnimationFrame(() => document.body.classList.add("is-ready")));
 scheduleAutoRefresh();
 clockTimer = setInterval(() => {
   if (data) renderView();
