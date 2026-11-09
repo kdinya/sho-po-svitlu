@@ -161,22 +161,23 @@ test("лампочка прив'язана до попередньої пози�
 });
 
 
-test("бренд вирівнює блискавку, назву й прапор по центру та ставить прапор за початком назви", () => {
+test("прапор у шапці — вбудований плавний SVG без 3D-композиції та враховує reduced motion", () => {
   const brand = html.match(/<a class="brand"[\s\S]*?<\/a>/)?.[0] ?? "";
   assert.match(brand, /ШоПо<span>Світлу<\/span>/);
   assert.match(brand, /aria-label="Прапор України"/);
-  assert.match(brand, /class="brand-flag-cloth"/);
+  assert.match(brand, /<svg class="brand-flag-cloth" viewBox="0 0 300 200"/);
+  assert.match(brand, /shape-rendering="geometricPrecision"/);
   assert.match(css, /\.topbar \{[^}]*align-items:\s*center/);
   assert.match(css, /\.brand \{[^}]*align-items:\s*center/);
   assert.match(css, /\.brand-copy \{[^}]*position:\s*relative;[^}]*justify-content:\s*center;[^}]*height:\s*52px/);
   assert.match(css, /\.brand-flag \{[^}]*position:\s*absolute;[^}]*top:\s*50%;[^}]*left:\s*0;[^}]*transform:\s*translateY\(-50%\);[^}]*z-index:\s*1;[^}]*width:\s*75px;[^}]*height:\s*54px;/);
   assert.match(css, /\.brand-title \{[^}]*position:\s*relative;[^}]*z-index:\s*2;[^}]*white-space:\s*nowrap;/);
-  assert.match(brand, /id="ukraineFlagFolds"/);
-  assert.match(brand, /class="brand-flag-folds"/);
-  assert.match(css, /perspective:\s*120px/);
-  assert.match(css, /animation:\s*flagFlutter 2\.8s/);
-  assert.match(css, /@keyframes flagFlutter[\s\S]*rotateY\(17deg\)[\s\S]*@keyframes flagFolds[\s\S]*@keyframes flagGleam/);
-  assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
+  assert.match(brand, /id="headerFlagCloth"/);
+  assert.match(brand, /fill="url\(#headerFlagBlue\)"/);
+  assert.match(brand, /fill="url\(#headerFlagYellow\)"/);
+  assert.match(css, /animation:\s*headerFlagFlutter 4\.2s/);
+  assert.doesNotMatch(`${brand}\n${css}`, /rotateY|perspective:|clipPath|clip-path:/);
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.brand-flag-cloth \{ animation: none; \}/);
 });
 
 test("анімація очей керується станом живлення й враховує повагу до зменшення руху", () => {

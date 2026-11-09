@@ -50,7 +50,33 @@
           <span class="brand-copy">
             <strong class="brand-title">ШоПо<span>Світлу</span></strong>
             <span class="brand-flag" role="img" aria-label="Прапор України">
-              <img class="brand-flag-image" src="/images/ukraine-flag-wave.svg" alt="" width="600" height="420" decoding="async" />
+              <svg class="brand-flag-cloth" viewBox="0 0 300 200" role="presentation" aria-hidden="true" focusable="false" shape-rendering="geometricPrecision">
+                <defs>
+                  <linearGradient id="headerFlagBlue" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0" stop-color="#1684e8" />
+                    <stop offset="1" stop-color="#0870d0" />
+                  </linearGradient>
+                  <linearGradient id="headerFlagYellow" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0" stop-color="#ffe66a" />
+                    <stop offset="1" stop-color="#ffd52e" />
+                  </linearGradient>
+                  <linearGradient id="headerFlagFolds" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0" stop-color="#fff" stop-opacity=".12" />
+                    <stop offset=".22" stop-color="#061c42" stop-opacity=".05" />
+                    <stop offset=".4" stop-color="#fff" stop-opacity=".08" />
+                    <stop offset=".62" stop-color="#061c42" stop-opacity=".13" />
+                    <stop offset=".82" stop-color="#fff" stop-opacity=".06" />
+                    <stop offset="1" stop-color="#061c42" stop-opacity=".1" />
+                  </linearGradient>
+                  <path id="headerFlagCloth" d="M12 30 C48 18 77 43 112 28 C148 13 177 41 211 28 C242 17 266 24 288 31 C282 54 294 78 286 102 C294 126 282 149 288 170 C253 163 232 181 211 170 C176 157 148 183 112 170 C76 157 48 183 12 170 C20 146 7 124 12 100 C18 76 6 54 12 30 Z" />
+                </defs>
+                <g class="header-flag-fabric">
+                  <path d="M12 30 C48 18 77 43 112 28 C148 13 177 41 211 28 C242 17 266 24 288 31 C282 54 294 78 286 102 C252 94 232 111 211 102 C176 91 148 114 112 101 C76 89 48 113 12 100 C18 76 6 54 12 30 Z" fill="url(#headerFlagBlue)" />
+                  <path d="M12 100 C48 113 76 89 112 101 C148 114 176 91 211 102 C232 111 252 94 286 102 C294 126 282 149 288 170 C253 163 232 181 211 170 C176 157 148 183 112 170 C76 157 48 183 12 170 C20 146 7 124 12 100 Z" fill="url(#headerFlagYellow)" />
+                  <use href="#headerFlagCloth" fill="url(#headerFlagFolds)" />
+                  <use href="#headerFlagCloth" class="header-flag-edge" />
+                </g>
+              </svg>
             </span>
           </span>
         </a>
