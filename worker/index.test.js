@@ -258,6 +258,26 @@ test("/api/ping: рахує унікальні пристрої й не дубл
   assert.deepEqual(await stats.json(), { ok: true, users: 2 });
 });
 
+test("/api/complete-setup: починає новий лічильник з нуля, зберігаючи старі записи", async () => {
+  const counter = memoryCompletedCounter();
+  counter.entries.set("count", 26);
+  counter.entries.set("user:previous-browser-id", "2026-11-08T00:00:00.000Z");
+  const env = { COMPLETED_SETUP_COUNTER: counter };
+  const before = await (await handleRequest(new Request("https://worker.example/api/completed-settings"), env)).json();
+  assert.deepEqual(before, { ok: true, users: 0 });
+
+  const id = "aaaaaaaa-1111-4222-8333-bbbbbbbbbbbb";
+  const request = new Request("https://worker.example/api/complete-setup", {
+    method: "POST", body: JSON.stringify({ id, nickname: "Олена" }),
+  });
+  const first = await (await handleRequest(request, env)).json();
+  assert.deepEqual({ users: first.users, isNew: first.isNew }, { users: 1, isNew: true });
+  assert.equal(counter.entries.get("count"), 26, "старий лічильник лишається недоторканим");
+  assert.equal(counter.entries.has("user:previous-browser-id"), true, "старі записи лишаються збереженими");
+  assert.equal(counter.entries.get("v2:count"), 1);
+  assert.equal(counter.entries.has(`v2:user:${id}`), true);
+});
+
 test("/api/complete-setup: рахує тільки завершення з ніком і дедуплікує за ID", async () => {
   const env = { COMPLETED_SETUP_COUNTER: memoryCompletedCounter() };
   const id = "aaaaaaaa-1111-4222-8333-bbbbbbbbbbbb";
@@ -273,7 +293,7 @@ test("/api/complete-setup: рахує тільки завершення з ні�
   const second = await (await handleRequest(request("Тест", "cccccccc-1111-4222-8333-dddddddddddd"), env)).json();
   assert.equal(second.users, 2);
   assert.deepEqual(await (await handleRequest(new Request("https://worker.example/api/completed-settings"), env)).json(), { ok: true, users: 2 });
-  assert.equal(env.COMPLETED_SETUP_COUNTER.entries.has(`user:${id}`), true);
+  assert.equal(env.COMPLETED_SETUP_COUNTER.entries.has(`v2:user:${id}`), true);
 });
 
 test("/api/complete-setup: виключає службовий нік без урахування регістру та прибирає попередній запис цього ID", async () => {
@@ -285,8 +305,8 @@ test("/api/complete-setup: виключає службовий нік без у�
   await handleRequest(request("Олена"), env);
   const excluded = await (await handleRequest(request("  SHOPOSVITLU_BOT  "), env)).json();
   assert.deepEqual({ users: excluded.users, isNew: excluded.isNew, excluded: excluded.excluded }, { users: 0, isNew: false, excluded: true });
-  assert.equal(env.COMPLETED_SETUP_COUNTER.entries.has(`user:${id}`), false);
-  assert.equal(env.COMPLETED_SETUP_COUNTER.entries.get("count"), 0);
+  assert.equal(env.COMPLETED_SETUP_COUNTER.entries.has(`v2:user:${id}`), false);
+  assert.equal(env.COMPLETED_SETUP_COUNTER.entries.get("v2:count"), 0);
   const laterCounted = await (await handleRequest(request("Олена"), env)).json();
   assert.equal(laterCounted.users, 1);
 });
@@ -345,7 +365,7 @@ test("Durable Object serializes concurrent registrations for the same ID", async
   const results = await Promise.all(responses.map((response) => response.json()));
   assert.equal(results.filter((result) => result.isNew).length, 1);
   assert.equal(results.at(-1).users, 1);
-  assert.equal(env.COMPLETED_SETUP_COUNTER.entries.get("count"), 1);
+  assert.equal(env.COMPLETED_SETUP_COUNTER.entries.get("v2:count"), 1);
 });
 
 test("recountUsers: точно перераховує користувачів по сторінках KV і виправляє лічильник", async () => {

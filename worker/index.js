@@ -7,6 +7,9 @@ const USER_KEY_PREFIX = "user:";
 const USERS_COUNT_KEY = "stats:users";
 const USERS_RECOUNT_MAX_PAGES = 100;
 const COMPLETED_COUNTER_NAME = "sho-po-svitlu-completed-settings";
+// New counter generation starts from zero while retaining the previous records in storage.
+const COMPLETED_COUNTER_GENERATION = "v2";
+const COMPLETED_COUNTER_COUNT_KEY = `${COMPLETED_COUNTER_GENERATION}:count`;
 const RESERVED_SETUP_NICKNAME = "shoposvitlu_bot";
 const SETUP_NICKNAME_PATTERN = /^[\p{L}\p{M}\p{N}_ -]+$/u;
 const UKRAINE_REGIONS = new Set([
@@ -277,7 +280,7 @@ export class CompletedSetupCounter {
   async fetch(request) {
     const url = new URL(request.url);
     if (url.pathname === "/stats" && request.method === "GET") {
-      const count = Number(await this.ctx.storage.get("count") ?? 0);
+      const count = Number(await this.ctx.storage.get(COMPLETED_COUNTER_COUNT_KEY) ?? 0);
       return Response.json({ ok: true, users: Number.isFinite(count) && count >= 0 ? count : 0 });
     }
     if (url.pathname !== "/register" || request.method !== "POST") {
@@ -298,14 +301,14 @@ export class CompletedSetupCounter {
     }
 
     const result = await this.ctx.storage.transaction(async (transaction) => {
-      const count = Math.max(0, Number(await transaction.get("count") ?? 0));
-      const key = `user:${id}`;
+      const count = Math.max(0, Number(await transaction.get(COMPLETED_COUNTER_COUNT_KEY) ?? 0));
+      const key = `${COMPLETED_COUNTER_GENERATION}:user:${id}`;
       const exists = await transaction.get(key) !== undefined;
       if (nickname.toLowerCase() === RESERVED_SETUP_NICKNAME) {
         if (exists) {
           await transaction.delete(key);
           const nextCount = Math.max(0, count - 1);
-          await transaction.put("count", nextCount);
+          await transaction.put(COMPLETED_COUNTER_COUNT_KEY, nextCount);
           return { users: nextCount, isNew: false, excluded: true };
         }
         return { users: count, isNew: false, excluded: true };
@@ -313,7 +316,7 @@ export class CompletedSetupCounter {
       if (exists) return { users: count, isNew: false, excluded: false };
       const nextCount = count + 1;
       await transaction.put(key, new Date().toISOString());
-      await transaction.put("count", nextCount);
+      await transaction.put(COMPLETED_COUNTER_COUNT_KEY, nextCount);
       return { users: nextCount, isNew: true, excluded: false };
     });
     return Response.json({ ok: true, ...result });

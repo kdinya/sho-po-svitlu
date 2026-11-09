@@ -173,9 +173,9 @@ test("бренд вирівнює блискавку, назву й прапор
   assert.match(css, /\.brand-title \{[^}]*position:\s*relative;[^}]*z-index:\s*2;[^}]*white-space:\s*nowrap;/);
   assert.match(brand, /id="ukraineFlagFolds"/);
   assert.match(brand, /class="brand-flag-folds"/);
-  assert.match(css, /perspective:\s*150px/);
-  assert.match(css, /animation:\s*flagWind 3\.4s/);
-  assert.match(css, /@keyframes flagWind[\s\S]*rotateY\(20deg\)[\s\S]*@keyframes flagFoldShift/);
+  assert.match(css, /perspective:\s*120px/);
+  assert.match(css, /animation:\s*flagFlutter 2\.8s/);
+  assert.match(css, /@keyframes flagFlutter[\s\S]*rotateY\(17deg\)[\s\S]*@keyframes flagFolds[\s\S]*@keyframes flagGleam/);
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
 });
 
