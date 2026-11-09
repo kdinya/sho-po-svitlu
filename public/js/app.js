@@ -35,6 +35,7 @@ const els = {
   homeTomorrowTab: $("homeTomorrowTab"),
   homeOverviewHeading: $("homeOverviewHeading"),
   homeSourceName: $("homeSourceName"),
+  homeRegionName: $("homeRegionName"),
   heroDate: $("heroDate"),
   statusCard: $("statusCard"),
   statusTitle: $("statusTitle"),
@@ -103,6 +104,11 @@ const els = {
   cancelAddChannelBtn: $("cancelAddChannelBtn"),
   confirmAddChannelBtn: $("confirmAddChannelBtn"),
   saveIntervalBtn: $("saveIntervalBtn"),
+  aboutAppBtn: $("aboutAppBtn"),
+  aboutAppDialog: $("aboutAppDialog"),
+  closeAboutAppDialog: $("closeAboutAppDialog"),
+  aboutCloseBtn: $("aboutCloseBtn"),
+  aboutRequestChannelBtn: $("aboutRequestChannelBtn"),
   homeInstallBanner: $("homeInstallBanner"),
   homeInstallBtn: $("homeInstallBtn"),
   homeDismissInstallBtn: $("homeDismissInstallBtn"),
@@ -341,6 +347,23 @@ function renderChannelsList() {
   const regionChannels = getRegionChannels(region);
   if (els.regionChannelsHeading) els.regionChannelsHeading.textContent = `Доступні канали (${region})`;
 
+  if (regionChannels.length === 0) {
+    const empty = document.createElement("div");
+    empty.className = "channels-empty";
+    const p = document.createElement("p");
+    p.textContent = "Для цієї області ще немає доданих каналів.";
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "primary-btn";
+    btn.style.padding = "8px 16px";
+    btn.style.fontSize = "13.5px";
+    btn.textContent = "Запропонувати канал";
+    btn.addEventListener("click", () => openRequestDialog("new"));
+    empty.append(p, btn);
+    els.channelsList.append(empty);
+    return;
+  }
+
   regionChannels.forEach((ch) => {
     const index = channels.findIndex((channel) => channel.username.toLowerCase() === ch.username.toLowerCase());
     const isSelected = ch.username.toLowerCase() === currentNormalized;
@@ -436,9 +459,13 @@ function updateSource() {
   els.sourceLink.href = normalized.url;
   const known = channels.find((ch) => ch.username.toLowerCase() === normalized.username.toLowerCase());
   const channelTitle = data?.title || known?.name || normalized.username;
+  const regionTitle = known?.region || "Кіровоградська область";
   els.sourceName.textContent = channelTitle;
   els.sourceHandle.textContent = `t.me/s/${normalized.username}`;
   els.homeSourceName.textContent = channelTitle;
+  if (els.homeRegionName) {
+    els.homeRegionName.textContent = regionTitle;
+  }
 }
 
 function setStatusTitle(before, accent = "", after = "") {
@@ -618,6 +645,33 @@ els.homeTomorrowTab.addEventListener("click", () => selectDay("tomorrow"));
 els.refreshButton.addEventListener("click", () => refresh({ manual: true, force: true }));
 els.editSourceButton.addEventListener("click", openSettings);
 els.closeSettings.addEventListener("click", closeSettings);
+
+function openAboutApp() {
+  if (els.aboutAppDialog) els.aboutAppDialog.showModal();
+}
+
+function closeAboutApp() {
+  if (els.aboutAppDialog) els.aboutAppDialog.close();
+}
+
+if (els.aboutAppBtn) els.aboutAppBtn.addEventListener("click", openAboutApp);
+if (els.closeAboutAppDialog) els.closeAboutAppDialog.addEventListener("click", closeAboutApp);
+if (els.aboutCloseBtn) els.aboutCloseBtn.addEventListener("click", closeAboutApp);
+if (els.aboutRequestChannelBtn) {
+  els.aboutRequestChannelBtn.addEventListener("click", () => {
+    closeAboutApp();
+    openRequestDialog("new");
+  });
+}
+
+[els.settingsDialog, els.requestChannelDialog, els.aboutAppDialog].forEach((dialog) => {
+  if (dialog) {
+    dialog.addEventListener("click", (event) => {
+      if (event.target === dialog) dialog.close();
+    });
+  }
+});
+
 els.openRequestChannelBtn.addEventListener("click", () => openRequestDialog("new"));
 els.proposeChannelBtn.addEventListener("click", () => openRequestDialog("new"));
 els.errorReport.addEventListener("click", () => openRequestDialog("broken", settings.channel));
