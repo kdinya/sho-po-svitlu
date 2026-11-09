@@ -107,9 +107,9 @@ body[data-power="off"] .sky-lights { opacity: 0.05; animation: none; }
 .brand-copy { display: flex; flex-direction: column; align-items: flex-start; min-width: 0; }
 .brand-flag {
   display: block;
-  width: 25px;
-  height: 18px;
-  margin-top: 3px;
+  width: 75px;
+  height: 54px;
+  margin-top: 4.5px;
   margin-left: 1px;
   perspective: 54px;
   filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.34));
@@ -160,11 +160,13 @@ body[data-power="off"] .sky-lights { opacity: 0.05; animation: none; }
   gap: 2px;
 }
 .channel-headline .channel-region {
-  display: block;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: clamp(15px, 4.6vw, 20px); /* запасний розмір; точний підбирає fitRegionName() */
+  white-space: normal;
+  font-size: clamp(22.5px, 6.9vw, 30px); /* у 1,5 раза більше; за потреби — два рядки */
   font-weight: 850;
   color: var(--text);
   letter-spacing: -0.02em;
@@ -181,7 +183,7 @@ body[data-power="off"] .sky-lights { opacity: 0.05; animation: none; }
   word-break: normal;
   overflow-wrap: break-word;
   text-wrap: balance;
-  font-size: clamp(10.5px, 3vw, 12.5px);
+  font-size: clamp(15.75px, 4.5vw, 18.75px);
   font-weight: 600;
   color: #9cb3ea;
   letter-spacing: normal;
@@ -263,7 +265,7 @@ body[data-power="off"] .sky-lights { opacity: 0.05; animation: none; }
 .status-wrap {
   --mascot-w: clamp(100px, 28vw, 118px);
   position: relative;
-  margin-top: 84px;
+  margin-top: 158px;
   filter: drop-shadow(0 0 16px var(--accent-glow)) drop-shadow(0 12px 22px rgba(0, 0, 0, 0.45));
   transition: filter 0.5s;
 }
@@ -360,7 +362,7 @@ body[data-power="off"] .sky-lights { opacity: 0.05; animation: none; }
 
 /* ---------- лампочка-талісман ---------- */
 .mascot {
-  position: absolute; z-index: 3; right: 2px; top: -84px;
+  position: absolute; z-index: 3; right: 2px; top: -146px;
   width: var(--mascot-w);
   aspect-ratio: 616 / 708;
   pointer-events: none;
@@ -833,8 +835,8 @@ dialog.sheet[open] .sheet-box { animation: slide 0.28s cubic-bezier(0.2, 0.9, 0.
   .channel-headline { bottom: calc(100% + 8px); }
   .channel-headline .brand-subtitle { line-height: 1.2; }
   .queue-trigger { padding: 8px 8px 8px 12px; font-size: 14.5px; gap: 5px; }
-  .mascot { top: -70px; right: 0; }
-  .status-wrap { --mascot-w: 94px; margin-top: 74px; }
+  .mascot { top: -120px; right: 0; }
+  .status-wrap { --mascot-w: 94px; margin-top: 132px; }
   .status-title { max-width: calc(100% - 92px); }
   .status-card { -webkit-mask: radial-gradient(circle 54px at calc(100% - 47px) -8px, transparent 53px, #000 54px); mask: radial-gradient(circle 54px at calc(100% - 47px) -8px, transparent 53px, #000 54px); }
 }

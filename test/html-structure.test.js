@@ -144,12 +144,15 @@ test("public/index.html: лічильник «Нас вже» стоїть у к
   assert.match(html, /<div class="heading-title-row">\s*<h1>Налаштування<\/h1>\s*<button class="info-circle-btn" id="aboutAppBtn"/);
 });
 
-test("public/css/style.css: область займає один рядок і не заходить на лампочку", () => {
+test("public/css/style.css: назва області збільшена і може займати два рядки поруч із лампочкою", () => {
   const region = css.match(/\.channel-headline \.channel-region \{([^}]*)\}/)?.[1] ?? "";
-  assert.match(region, /white-space:\s*nowrap/);
-  assert.doesNotMatch(region, /line-clamp/);
+  assert.match(region, /white-space:\s*normal/);
+  assert.match(region, /-webkit-line-clamp:\s*2/);
+  assert.match(region, /font-size:\s*clamp\(22\.5px,\s*6\.9vw,\s*30px\)/);
   assert.match(css, /\.channel-headline \{[^}]*width:\s*calc\(100% - var\(--mascot-w\) - 12px\)/);
-  assert.match(appJs, /function fitRegionName\(/);
+  assert.match(css, /width:\s*75px;\s*height:\s*54px;/);
+  assert.match(appJs, /const SCALE = 1\.5/);
+  assert.match(css, /font-size:\s*clamp\(15\.75px,\s*4\.5vw,\s*18\.75px\)/);
 });
 
 
