@@ -402,11 +402,11 @@ body[data-power="off"] .zzz { display: block; }
 .timeline-note { margin-top: 12px; text-align: center; font-size: 13px; color: var(--muted); }
 
 /* ---------- відключення ---------- */
-.outages-card { padding-bottom: 8px; }
-.outage-list { margin-top: 10px; }
+.outages-card { padding-bottom: 5px; }
+.outage-list { margin-top: 7px; }
 .outage-item {
   display: flex; align-items: center; gap: 14px;
-  padding: 11px 0;
+  padding: 7px 0;
 }
 .outage-bolt {
   width: 38px; height: 38px; flex: none; border-radius: 50%;
@@ -428,7 +428,7 @@ body[data-power="off"] .zzz { display: block; }
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 8px 0;
+  padding: 5px 0;
   width: 100%;
 }
 .outage-divider::before {
@@ -444,7 +444,7 @@ body[data-power="off"] .zzz { display: block; }
 .outage-divider-label {
   position: relative;
   z-index: 1;
-  padding: 4px 12px;
+  padding: 3px 12px;
   border-radius: 12px;
   background: #0d1a3a;
   border: 1px solid rgba(255, 106, 43, 0.35);
@@ -462,7 +462,7 @@ body[data-power="off"] .zzz { display: block; }
   color: #fff;
   background: rgba(229, 70, 14, 0.35);
 }
-.empty-state { display: flex; align-items: center; gap: 14px; padding: 14px 0 10px; color: var(--muted); font-size: 15px; }
+.empty-state { display: flex; align-items: center; gap: 14px; padding: 9px 0 7px; color: var(--muted); font-size: 15px; }
 .empty-orb {
   width: 38px; height: 38px; flex: none; border-radius: 50%;
   background: radial-gradient(circle at 35% 28%, #fff3a8, #ffc014); box-shadow: 0 0 14px rgba(255, 200, 40, 0.5);
