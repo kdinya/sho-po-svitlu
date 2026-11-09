@@ -108,7 +108,7 @@ body[data-power="off"] .sky-lights { opacity: 0.05; animation: none; }
 .brand-flag {
   position: absolute;
   top: 50%;
-  left: 0;
+  left: -8px;
   transform: translateY(-50%);
   z-index: 1;
   display: block;
