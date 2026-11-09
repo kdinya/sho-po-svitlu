@@ -178,19 +178,29 @@ test("renderOutages: коректно формує список відключе
   ];
   renderOutages(container, countNode, periods, 300, { highlightPast: true });
   assert.equal(countNode.textContent, "3");
-  assert.equal(container.children.length, 3);
-  assert.equal(container.children[0].classList.has("is-past"), true);
-  assert.equal(container.children[1].classList.has("is-current"), true);
-  assert.equal(container.children[2].classList.has("is-past"), false);
-  assert.equal(container.children[2].classList.has("is-current"), false);
+  // 3 відключення + 2 розділювальні лінії з тривалістю без світла між ними = 5 елементів
+  assert.equal(container.children.length, 5);
 
   const firstItem = container.children[0];
-  const range = firstItem.children.find((c) => c.className === "outage-range");
-  assert.ok(range, "повинен містити .outage-range");
-  const startTime = range.children[0];
-  const divider = range.children[1];
-  const endTime = range.children[2];
-  assert.equal(startTime.textContent, "02:00");
-  assert.equal(endTime.textContent, "04:00");
-  assert.equal(divider.children[0].textContent, "без світла - 2 год");
+  assert.equal(firstItem.classList.has("is-past"), true);
+  const firstTime = firstItem.children.find((c) => c && c.tagName === "TIME");
+  const firstDuration = firstItem.children.find((c) => c && c.className === "outage-duration");
+  assert.equal(firstTime.textContent, "02:00 – 04:00");
+  assert.ok(firstDuration, "має містити .outage-duration");
+  assert.match(firstDuration.children.find((c) => typeof c === "string"), /2 год/);
+
+  const firstDivider = container.children[1];
+  assert.equal(firstDivider.classList.has("is-past"), true);
+  assert.equal(firstDivider.children[0].textContent, "без світла - 2 год");
+
+  const secondItem = container.children[2];
+  assert.equal(secondItem.classList.has("is-current"), true);
+
+  const secondDivider = container.children[3];
+  assert.equal(secondDivider.classList.has("is-current"), true);
+  assert.equal(secondDivider.children[0].textContent, "без світла - 2 год");
+
+  const thirdItem = container.children[4];
+  assert.equal(thirdItem.classList.has("is-past"), false);
+  assert.equal(thirdItem.classList.has("is-current"), false);
 });
