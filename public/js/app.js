@@ -93,6 +93,9 @@ const els = {
   pwaPanel: $("pwaPanel"),
   installButton: $("installButton"),
   shareAppButton: $("shareAppButton"),
+  copyShareLinkBtn: $("copyShareLinkBtn"),
+  tgShareBtn: $("tgShareBtn"),
+  shareCard: $("shareCard"),
   toast: $("toast"),
   navButtons: [...document.querySelectorAll(".nav-item")],
 };
@@ -767,26 +770,64 @@ els.homeDismissInstallBtn?.addEventListener("click", () => {
 // Первинна ініціалізація стану встановлення
 updateInstallUI();
 
-// Share
-els.shareAppButton.addEventListener("click", async () => {
+// Share app
+function getAppShareUrl() {
+  try {
+    const loc = window.location;
+    if (!loc.origin || loc.origin === "null" || loc.protocol === "file:") {
+      return "https://sho-po-svitlu-ib61.vercel.app/";
+    }
+    const url = new URL(loc.href);
+    url.search = "";
+    url.hash = "";
+    return url.toString();
+  } catch {
+    return "https://sho-po-svitlu-ib61.vercel.app/";
+  }
+}
+
+function updateShareLinks() {
+  const url = getAppShareUrl();
+  const text = "ШоПоСвітлу — зручний графік відключень світла за чергами:";
+  if (els.tgShareBtn) {
+    els.tgShareBtn.href = `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`;
+  }
+}
+
+async function copyShareUrlToClipboard() {
+  const url = getAppShareUrl();
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(url);
+      showToast("Посилання на додаток скопійовано у буфер!");
+      return;
+    }
+  } catch {}
+  showToast(`Посилання: ${url}`);
+}
+
+async function handleShareApp() {
+  const url = getAppShareUrl();
   const shareData = {
     title: "ШоПоСвітлу",
-    text: "Зручний графік відключень світла для своєї черги.",
-    url: window.location.href,
+    text: "ШоПоСвітлу — зручний графік відключень світла за чергами:",
+    url: url,
   };
-  try {
-    if (navigator.share) {
+
+  if (navigator.share) {
+    try {
       await navigator.share(shareData);
-    } else if (navigator.clipboard?.writeText) {
-      await navigator.clipboard.writeText(shareData.url);
-      showToast("Посилання скопійовано у буфер!");
-    } else {
-      showToast(`Посилання на додаток: ${shareData.url}`);
+      return;
+    } catch (err) {
+      if (err.name === "AbortError") return;
     }
-  } catch (err) {
-    if (err.name !== "AbortError") showToast("Не вдалося поділитися.");
   }
-});
+
+  await copyShareUrlToClipboard();
+}
+
+els.shareAppButton?.addEventListener("click", handleShareApp);
+els.copyShareLinkBtn?.addEventListener("click", copyShareUrlToClipboard);
 
 els.navButtons.forEach((btn) => {
   btn.addEventListener("click", () => setActiveScreen(btn.dataset.screenTarget));
@@ -802,6 +843,7 @@ window.addEventListener("online", () => {
 
 // Initialize
 initQueueOptions();
+updateShareLinks();
 setActiveScreen("home");
 renderView();
 scheduleAutoRefresh();

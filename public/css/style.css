@@ -494,11 +494,29 @@ body[data-power="off"] .zzz { display: block; }
 .update-row small { display: block; font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #8fa6e0; }
 .update-row strong { color: var(--text); font-size: 16px; }
 
+/* ---------- картка поділитися додатком ---------- */
+.share-head { display: flex; align-items: center; gap: 12px; }
+.share-head h2 { font-size: 19px; font-weight: 800; }
+.share-mark {
+  width: 46px; height: 46px; flex: none; border-radius: 50%;
+  display: grid; place-items: center; color: #081432;
+  background: radial-gradient(circle at 35% 28%, #ffe369, #f5a623);
+  box-shadow: 0 0 18px rgba(255, 196, 46, 0.45);
+}
+.share-mark .icon { width: 22px; height: 22px; }
+.share-desc { margin: 12px 0 14px; font-size: 14px; color: var(--muted); line-height: 1.45; }
+.share-buttons { display: flex; flex-direction: column; gap: 10px; }
+.share-buttons .share-main-btn { width: 100%; justify-content: center; font-size: 15px; padding: 13px 18px; }
+.share-secondary-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.share-secondary-row .ghost-btn { justify-content: center; font-size: 13.5px; padding: 11px 10px; text-decoration: none; color: inherit; }
+.share-secondary-row .ghost-btn:hover { color: var(--text); border-color: var(--sun); }
+.pwa-buttons .primary-btn.wide { width: 100%; justify-content: center; }
+
 .pwa-head { display: flex; align-items: center; gap: 14px; }
 .pwa-head img { border-radius: 14px; box-shadow: 0 0 18px rgba(255, 200, 40, 0.35); }
 .pwa-head h2 { font-size: 18px; font-weight: 800; }
 .pwa-desc { margin: 12px 0 14px; font-size: 14px; color: var(--muted); }
-.pwa-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.pwa-buttons { display: flex; flex-direction: column; gap: 10px; }
 .honesty-note {
   display: flex; gap: 12px; margin-top: 14px; padding: 14px; border-radius: 20px;
   background: rgba(255, 210, 58, 0.07); border: 1px solid rgba(255, 210, 58, 0.22);
