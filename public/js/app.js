@@ -413,11 +413,13 @@ function renderView() {
   updateSource();
 
   renderTimeline(els.timelineTrack, els.nowMarker, els.currentTime, periods, now, { showNow: isCurrentDay });
-  renderOutages(els.outageList, els.outageCount, periods, isCurrentDay ? nowMinutes : 0, { highlightPast: isCurrentDay });
+  renderOutages(els.outageList, els.outageCount, periods, isCurrentDay ? nowMinutes : 0, {
+    highlightPast: isCurrentDay,
+    emptyText: data && !hasSchedule ? `У каналі немає графіка для черги ${settings.queue}.` : data ? undefined : "Завантажуємо графік…",
+  });
   renderTimeline(els.homeTimelineTrack, els.homeNowMarker, els.homeCurrentTime, periods, now, { showNow: isCurrentDay });
   renderOutages(els.homeOutageList, els.homeOutageCount, periods, isCurrentDay ? nowMinutes : 0, {
     highlightPast: isCurrentDay,
-    hidePast: isCurrentDay,
     emptyText: data && !hasSchedule ? `У каналі немає графіка для черги ${settings.queue}.` : data ? undefined : "Завантажуємо графік…",
   });
 
@@ -523,6 +525,7 @@ document.addEventListener("keydown", (event) => {
 const selectDay = (day) => {
   activeDay = day;
   renderView();
+  if (settings.workerUrl) refresh({ manual: false, force: false });
 };
 els.todayTab.addEventListener("click", () => selectDay("today"));
 els.tomorrowTab.addEventListener("click", () => selectDay("tomorrow"));
@@ -845,7 +848,7 @@ clockTimer = setInterval(() => {
   if (data) renderView();
 }, 30_000);
 
-if (settings.workerUrl && !data) {
+if (settings.workerUrl) {
   refresh({ manual: false, force: false });
 }
 if (needsOnboarding()) openOnboarding();

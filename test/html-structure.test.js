@@ -80,3 +80,9 @@ test("частота перевірки розміщена в налаштува
   assert.doesNotMatch(channelDialog, /name="interval"/);
   assert.equal([...html.matchAll(/id="saveIntervalBtn"/g)].length, 1);
 });
+
+test("блоки відключень на головній та в розкладі однакові, називаються «Коли не буде світла» і містять бейджі кількості", () => {
+  assert.match(html, /id=["']homeOutagesHeading["'][^>]*>[\s\S]*?Коли не буде світла\s*<span class=["']count-chip["'] id=["']homeOutageCount["']/);
+  assert.match(html, /id=["']scheduleOutagesHeading["'][^>]*>[\s\S]*?Коли не буде світла\s*<span class=["']count-chip["'] id=["']outageCount["']/);
+  assert.match(html, /class=["']channel-headline["'][\s\S]*?id=["']homeSourceName["']/);
+});
