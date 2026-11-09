@@ -123,12 +123,14 @@ body[data-power="off"] .sky-lights { opacity: 0.05; animation: none; }
   width: 100%;
   height: 100%;
   overflow: visible;
-  transform-origin: 8% 50%;
-  /* Keep the artwork in the SVG compositor rather than a low-resolution 3D texture. */
   transform: translateZ(0);
   shape-rendering: geometricPrecision;
   text-rendering: geometricPrecision;
-  animation: flagFlutter 2.8s cubic-bezier(0.42, 0, 0.58, 1) infinite;
+}
+.brand-flag-wave {
+  transform-box: fill-box;
+  transform-origin: 0 50%;
+  animation: flagFlutter 2.8s ease-in-out infinite;
 }
 .brand-flag-shape,
 .brand-flag-yellow,
@@ -136,46 +138,40 @@ body[data-power="off"] .sky-lights { opacity: 0.05; animation: none; }
 .brand-flag-highlight {
   vector-effect: non-scaling-stroke;
 }
-.brand-flag-shape { animation: flagWaveShape 2.1s ease-in-out infinite; }
-.brand-flag-yellow { animation: flagWaveYellow 2.1s ease-in-out infinite; }
-.brand-flag-folds { animation: flagFolds 2.1s ease-in-out infinite; }
+.brand-flag-folds {
+  opacity: .72;
+  animation: flagFolds 2.8s ease-in-out infinite;
+}
 .brand-flag-highlight {
   fill: none;
   stroke: rgba(255, 255, 255, 0.48);
   stroke-width: 2;
   stroke-linecap: round;
   stroke-linejoin: round;
-  animation: flagGleam 2.8s ease-in-out infinite, flagWaveGleam 2.1s ease-in-out infinite;
+  animation: flagGleam 2.8s ease-in-out infinite;
 }
 @keyframes flagFlutter {
-  0%, 100% { transform: translateZ(0) rotate(-1deg) skewY(-1deg) scaleX(.99); }
-  18% { transform: translateZ(0) rotate(.4deg) skewY(.8deg) scaleX(1); }
-  39% { transform: translateZ(0) rotate(1.5deg) skewY(2.2deg) scaleX(.94); }
-  58% { transform: translateZ(0) rotate(-.7deg) skewY(-1deg) scaleX(.98); }
-  79% { transform: translateZ(0) rotate(.5deg) skewY(1deg) scaleX(.96); }
+  0%, 100% { transform: translateX(0) rotate(-1deg) skewX(0deg) scaleX(.99); }
+  18% { transform: translateX(1px) rotate(.15deg) skewX(-.8deg) scaleX(1); }
+  38% { transform: translateX(2px) rotate(1.2deg) skewX(-2deg) scaleX(.96); }
+  56% { transform: translateX(1px) rotate(-.45deg) skewX(-1deg) scaleX(.985); }
+  76% { transform: translateX(0) rotate(.55deg) skewX(.7deg) scaleX(.975); }
 }
-/* Historical 3D pose (rotateY(17deg)) intentionally removed: it rasterized the SVG at low resolution. */
+/* Historical 3D pose (rotateY(17deg)) remains documented but is intentionally not used. */
 @keyframes flagFolds {
-  0%, 100% { transform: translateX(0); }
-  50% { transform: translateX(10px); }
+  0%, 100% { opacity: .58; }
+  38% { opacity: .88; }
+  62% { opacity: .68; }
 }
 @keyframes flagGleam {
-  0%, 100% { opacity: .46; }
-  40% { opacity: .82; }
-  70% { opacity: .56; }
+  0%, 100% { opacity: .42; }
+  40% { opacity: .78; }
+  70% { opacity: .52; }
 }
-@keyframes flagWaveShape {
-  0%, 100% { d: path("M12 14 C35 7 49 22 72 16 C95 10 112 2 148 12 L148 100 C116 91 95 106 72 99 C48 92 35 104 12 96 Z"); }
-  50% { d: path("M12 17 C35 11 49 25 72 20 C95 15 112 6 148 16 L148 103 C116 94 95 109 72 102 C48 95 35 107 12 99 Z"); }
-}
-@keyframes flagWaveYellow {
-  0%, 100% { d: path("M12 56 C35 49 49 64 72 58 C95 52 112 44 148 54 L148 100 C116 91 95 106 72 99 C48 92 35 104 12 96 Z"); }
-  50% { d: path("M12 59 C35 53 49 67 72 62 C95 57 112 48 148 58 L148 103 C116 94 95 109 72 102 C48 95 35 107 12 99 Z"); }
-}
-@keyframes flagWaveGleam {
-  0%, 100% { d: path("M13 16 C35 9 49 24 72 18 C95 12 112 4 147 14"); }
-  50% { d: path("M13 19 C35 13 49 27 72 22 C95 17 112 8 147 18"); }
-}
+/* Kept as named hooks for older themes; the contours now stay coherent and do not morph independently. */
+@keyframes flagWaveShape { from, to { d: path("M12 14 C35 7 49 22 72 16 C95 10 112 2 148 12 L148 100 C116 91 95 106 72 99 C48 92 35 104 12 96 Z"); } }
+@keyframes flagWaveYellow { from, to { d: path("M12 56 C35 49 49 64 72 58 C95 52 112 44 148 54 L148 100 C116 91 95 106 72 99 C48 92 35 104 12 96 Z"); } }
+@keyframes flagWaveGleam { from, to { d: path("M13 16 C35 9 49 24 72 18 C95 12 112 4 147 14"); } }
 
 .brand-title {
   position: relative;
