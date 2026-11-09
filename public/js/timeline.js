@@ -108,12 +108,27 @@ export function renderOutages(container, countNode, periods = [], nowMinutes = 0
     const bolt = document.createElement("span");
     bolt.className = "outage-bolt";
     bolt.append(svgIcon("i-bolt"));
-    const time = document.createElement("time");
-    time.textContent = `${minutesToTime(period.start)} – ${minutesToTime(period.end)}`;
-    const duration = document.createElement("span");
-    duration.className = "outage-duration";
-    duration.append(svgIcon("i-clock"), document.createTextNode(formatDuration(period.start, period.end)));
-    item.append(bolt, time, duration);
+
+    const range = document.createElement("div");
+    range.className = "outage-range";
+
+    const startTime = document.createElement("time");
+    startTime.className = "outage-time outage-time-start";
+    startTime.textContent = minutesToTime(period.start);
+
+    const divider = document.createElement("span");
+    divider.className = "outage-divider";
+    const dividerLabel = document.createElement("span");
+    dividerLabel.className = "outage-divider-label";
+    dividerLabel.textContent = `без світла - ${formatDuration(period.start, period.end)}`;
+    divider.append(dividerLabel);
+
+    const endTime = document.createElement("time");
+    endTime.className = "outage-time outage-time-end";
+    endTime.textContent = minutesToTime(period.end);
+
+    range.append(startTime, divider, endTime);
+    item.append(bolt, range);
     container.append(item);
   }
 }

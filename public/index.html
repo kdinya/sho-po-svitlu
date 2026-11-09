@@ -45,7 +45,6 @@
           <span class="brand-mark"><svg class="icon"><use href="#i-bolt" /></svg></span>
           <span class="brand-copy">
             <strong class="brand-title">ШоПо<span>Світлу</span></strong>
-            <span class="brand-subtitle" id="homeSourceName">Світло Маловисківського району</span>
           </span>
         </a>
         <div class="queue-picker" id="queuePicker">
@@ -80,6 +79,9 @@
             </div>
           </aside>
           <div class="status-wrap">
+            <div class="channel-headline">
+              <span class="brand-subtitle" id="homeSourceName">Світло Маловисківського району</span>
+            </div>
             <div class="mascot" id="mascot" aria-hidden="true">
               <img class="mascot-img mascot-on" src="/images/mascot-lightbulb.webp" alt="" width="616" height="708" fetchpriority="high" />
               <img class="mascot-img mascot-off" src="/images/mascot-lightbulb-off.webp" alt="" width="616" height="708" />
@@ -126,9 +128,8 @@
           </section>
 
           <section class="card outages-card" aria-labelledby="homeOutagesHeading">
-            <h2 id="homeOutagesHeading" class="card-title"><span class="title-ring"><svg class="icon"><use href="#i-clock" /></svg></span>Найближчі відключення</h2>
+            <h2 id="homeOutagesHeading" class="card-title"><span class="title-ring"><svg class="icon"><use href="#i-bolt" /></svg></span>Коли не буде світла <span class="count-chip" id="homeOutageCount">—</span></h2>
             <div class="outage-list" id="homeOutageList"></div>
-            <span id="homeOutageCount" hidden></span>
           </section>
 
           <p class="safety-note">Графік є планом і може відрізнятися від фактичного електропостачання.</p>
@@ -164,8 +165,8 @@
             <p class="timeline-note" id="timelineNote">Помаранчеве — планові відключення для обраної черги.</p>
           </section>
 
-          <section class="card outages-card">
-            <h2 class="card-title"><span class="title-ring"><svg class="icon"><use href="#i-bolt" /></svg></span>Коли не буде світла <span class="count-chip" id="outageCount">—</span></h2>
+          <section class="card outages-card" aria-labelledby="scheduleOutagesHeading">
+            <h2 id="scheduleOutagesHeading" class="card-title"><span class="title-ring"><svg class="icon"><use href="#i-bolt" /></svg></span>Коли не буде світла <span class="count-chip" id="outageCount">—</span></h2>
             <div class="outage-list" id="outageList"></div>
           </section>
         </section>

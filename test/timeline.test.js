@@ -183,4 +183,14 @@ test("renderOutages: коректно формує список відключе
   assert.equal(container.children[1].classList.has("is-current"), true);
   assert.equal(container.children[2].classList.has("is-past"), false);
   assert.equal(container.children[2].classList.has("is-current"), false);
+
+  const firstItem = container.children[0];
+  const range = firstItem.children.find((c) => c.className === "outage-range");
+  assert.ok(range, "повинен містити .outage-range");
+  const startTime = range.children[0];
+  const divider = range.children[1];
+  const endTime = range.children[2];
+  assert.equal(startTime.textContent, "02:00");
+  assert.equal(endTime.textContent, "04:00");
+  assert.equal(divider.children[0].textContent, "без світла - 2 год");
 });
