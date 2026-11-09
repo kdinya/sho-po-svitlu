@@ -192,3 +192,16 @@ test("опис у довідці пояснює вимоги до каналу �
   assert.match(html, /перевіряє останні п’ять і знаходить графік/);
   assert.match(html, /Зображення графіків без текстового розкладу автоматично не розпізнаються/);
 });
+
+
+test("кнопка підтримки доступна на всіх екранах і безпечно відкриває банку в новій вкладці", () => {
+  const link = html.match(/<a class="support-link"[^>]*>[\s\S]*?<\/a>/)?.[0];
+  assert.ok(link, "має бути постійна кнопка підтримки поза окремими екранами");
+  assert.match(link, /href="https:\/\/send\.monobank\.ua\/jar\/e9Z2mHngN"/);
+  assert.match(link, /target="_blank"/);
+  assert.match(link, /rel="noopener noreferrer"/);
+  assert.match(link, /aria-label="[^"]+"/);
+  assert.match(link, />\s*<span>Підтримати<\/span>/);
+  assert.match(css, /\.support-link \{[\s\S]*?position:\s*fixed;[\s\S]*?right:\s*max\([\s\S]*?bottom:\s*calc\(var\(--nav-h\) \+ 14px \+ env\(safe-area-inset-bottom\)\)/);
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
+});
