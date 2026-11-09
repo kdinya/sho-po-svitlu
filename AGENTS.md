@@ -14,6 +14,7 @@
 2. Make the smallest focused change that meets the request. Preserve unrelated work, configuration, and history. Do not force-push or rewrite shared history.
 3. For a small isolated change, work directly on the current default branch after confirming it has not moved. For substantial work, use a dedicated branch and save meaningful checkpoints.
 4. Run the relevant tests before reporting completion. Report any unverified behavior or unrelated defect you discover.
+5. When a task involves creating a branch and opening a pull request, once all changes are implemented and all automated tests and syntax checks pass, merge the PR into `main` directly without waiting for an additional confirmation request. Delete the temporary feature branch after merging.
 
 ## 3. Product and architecture invariants
 
