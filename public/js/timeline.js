@@ -99,7 +99,20 @@ export function renderOutages(container, countNode, periods = [], nowMinutes = 0
     container.append(empty);
     return;
   }
-  for (const period of visible) {
+  visible.forEach((period, index) => {
+    if (index > 0) {
+      const prev = visible[index - 1];
+      const divider = document.createElement("div");
+      divider.className = "outage-divider";
+      if (highlightPast && prev.end <= nowMinutes) divider.classList.add("is-past");
+      if (highlightPast && nowMinutes >= prev.start && nowMinutes < prev.end) divider.classList.add("is-current");
+      const dividerLabel = document.createElement("span");
+      dividerLabel.className = "outage-divider-label";
+      dividerLabel.textContent = `без світла - ${formatDuration(prev.start, prev.end)}`;
+      divider.append(dividerLabel);
+      container.append(divider);
+    }
+
     const item = document.createElement("div");
     item.className = "outage-item";
     const isCurrent = highlightPast && nowMinutes >= period.start && nowMinutes < period.end;
@@ -108,27 +121,12 @@ export function renderOutages(container, countNode, periods = [], nowMinutes = 0
     const bolt = document.createElement("span");
     bolt.className = "outage-bolt";
     bolt.append(svgIcon("i-bolt"));
-
-    const range = document.createElement("div");
-    range.className = "outage-range";
-
-    const startTime = document.createElement("time");
-    startTime.className = "outage-time outage-time-start";
-    startTime.textContent = minutesToTime(period.start);
-
-    const divider = document.createElement("span");
-    divider.className = "outage-divider";
-    const dividerLabel = document.createElement("span");
-    dividerLabel.className = "outage-divider-label";
-    dividerLabel.textContent = `без світла - ${formatDuration(period.start, period.end)}`;
-    divider.append(dividerLabel);
-
-    const endTime = document.createElement("time");
-    endTime.className = "outage-time outage-time-end";
-    endTime.textContent = minutesToTime(period.end);
-
-    range.append(startTime, divider, endTime);
-    item.append(bolt, range);
+    const time = document.createElement("time");
+    time.textContent = `${minutesToTime(period.start)} – ${minutesToTime(period.end)}`;
+    const duration = document.createElement("span");
+    duration.className = "outage-duration";
+    duration.append(svgIcon("i-clock"), document.createTextNode(formatDuration(period.start, period.end)));
+    item.append(bolt, time, duration);
     container.append(item);
-  }
+  });
 }
