@@ -1,4 +1,4 @@
-import { DEFAULT_CHANNEL, DEFAULT_WORKER_URL, UKRAINE_REGIONS, fetchSchedule, fetchUsersCount, normalizeChannelInput, pingUsers, sendChannelRequest } from "./api.js";
+import { DEFAULT_CHANNEL, DEFAULT_WORKER_URL, UKRAINE_REGIONS, fetchCompletedSetupsCount, fetchSchedule, normalizeChannelInput, normalizeSetupNickname, registerCompletedSetup, sendChannelRequest } from "./api.js";
 import { formatDate, formatHours, getLocalClock, getScheduleState, renderOutages, renderTimeline, totalMinutes } from "./timeline.js";
 
 const STORAGE_KEY = "sho-po-svitlu.settings.v1";
@@ -6,7 +6,8 @@ const DATA_KEY = "sho-po-svitlu.last-data.v1";
 const CHANNELS_KEY = "sho-po-svitlu.channels.v1";
 const ONBOARD_KEY = "sho-po-svitlu.onboarded.v1";
 const CLIENT_ID_KEY = "sho-po-svitlu.client-id.v1";
-const USERS_KEY = "sho-po-svitlu.users-count.v1";
+const USERS_KEY = "sho-po-svitlu.completed-settings-count.v1";
+const PROFILE_KEY = "sho-po-svitlu.profile.v1";
 const CLIENT_ID_COOKIE = "sps_cid";
 const CLIENT_ID_PATTERN = /^[A-Za-z0-9_-]{16,64}$/;
 
@@ -54,13 +55,18 @@ const els = {
   onboardDialog: $("onboardDialog"),
   onboardStepChannel: $("onboardStepChannel"),
   onboardStepQueue: $("onboardStepQueue"),
+  onboardStepNickname: $("onboardStepNickname"),
   onboardUseDefault: $("onboardUseDefault"),
   onboardUseCustom: $("onboardUseCustom"),
   onboardChannelInput: $("onboardChannelInput"),
   onboardError: $("onboardError"),
   onboardQueueGrid: $("onboardQueueGrid"),
   onboardDone: $("onboardDone"),
+  onboardContinueNickname: $("onboardContinueNickname"),
+  onboardNickname: $("onboardNickname"),
+  onboardNicknameError: $("onboardNicknameError"),
   onboardBack: $("onboardBack"),
+  onboardBackQueue: $("onboardBackQueue"),
   countdown: $("countdown"),
   refreshButton: $("refreshButton"),
   updateIcon: $("updateIcon"),
@@ -948,7 +954,7 @@ async function submitChannelRequest() {
 // Перший запуск: вибір каналу та черги
 let onboardChannel = null;
 let onboardQueue = settings.queue;
-let onboardCompleted = false;
+let onboardMode = "setup";
 
 function needsOnboarding() {
   try {
@@ -967,6 +973,7 @@ function markOnboarded() {
 function showOnboardStep(step) {
   els.onboardStepChannel.hidden = step !== "channel";
   els.onboardStepQueue.hidden = step !== "queue";
+  els.onboardStepNickname.hidden = step !== "nickname";
 }
 
 function renderOnboardQueues() {
@@ -991,12 +998,21 @@ function renderOnboardQueues() {
   );
 }
 
-function openOnboarding() {
-  onboardChannel = null;
+function openOnboarding({ nicknameOnly = false } = {}) {
+  onboardMode = nicknameOnly ? "nickname" : "setup";
+  onboardChannel = nicknameOnly ? channels.find((channel) => normalizeChannelInput(channel.url).url === normalizeChannelInput(settings.channel).url) || {
+    name: normalizeChannelInput(settings.channel).username,
+    url: normalizeChannelInput(settings.channel).url,
+    username: normalizeChannelInput(settings.channel).username,
+    isDefault: false,
+  } : null;
   onboardQueue = settings.queue;
   els.onboardError.hidden = true;
+  els.onboardNicknameError.hidden = true;
   els.onboardChannelInput.value = "";
-  showOnboardStep("channel");
+  els.onboardNickname.value = "";
+  els.onboardBackQueue.hidden = nicknameOnly;
+  showOnboardStep(nicknameOnly ? "nickname" : "channel");
   els.onboardDialog.showModal();
 }
 
@@ -1006,24 +1022,72 @@ function pickOnboardChannel(channel) {
   showOnboardStep("queue");
 }
 
-function finishOnboarding() {
-  if (!onboardChannel) return;
-  const changed = normalizeChannelInput(onboardChannel.url).url !== normalizeChannelInput(settings.channel).url;
-  if (!channels.some((ch) => ch.username.toLowerCase() === onboardChannel.username.toLowerCase())) {
-    channels.push(onboardChannel);
-    saveChannels();
+function saveProfile(profile) {
+  try { localStorage.setItem(PROFILE_KEY, JSON.stringify(profile)); } catch {}
+}
+
+function readStoredProfile() {
+  try {
+    const profile = JSON.parse(localStorage.getItem(PROFILE_KEY) || "null");
+    if (!profile || typeof profile.nickname !== "string") return null;
+    return { nickname: profile.nickname, registered: profile.registered === true };
+  } catch {
+    return null;
   }
-  settings.channel = normalizeChannelInput(onboardChannel.url).url;
-  settings.queue = onboardQueue;
-  saveSettings();
-  markOnboarded();
-  onboardCompleted = true;
-  els.onboardDialog.close();
-  if (changed) data = null;
-  initQueueOptions();
-  renderChannelsList();
-  renderView();
-  if (settings.workerUrl) refresh({ manual: true, force: true });
+}
+
+function continueOnboardingToNickname() {
+  if (!onboardChannel) return;
+  els.onboardNicknameError.hidden = true;
+  showOnboardStep("nickname");
+  els.onboardNickname.focus();
+}
+
+async function finishOnboarding() {
+  if (!onboardChannel) return;
+  let nickname;
+  try {
+    nickname = normalizeSetupNickname(els.onboardNickname.value);
+    els.onboardNicknameError.hidden = true;
+  } catch (error) {
+    els.onboardNicknameError.textContent = error.message;
+    els.onboardNicknameError.hidden = false;
+    els.onboardNickname.focus();
+    return;
+  }
+
+  const buttonText = els.onboardDone.textContent;
+  els.onboardDone.disabled = true;
+  els.onboardDone.textContent = "Зберігаємо…";
+  try {
+    if (onboardMode === "setup") {
+      const changed = normalizeChannelInput(onboardChannel.url).url !== normalizeChannelInput(settings.channel).url;
+      if (!channels.some((ch) => ch.username.toLowerCase() === onboardChannel.username.toLowerCase())) {
+        channels.push(onboardChannel);
+        saveChannels();
+      }
+      settings.channel = normalizeChannelInput(onboardChannel.url).url;
+      settings.queue = onboardQueue;
+      saveSettings();
+      if (changed) data = null;
+    }
+    saveProfile({ nickname, registered: false });
+    markOnboarded();
+    els.onboardDialog.close();
+    initQueueOptions();
+    renderChannelsList();
+    renderView();
+    if (settings.workerUrl) refresh({ manual: true, force: true });
+    const synced = await syncUsersCount({ force: true });
+    showToast(synced.excluded
+      ? "Технічне налаштування збережено, до лічильника його не додано."
+      : synced.ok
+        ? "Налаштування збережено."
+        : "Налаштування збережено. До лічильника додамо після з’єднання з сервером.");
+  } finally {
+    els.onboardDone.disabled = false;
+    els.onboardDone.textContent = buttonText;
+  }
 }
 
 els.onboardUseDefault.addEventListener("click", () => pickOnboardChannel(DEFAULT_CHANNELS[0]));
@@ -1043,10 +1107,10 @@ els.onboardChannelInput.addEventListener("keydown", (event) => {
   if (event.key === "Enter") els.onboardUseCustom.click();
 });
 els.onboardBack.addEventListener("click", () => showOnboardStep("channel"));
+els.onboardContinueNickname.addEventListener("click", continueOnboardingToNickname);
+els.onboardBackQueue.addEventListener("click", () => showOnboardStep("queue"));
 els.onboardDone.addEventListener("click", finishOnboarding);
-els.onboardDialog.addEventListener("close", () => {
-  if (!onboardCompleted) markOnboarded();
-});
+els.onboardDialog.addEventListener("cancel", (event) => event.preventDefault());
 
 // PWA Install
 function isAppInstalled() {
@@ -1217,27 +1281,51 @@ function renderUsersCount(count) {
 }
 
 let usersSyncedAt = 0;
-let usersSyncing = false;
+let usersSyncPromise = null;
 
-async function syncUsersCount() {
-  if (!settings.workerUrl || usersSyncing || Date.now() - usersSyncedAt < 60_000) return;
-  usersSyncing = true;
+async function syncUsersCount({ force = false } = {}) {
+  if (!settings.workerUrl) return { ok: false, excluded: false };
+  if (usersSyncPromise) {
+    return force ? usersSyncPromise.then(() => syncUsersCount({ force: true })) : usersSyncPromise;
+  }
+  if (!force && Date.now() - usersSyncedAt < 60_000) return { ok: true, excluded: false };
+
+  usersSyncPromise = (async () => {
+    try {
+      const profile = readStoredProfile();
+      let count;
+      if (profile && !profile.registered) {
+        const result = await registerCompletedSetup({
+          workerUrl: settings.workerUrl,
+          clientId: await getClientId(),
+          nickname: profile.nickname,
+        });
+        if (!result) return { ok: false, excluded: false };
+        saveProfile({ ...profile, registered: true });
+        count = result.users;
+        if (result.excluded) {
+          usersSyncedAt = Date.now();
+          try { localStorage.setItem(USERS_KEY, JSON.stringify({ count })); } catch {}
+          renderUsersCount(count);
+          return { ok: true, excluded: true };
+        }
+      } else {
+        count = await fetchCompletedSetupsCount({ workerUrl: settings.workerUrl });
+      }
+      usersSyncedAt = Date.now();
+      if (count === null) return { ok: false, excluded: false };
+      try { localStorage.setItem(USERS_KEY, JSON.stringify({ count })); } catch {}
+      renderUsersCount(count);
+      return { ok: true, excluded: false };
+    } catch {
+      /* Якщо Worker недоступний, завершення буде повторно надіслано під час наступного синхронізування. */
+      return { ok: false, excluded: false };
+    }
+  })();
   try {
-    const cache = readUsersCache();
-    const today = localDateKey();
-    // Раз на добу реєструємо пристрій, в інші рази лише читаємо число.
-    const pinged = cache.pingedOn === today;
-    const count = pinged
-      ? await fetchUsersCount({ workerUrl: settings.workerUrl })
-      : await pingUsers({ workerUrl: settings.workerUrl, clientId: await getClientId() });
-    usersSyncedAt = Date.now();
-    if (count === null) return;
-    try { localStorage.setItem(USERS_KEY, JSON.stringify({ count, pingedOn: pinged ? cache.pingedOn : today })); } catch {}
-    renderUsersCount(count);
-  } catch {
-    /* Лічильник не критичний: без мережі показуємо останнє збережене число. */
+    return await usersSyncPromise;
   } finally {
-    usersSyncing = false;
+    usersSyncPromise = null;
   }
 }
 
@@ -1309,7 +1397,14 @@ document.addEventListener("visibilitychange", () => {
 });
 
 window.addEventListener("online", () => {
-  if (settings.workerUrl) refresh();
+  if (settings.workerUrl) {
+    refresh();
+    syncUsersCount({ force: true });
+  }
+});
+
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden && settings.workerUrl) syncUsersCount();
 });
 
 // Initialize
@@ -1343,3 +1438,4 @@ if (els.homeRegionName?.parentElement && "ResizeObserver" in window) {
 }
 document.fonts?.ready.then(fitRegionName);
 if (needsOnboarding()) openOnboarding();
+else if (!readStoredProfile()?.nickname) openOnboarding({ nicknameOnly: true });

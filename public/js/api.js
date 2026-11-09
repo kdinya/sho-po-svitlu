@@ -123,17 +123,33 @@ export async function sendChannelRequest({ workerUrl, region, channelUrl, sender
   }
 }
 
-async function requestUsersCount(endpoint, options = {}) {
+async function requestUsersData(endpoint, options = {}) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 6000);
   try {
     const response = await fetch(endpoint, { mode: "cors", cache: "no-store", ...options, signal: controller.signal });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const data = await response.json();
-    return Number.isFinite(data?.users) && data.users >= 0 ? data.users : null;
+    let data;
+    try { data = await response.json(); } catch { throw new Error("Worker повернув некоректну відповідь."); }
+    if (!response.ok) throw new Error(data?.message || `HTTP ${response.status}`);
+    return data;
   } finally {
     clearTimeout(timeout);
   }
+}
+
+async function requestUsersCount(endpoint, options = {}) {
+  const data = await requestUsersData(endpoint, options);
+  return Number.isFinite(data?.users) && data.users >= 0 ? data.users : null;
+}
+
+export function normalizeSetupNickname(input) {
+  const nickname = String(input ?? "").normalize("NFKC").trim().replace(/\s+/gu, " ");
+  if (!nickname) throw new Error("Введіть свій нік.");
+  const length = [...nickname].length;
+  if (length < 2 || length > 24 || !/^[\p{L}\p{M}\p{N}_ -]+$/u.test(nickname)) {
+    throw new Error("Нік має містити 2–24 символи: літери, цифри, пробіли, _ або -.");
+  }
+  return nickname;
 }
 
 // Реєструє пристрій (анонімний випадковий id) і повертає кількість унікальних користувачів.
@@ -152,4 +168,26 @@ export function fetchUsersCount({ workerUrl } = {}) {
   const base = normalizeWorkerUrl(workerUrl);
   if (!base) return Promise.resolve(null);
   return requestUsersCount(`${base}/api/stats`, { method: "GET", headers: { Accept: "application/json" } });
+}
+
+// Реєструє завершення налаштувань за анонімним ID; нік використовується лише для перевірки службового імені.
+export async function registerCompletedSetup({ workerUrl, clientId, nickname } = {}) {
+  const base = normalizeWorkerUrl(workerUrl);
+  if (!base) return null;
+  const normalizedNickname = normalizeSetupNickname(nickname);
+  const data = await requestUsersData(`${base}/api/complete-setup`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    body: JSON.stringify({ id: clientId, nickname: normalizedNickname }),
+  });
+  return Number.isFinite(data?.users) && data.users >= 0
+    ? { users: data.users, isNew: data.isNew === true, excluded: data.excluded === true }
+    : null;
+}
+
+// Читає окремий лічильник браузерів, що завершили налаштування.
+export function fetchCompletedSetupsCount({ workerUrl } = {}) {
+  const base = normalizeWorkerUrl(workerUrl);
+  if (!base) return Promise.resolve(null);
+  return requestUsersCount(`${base}/api/completed-settings`, { method: "GET", headers: { Accept: "application/json" } });
 }

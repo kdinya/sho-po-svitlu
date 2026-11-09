@@ -348,7 +348,7 @@
             </div>
             <p class="share-counter" id="shareCounter" aria-live="polite" hidden>
               <svg class="icon" aria-hidden="true"><use href="#i-users" /></svg>
-              <span>Нас вже <b id="usersCount">—</b></span>
+              <span>Налаштування завершили: <b id="usersCount">—</b></span>
             </p>
           </article>
 
@@ -545,8 +545,17 @@
           <h2 id="onboardQueueTitle">Яка у вас черга?</h2>
           <p class="welcome-lead">Її можна змінити будь-коли зверху екрана.</p>
           <div class="queue-grid" id="onboardQueueGrid" role="radiogroup" aria-label="Оберіть чергу"></div>
-          <button type="button" class="primary-btn" id="onboardDone">Готово</button>
+          <button type="button" class="primary-btn" id="onboardContinueNickname">Далі</button>
           <button type="button" class="link-btn center" id="onboardBack">← Назад до каналів</button>
+        </div>
+        <div class="welcome-step" id="onboardStepNickname" hidden>
+          <h2 id="onboardNicknameTitle">Знайомимось? Як до вас звертатися?</h2>
+          <p class="welcome-lead" id="onboardNicknameHelp">Введіть нік і збережіть налаштування. Нік зберігається у вашому браузері й не публікується. Для перевірки службового ніку він передається Worker, але не зберігається на сервері. Один браузер зараховується один раз.</p>
+          <p class="welcome-lead">Нік <strong>shoposvitlu_bot</strong> призначений для технічних перевірок і не враховується в лічильнику.</p>
+          <div class="input-wrap"><svg class="icon"><use href="#i-users" /></svg><input id="onboardNickname" type="text" maxlength="24" required autocomplete="nickname" autocapitalize="none" aria-label="Ваш нік" aria-describedby="onboardNicknameHelp" placeholder="Ваш нік" /></div>
+          <p class="form-error" id="onboardNicknameError" role="alert" hidden></p>
+          <button type="button" class="primary-btn" id="onboardDone">Зберегти</button>
+          <button type="button" class="link-btn center" id="onboardBackQueue">← Назад до черги</button>
         </div>
       </div>
     </dialog>

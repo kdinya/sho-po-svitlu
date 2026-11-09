@@ -136,11 +136,11 @@ test("поля вибору областей і типу запиту не мі�
   assert.doesNotMatch(html, /input-wrap\s+select-wrap[\s\S]{0,80}id=["']requestRegion["']/);
 });
 
-test("public/index.html: лічильник «Нас вже» стоїть у картці поділу під кнопками, а «і» — поруч зі словом «Налаштування»", () => {
+test("public/index.html: лічильник завершених налаштувань стоїть у картці поділу під кнопками, а «і» — поруч зі словом «Налаштування»", () => {
   const card = html.match(/<article class="card share-card" id="shareCard">([\s\S]*?)<\/article>/)?.[1];
   assert.ok(card, "картка shareCard має існувати");
   assert.ok(card.indexOf('id="shareCounter"') > card.indexOf('class="share-buttons"'), "лічильник має бути під кнопками");
-  assert.match(card, /Нас вже <b id="usersCount">/);
+  assert.match(card, /Налаштування завершили: <b id="usersCount">/);
   assert.match(html, /<div class="heading-title-row">\s*<h1>Налаштування<\/h1>\s*<button class="info-circle-btn" id="aboutAppBtn"/);
 });
 
@@ -209,4 +209,16 @@ test("кнопка підтримки доступна на всіх екран�
   assert.match(link, />\s*<span>Підтримати<\/span>/);
   assert.match(css, /\.support-link \{[\s\S]*?position:\s*fixed;[\s\S]*?right:\s*max\([\s\S]*?bottom:\s*calc\(var\(--nav-h\) \+ 14px \+ env\(safe-area-inset-bottom\)\)/);
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
+});
+
+
+test("налаштування обов’язково запитують нік, завершуються кнопкою Зберегти й показують виключений нік AI", () => {
+  assert.match(html, /id="onboardNickname"[^>]*required/);
+  assert.match(html, /id="onboardContinueNickname"/);
+  assert.match(html, /id="onboardDone">Зберегти<\/button>/);
+  assert.match(html, /shoposvitlu_bot/);
+  assert.match(appJs, /registerCompletedSetup\(/);
+  assert.match(appJs, /fetchCompletedSetupsCount\(/);
+  assert.match(appJs, /openOnboarding\(\{ nicknameOnly: true \}\)/);
+  assert.match(appJs, /sho-po-svitlu\.profile\.v1/);
 });

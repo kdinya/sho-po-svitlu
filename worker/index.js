@@ -6,6 +6,9 @@ const USER_ID_PATTERN = /^[A-Za-z0-9_-]{16,64}$/;
 const USER_KEY_PREFIX = "user:";
 const USERS_COUNT_KEY = "stats:users";
 const USERS_RECOUNT_MAX_PAGES = 100;
+const COMPLETED_COUNTER_NAME = "sho-po-svitlu-completed-settings";
+const RESERVED_SETUP_NICKNAME = "shoposvitlu_bot";
+const SETUP_NICKNAME_PATTERN = /^[\p{L}\p{M}\p{N}_ -]+$/u;
 const UKRAINE_REGIONS = new Set([
   "Кіровоградська область", "Вінницька область", "Волинська область", "Дніпропетровська область",
   "Донецька область", "Житомирська область", "Закарпатська область", "Запорізька область",
@@ -215,6 +218,108 @@ async function fetchChannel(username, env, { force = false } = {}) {
   return result;
 }
 
+export function normalizeSetupNickname(input) {
+  if (typeof input !== "string") throw new Error("Введіть свій нік.");
+  const nickname = input.normalize("NFKC").trim().replace(/\s+/gu, " ");
+  if (!nickname) throw new Error("Введіть свій нік.");
+  const length = [...nickname].length;
+  if (length < 2 || length > 24 || !SETUP_NICKNAME_PATTERN.test(nickname)) {
+    throw new Error("Нік має містити 2–24 символи: літери, цифри, пробіли, _ або -.");
+  }
+  return nickname;
+}
+
+async function callCompletedSetupCounter(env, path, { method = "GET", body } = {}) {
+  const binding = env.COMPLETED_SETUP_COUNTER;
+  if (!binding) return null;
+  const stub = binding.get(binding.idFromName(COMPLETED_COUNTER_NAME));
+  const response = await stub.fetch(new Request(`https://completed-counter.internal${path}`, {
+    method,
+    headers: body ? { "Content-Type": "application/json" } : undefined,
+    body: body ? JSON.stringify(body) : undefined,
+  }));
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || "Не вдалося оновити лічильник налаштувань.");
+  return data;
+}
+
+async function readCompletedSetupsCount(env) {
+  try {
+    const data = await callCompletedSetupCounter(env, "/stats");
+    return Number.isFinite(data?.users) && data.users >= 0 ? data.users : null;
+  } catch {
+    return null;
+  }
+}
+
+async function registerCompletedSetup(env, id, nickname) {
+  try {
+    const data = await callCompletedSetupCounter(env, "/register", {
+      method: "POST",
+      body: { id, nickname },
+    });
+    return {
+      count: Number.isFinite(data?.users) && data.users >= 0 ? data.users : null,
+      isNew: data?.isNew === true,
+      excluded: data?.excluded === true,
+    };
+  } catch {
+    // Не підтверджуємо успіх при тимчасовій помилці: клієнт має безпечно повторити запит.
+    return { count: null, isNew: false, excluded: false };
+  }
+}
+
+export class CompletedSetupCounter {
+  constructor(ctx) {
+    this.ctx = ctx;
+  }
+
+  async fetch(request) {
+    const url = new URL(request.url);
+    if (url.pathname === "/stats" && request.method === "GET") {
+      const count = Number(await this.ctx.storage.get("count") ?? 0);
+      return Response.json({ ok: true, users: Number.isFinite(count) && count >= 0 ? count : 0 });
+    }
+    if (url.pathname !== "/register" || request.method !== "POST") {
+      return Response.json({ error: "not_found", message: "Маршрут не знайдено." }, { status: 404 });
+    }
+
+    let body;
+    try { body = await request.json(); } catch {
+      return Response.json({ error: "invalid_json", message: "Некоректний JSON." }, { status: 400 });
+    }
+    const { id, nickname: rawNickname } = body || {};
+    if (typeof id !== "string" || !USER_ID_PATTERN.test(id)) {
+      return Response.json({ error: "invalid_id", message: "Некоректний ідентифікатор браузера." }, { status: 400 });
+    }
+    let nickname;
+    try { nickname = normalizeSetupNickname(rawNickname); } catch (error) {
+      return Response.json({ error: "invalid_nickname", message: error.message }, { status: 400 });
+    }
+
+    const result = await this.ctx.storage.transaction(async (transaction) => {
+      const count = Math.max(0, Number(await transaction.get("count") ?? 0));
+      const key = `user:${id}`;
+      const exists = await transaction.get(key) !== undefined;
+      if (nickname.toLowerCase() === RESERVED_SETUP_NICKNAME) {
+        if (exists) {
+          await transaction.delete(key);
+          const nextCount = Math.max(0, count - 1);
+          await transaction.put("count", nextCount);
+          return { users: nextCount, isNew: false, excluded: true };
+        }
+        return { users: count, isNew: false, excluded: true };
+      }
+      if (exists) return { users: count, isNew: false, excluded: false };
+      const nextCount = count + 1;
+      await transaction.put(key, new Date().toISOString());
+      await transaction.put("count", nextCount);
+      return { users: nextCount, isNew: true, excluded: false };
+    });
+    return Response.json({ ok: true, ...result });
+  }
+}
+
 async function readUsersCount(env) {
   if (!env.KV_BINDING) return null;
   try {
@@ -325,7 +430,7 @@ function cleanBotToken(raw) {
 
 export async function handleRequest(request, env = {}) {
   const url = new URL(request.url);
-  const isPostRoute = url.pathname === "/api/request-channel" || url.pathname === "/api/ping";
+  const isPostRoute = ["/api/request-channel", "/api/ping", "/api/complete-setup"].includes(url.pathname);
   const methods = isPostRoute ? "POST, OPTIONS" : "GET, OPTIONS";
   if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders(request, methods) });
 
@@ -345,6 +450,33 @@ export async function handleRequest(request, env = {}) {
   if (url.pathname === "/api/stats") {
     if (request.method !== "GET") return json({ error: "method_not_allowed", message: "Дозволені лише GET-запити." }, request, 405);
     return json({ ok: true, users: await readUsersCount(env) }, request);
+  }
+
+  if (url.pathname === "/api/completed-settings") {
+    if (request.method !== "GET") return json({ error: "method_not_allowed", message: "Дозволені лише GET-запити." }, request, 405);
+    return json({ ok: true, users: await readCompletedSetupsCount(env) }, request);
+  }
+
+  if (url.pathname === "/api/complete-setup") {
+    if (request.method !== "POST") return json({ error: "method_not_allowed", message: "Дозволені лише POST-запити." }, request, 405, "POST, OPTIONS");
+    let body;
+    try {
+      body = await request.json();
+    } catch {
+      return json({ error: "invalid_json", message: "Некоректний JSON у тілі запиту." }, request, 400, "POST, OPTIONS");
+    }
+    const id = body?.id;
+    if (typeof id !== "string" || !USER_ID_PATTERN.test(id)) {
+      return json({ error: "invalid_id", message: "Некоректний ідентифікатор браузера." }, request, 400, "POST, OPTIONS");
+    }
+    let nickname;
+    try {
+      nickname = normalizeSetupNickname(body?.nickname);
+    } catch (error) {
+      return json({ error: "invalid_nickname", message: error.message }, request, 400, "POST, OPTIONS");
+    }
+    const { count, isNew, excluded } = await registerCompletedSetup(env, id, nickname);
+    return json({ ok: true, users: count, isNew, excluded }, request, 200, "POST, OPTIONS");
   }
 
   if (url.pathname === "/api/ping") {
@@ -472,6 +604,8 @@ export default {
     const username = env.DEFAULT_CHANNEL || "SvitloMalovyskivskohoRaionu";
     context.waitUntil(fetchChannel(username, env, { force: true }));
     // Cron працює кожні 5 хв; точний перерахунок користувачів — лише раз на годину.
-    if (new Date(controller?.scheduledTime ?? Date.now()).getUTCMinutes() < 5) context.waitUntil(recountUsers(env));
+    if (new Date(controller?.scheduledTime ?? Date.now()).getUTCMinutes() < 5) {
+      context.waitUntil(recountUsers(env));
+    }
   },
 };
