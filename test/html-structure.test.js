@@ -136,11 +136,11 @@ test("поля вибору областей і типу запиту не мі�
   assert.doesNotMatch(html, /input-wrap\s+select-wrap[\s\S]{0,80}id=["']requestRegion["']/);
 });
 
-test("public/index.html: лічильник завершених налаштувань стоїть у картці поділу під кнопками, а «і» — поруч зі словом «Налаштування»", () => {
+test("public/index.html: лічильник користувачів стоїть у картці поділу під кнопками", () => {
   const card = html.match(/<article class="card share-card" id="shareCard">([\s\S]*?)<\/article>/)?.[1];
   assert.ok(card, "картка shareCard має існувати");
   assert.ok(card.indexOf('id="shareCounter"') > card.indexOf('class="share-buttons"'), "лічильник має бути під кнопками");
-  assert.match(card, /Налаштування завершили: <b id="usersCount">/);
+  assert.match(card, /Нас зараз: <b id="usersCount">/);
   assert.match(html, /<div class="heading-title-row">\s*<h1>Налаштування<\/h1>\s*<button class="info-circle-btn" id="aboutAppBtn"/);
 });
 
