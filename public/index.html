@@ -53,23 +53,20 @@
               <svg class="brand-flag-cloth" viewBox="0 0 34 24" aria-hidden="true" focusable="false">
                 <defs>
                   <clipPath id="ukraineFlagShape">
-                    <path d="M3 2.5c6-2 10 2 15 1.4 5-.6 8-3.1 13-1.5v17c-5-1.4-9 1.5-14 2.1-5 .6-8-2.9-14-1.2z" />
+                    <path class="brand-flag-shape" d="M3 2.5c6-2 10 2 15 1.4 5-.6 8-3.1 13-1.5v17c-5-1.4-9 1.5-14 2.1-5 .6-8-2.9-14-1.2z" />
                   </clipPath>
-                  <linearGradient id="ukraineFlagFolds" x1="0" y1="0" x2="1" y2="0">
-                    <stop offset="0" stop-color="#071b42" stop-opacity=".32" />
-                    <stop offset=".12" stop-color="#fff" stop-opacity=".18" />
-                    <stop offset=".27" stop-color="#071b42" stop-opacity=".24" />
-                    <stop offset=".43" stop-color="#fff" stop-opacity=".06" />
-                    <stop offset=".57" stop-color="#071b42" stop-opacity=".2" />
-                    <stop offset=".72" stop-color="#fff" stop-opacity=".16" />
-                    <stop offset=".86" stop-color="#071b42" stop-opacity=".25" />
-                    <stop offset="1" stop-color="#fff" stop-opacity=".1" />
+                  <linearGradient id="ukraineFlagFolds" gradientUnits="userSpaceOnUse" x1="3" y1="0" x2="26.33" y2="0" spreadMethod="repeat">
+                    <stop offset="0" stop-color="#fff" stop-opacity=".18" />
+                    <stop offset=".25" stop-color="#071b42" stop-opacity="0" />
+                    <stop offset=".5" stop-color="#071b42" stop-opacity=".34" />
+                    <stop offset=".75" stop-color="#071b42" stop-opacity="0" />
+                    <stop offset="1" stop-color="#fff" stop-opacity=".18" />
                   </linearGradient>
                 </defs>
                 <g clip-path="url(#ukraineFlagShape)">
-                  <path fill="#0057b8" d="M1 1h32v11H1z" />
-                  <path fill="#ffd700" d="M1 12h32v11H1z" />
-                  <rect class="brand-flag-folds" x="1" y="1" width="32" height="22" fill="url(#ukraineFlagFolds)" />
+                  <path fill="#0057b8" d="M1 1h32v22H1z" />
+                  <path class="brand-flag-yellow" fill="#ffd700" d="M1 12h32v11H1z" />
+                  <rect class="brand-flag-folds" x="-22" y="1" width="70" height="22" fill="url(#ukraineFlagFolds)" />
                 </g>
                 <path class="brand-flag-highlight" d="M3 3c6-2 10 2 15 1.4 5-.6 8-3.1 13-1.5" />
               </svg>
