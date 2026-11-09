@@ -605,7 +605,7 @@ function updateSource() {
   }
 }
 
-// Масштабує назву області у 1,5 раза й залишає місце максимум для двох рядків поруч із лампочкою.
+// Підбирає розмір назви області, щоб вона займала один рядок і не заходила на лампочку.
 function fitRegionName() {
   const el = els.homeRegionName;
   const box = el?.parentElement;
@@ -614,17 +614,13 @@ function fitRegionName() {
   const REFERENCE = 20;
   const MAX = 26;
   const MIN = 13;
-  const SCALE = 1.5;
-  const previousWhiteSpace = el.style.whiteSpace;
   el.style.fontSize = `${REFERENCE}px`;
-  el.style.whiteSpace = "nowrap";
   const range = document.createRange();
   range.selectNodeContents(el);
   const needed = range.getBoundingClientRect().width;
-  el.style.whiteSpace = previousWhiteSpace;
   if (!needed) return;
-  const originalSize = Math.max(MIN, Math.min(MAX, Math.floor(((REFERENCE * (available - 1)) / needed) * 10) / 10));
-  el.style.fontSize = `${originalSize * SCALE}px`;
+  const size = Math.floor(((REFERENCE * (available - 1)) / needed) * 10) / 10;
+  el.style.fontSize = `${Math.max(MIN, Math.min(MAX, size))}px`;
 }
 
 function setStatusTitle(before, accent = "", after = "") {

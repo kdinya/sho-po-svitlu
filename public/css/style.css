@@ -107,7 +107,7 @@ body[data-power="off"] .sky-lights { opacity: 0.05; animation: none; }
 .brand-copy { position: relative; display: flex; flex-direction: column; align-items: flex-start; min-width: 0; min-height: 68px; }
 .brand-flag {
   position: absolute;
-  top: 15px;
+  top: 0;
   right: 0;
   z-index: 1;
   display: block;
@@ -164,13 +164,11 @@ body[data-power="off"] .sky-lights { opacity: 0.05; animation: none; }
   gap: 2px;
 }
 .channel-headline .channel-region {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
+  display: block;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: normal;
-  font-size: clamp(22.5px, 6.9vw, 30px); /* у 1,5 раза більше; за потреби — два рядки */
+  white-space: nowrap;
+  font-size: clamp(15px, 4.6vw, 20px); /* розмір до збільшення; точний підбирає fitRegionName() */
   font-weight: 850;
   color: var(--text);
   letter-spacing: -0.02em;
@@ -269,7 +267,7 @@ body[data-power="off"] .sky-lights { opacity: 0.05; animation: none; }
 .status-wrap {
   --mascot-w: clamp(100px, 28vw, 118px);
   position: relative;
-  margin-top: 158px;
+  margin-top: 84px;
   filter: drop-shadow(0 0 16px var(--accent-glow)) drop-shadow(0 12px 22px rgba(0, 0, 0, 0.45));
   transition: filter 0.5s;
 }
@@ -366,7 +364,7 @@ body[data-power="off"] .sky-lights { opacity: 0.05; animation: none; }
 
 /* ---------- лампочка-талісман ---------- */
 .mascot {
-  position: absolute; z-index: 3; right: 2px; top: -146px;
+  position: absolute; z-index: 3; right: 2px; top: -84px;
   width: var(--mascot-w);
   aspect-ratio: 616 / 708;
   pointer-events: none;
@@ -839,8 +837,8 @@ dialog.sheet[open] .sheet-box { animation: slide 0.28s cubic-bezier(0.2, 0.9, 0.
   .channel-headline { bottom: calc(100% + 8px); }
   .channel-headline .brand-subtitle { line-height: 1.2; }
   .queue-trigger { padding: 8px 8px 8px 12px; font-size: 14.5px; gap: 5px; }
-  .mascot { top: -120px; right: 0; }
-  .status-wrap { --mascot-w: 94px; margin-top: 132px; }
+  .mascot { top: -70px; right: 0; }
+  .status-wrap { --mascot-w: 94px; margin-top: 74px; }
   .status-title { max-width: calc(100% - 92px); }
   .status-card { -webkit-mask: radial-gradient(circle 54px at calc(100% - 47px) -8px, transparent 53px, #000 54px); mask: radial-gradient(circle 54px at calc(100% - 47px) -8px, transparent 53px, #000 54px); }
 }

@@ -144,15 +144,20 @@ test("public/index.html: лічильник «Нас вже» стоїть у к
   assert.match(html, /<div class="heading-title-row">\s*<h1>Налаштування<\/h1>\s*<button class="info-circle-btn" id="aboutAppBtn"/);
 });
 
-test("public/css/style.css: назва області збільшена і може займати два рядки поруч із лампочкою", () => {
+test("назва області має попередній розмір в один рядок, а назва каналу лишається збільшеною", () => {
   const region = css.match(/\.channel-headline \.channel-region \{([^}]*)\}/)?.[1] ?? "";
-  assert.match(region, /white-space:\s*normal/);
-  assert.match(region, /-webkit-line-clamp:\s*2/);
-  assert.match(region, /font-size:\s*clamp\(22\.5px,\s*6\.9vw,\s*30px\)/);
+  assert.match(region, /white-space:\s*nowrap/);
+  assert.match(region, /font-size:\s*clamp\(15px,\s*4\.6vw,\s*20px\)/);
   assert.match(css, /\.channel-headline \{[^}]*width:\s*calc\(100% - var\(--mascot-w\) - 12px\)/);
-  assert.match(css, /width:\s*75px;\s*height:\s*54px;/);
-  assert.match(appJs, /const SCALE = 1\.5/);
   assert.match(css, /font-size:\s*clamp\(15\.75px,\s*4\.5vw,\s*18\.75px\)/);
+  assert.doesNotMatch(appJs, /const SCALE = 1\.5/);
+  assert.match(appJs, /el\.style\.fontSize = `\$\{Math\.max\(MIN, Math\.min\(MAX, size\)\)\}px`/);
+});
+
+test("лампочка прив'язана до попередньої позиції статусного блоку", () => {
+  assert.match(css, /\.status-wrap \{[^}]*margin-top:\s*84px/);
+  assert.match(css, /\.mascot \{[^}]*top:\s*-84px/);
+  assert.match(css, /@media \(max-width: 390px\) \{[\s\S]*?\.mascot \{ top:\s*-70px; right:\s*0; \}\s*\.status-wrap \{ --mascot-w:\s*94px; margin-top:\s*74px; \}/);
 });
 
 
@@ -162,8 +167,8 @@ test("бренд розміщує прапор праворуч під назв�
   assert.match(brand, /aria-label="Прапор України"/);
   assert.match(brand, /class="brand-flag-cloth"/);
   assert.match(css, /\.brand-copy \{[^}]*position:\s*relative/);
-  assert.match(css, /\.brand-flag \{[^}]*position:\s*absolute;[^}]*right:\s*0;[^}]*z-index:\s*1;[^}]*width:\s*75px;[^}]*height:\s*54px;/);
-  assert.match(css, /\.brand-title \{[^}]*position:\s*relative;[^}]*z-index:\s*2;/);
+  assert.match(css, /\.brand-flag \{[^}]*position:\s*absolute;[^}]*top:\s*0;[^}]*right:\s*0;[^}]*z-index:\s*1;[^}]*width:\s*75px;[^}]*height:\s*54px;/);
+  assert.match(css, /\.brand-title \{[^}]*position:\s*relative;[^}]*z-index:\s*2;[^}]*white-space:\s*nowrap;/);
   assert.match(css, /@keyframes flagRipple/);
 });
 
@@ -177,4 +182,11 @@ test("анімація очей керується станом живлення
   assert.match(css, /outageWake 10s/);
   assert.match(css, /outageSleep 10s/);
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
+});
+
+
+test("опис у довідці пояснює вимоги до каналу та розпізнавання графіків серед новин", () => {
+  assert.match(html, /бажано, щоб канал публікував лише графіки відключень/);
+  assert.match(html, /перевіряє останні п’ять і знаходить графік/);
+  assert.match(html, /Зображення графіків без текстового розкладу автоматично не розпізнаються/);
 });
