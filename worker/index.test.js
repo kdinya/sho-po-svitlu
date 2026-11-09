@@ -94,3 +94,43 @@ test("Worker використовує KV namespace через binding KV_BINDING
     globalThis.fetch = originalFetch;
   }
 });
+
+test("Worker повертає 405 для не-GET запитів", async () => {
+  const post = await handleRequest(new Request("https://worker.example/api/schedule", { method: "POST" }), {});
+  assert.equal(post.status, 405);
+  const data = await post.json();
+  assert.equal(data.error, "method_not_allowed");
+});
+
+test("Worker повертає 404 для невідомих маршрутів", async () => {
+  const notFound = await handleRequest(new Request("https://worker.example/api/unknown-endpoint"), {});
+  assert.equal(notFound.status, 404);
+  const data = await notFound.json();
+  assert.equal(data.error, "not_found");
+});
+
+test("Worker повертає 502, якщо Telegram повертає помилку сервера", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response("Internal Server Error", { status: 500 });
+  try {
+    const response = await handleRequest(new Request("https://worker.example/api/schedule?channel=test_channel"), {});
+    assert.equal(response.status, 502);
+    const data = await response.json();
+    assert.equal(data.error, "channel_unavailable");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("розбирає черги з різними видами тире, двокрапками та пробілами", () => {
+  const text = `Черга 1.1 - 00:00 - 02:00, 06:00 – 08:00\nчерги 2.2: 10:00 — 12:00, 18:00 − 20:00`;
+  const queues = parseQueues(text);
+  assert.deepEqual(Object.keys(queues), ["1.1", "2.2"]);
+  assert.deepEqual(queues["1.1"], [{ start: 0, end: 120 }, { start: 360, end: 480 }]);
+  assert.deepEqual(queues["2.2"], [{ start: 600, end: 720 }, { start: 1080, end: 1200 }]);
+});
+
+test("ігнорує повідомлення без графіків відключень", () => {
+  const plainText = "Увага! Завтра плануються аварійно-відновлювальні роботи на підстанції. Слідкуйте за оновленнями.";
+  assert.deepEqual(parseQueues(plainText), {});
+});

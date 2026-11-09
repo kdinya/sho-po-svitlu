@@ -5,7 +5,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test worker/*.test.js",
+    "test": "node --test worker/*.test.js test/*.test.js",
+    "test:worker": "node --test worker/*.test.js",
+    "test:client": "node --test test/*.test.js",
+    "check": "node --check public/js/api.js public/js/app.js public/js/timeline.js public/sw.js worker/index.js",
     "dev": "npx serve public",
     "deploy:worker": "cd worker && npx wrangler deploy"
   }
