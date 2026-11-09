@@ -21,7 +21,7 @@ const DEFAULT_CHANNELS = [
   },
 ];
 
-const DEFAULTS = { channel: DEFAULT_CHANNEL, workerUrl: DEFAULT_WORKER_URL, queue: "6.2", intervalMinutes: 5 };
+const DEFAULTS = { channel: DEFAULT_CHANNEL, workerUrl: DEFAULT_WORKER_URL, queue: "6.2", intervalMinutes: 30 };
 let QUEUES = [];
 
 const $ = (id) => document.getElementById(id);

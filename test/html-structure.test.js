@@ -77,7 +77,7 @@ test("частота перевірки розміщена в налаштува
   const channelDialog = html.slice(html.indexOf('id="settingsDialog"'), html.indexOf('id="onboardDialog"'));
   assert.match(settingsScreen, /id="frequencyTitle"/);
   assert.match(settingsScreen, /id="saveIntervalBtn"/);
-  assert.match(settingsScreen, /name="interval" value="5"/);
+  assert.match(settingsScreen, /name="interval" value="30" checked/);
   assert.doesNotMatch(channelDialog, /name="interval"/);
   assert.equal([...html.matchAll(/id="saveIntervalBtn"/g)].length, 1);
 });

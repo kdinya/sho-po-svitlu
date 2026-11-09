@@ -113,14 +113,16 @@ test("sanitizeShareUrl та buildTelegramShareLink: формують чисті 
   );
 });
 
-test("налаштування збереження: валідує допустимі інтервали автооновлення (5, 15, 30 хв)", () => {
+test("налаштування автооновлення: за замовчуванням 30 хв, допустимі 5, 15 і 30 хв", () => {
   const allowed = [5, 15, 30];
-  const sanitizeInterval = (val) => (allowed.includes(Number(val)) ? Number(val) : 5);
+  const defaultInterval = 30;
+  const sanitizeInterval = (val) => (allowed.includes(Number(val)) ? Number(val) : defaultInterval);
 
+  assert.equal(defaultInterval, 30);
   assert.equal(sanitizeInterval(5), 5);
   assert.equal(sanitizeInterval(15), 15);
   assert.equal(sanitizeInterval(30), 30);
-  assert.equal(sanitizeInterval(10), 5); // недозволений перетворюється на 5
-  assert.equal(sanitizeInterval("abc"), 5);
-  assert.equal(sanitizeInterval(-1), 5);
+  assert.equal(sanitizeInterval(10), 30);
+  assert.equal(sanitizeInterval("abc"), 30);
+  assert.equal(sanitizeInterval(-1), 30);
 });
