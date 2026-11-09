@@ -151,3 +151,24 @@ test("public/css/style.css: область займає один рядок і �
   assert.match(css, /\.channel-headline \{[^}]*width:\s*calc\(100% - var\(--mascot-w\) - 12px\)/);
   assert.match(appJs, /function fitRegionName\(/);
 });
+
+
+test("бренд має анімований український прапор під назвою додатка", () => {
+  const brand = html.match(/<a class="brand"[\s\S]*?<\/a>/)?.[0] ?? "";
+  assert.match(brand, /ШоПо<span>Світлу<\/span>/);
+  assert.match(brand, /aria-label="Прапор України"/);
+  assert.match(brand, /class="brand-flag-cloth"/);
+  assert.match(css, /@keyframes flagRipple/);
+});
+
+test("анімація очей керується станом живлення й враховує повагу до зменшення руху", () => {
+  const homeScreen = html.slice(html.indexOf('id="homeScreen"'), html.indexOf('id="scheduleScreen"'));
+  assert.match(homeScreen, /class="mascot-eyes mascot-eyes-on"/);
+  assert.match(homeScreen, /class="mascot-eyes mascot-eyes-off"/);
+  assert.match(css, /body\[data-power="on"\] \.mascot-eyes-on/);
+  assert.match(css, /body\[data-power="off"\] \.mascot-eyes-off/);
+  assert.match(css, /body\[data-loading\] \.mascot-eyes/);
+  assert.match(css, /outageWake 10s/);
+  assert.match(css, /outageSleep 10s/);
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
+});

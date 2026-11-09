@@ -48,6 +48,20 @@
           <span class="brand-mark"><svg class="icon"><use href="#i-bolt" /></svg></span>
           <span class="brand-copy">
             <strong class="brand-title">ШоПо<span>Світлу</span></strong>
+            <span class="brand-flag" role="img" aria-label="Прапор України">
+              <svg class="brand-flag-cloth" viewBox="0 0 34 24" aria-hidden="true" focusable="false">
+                <defs>
+                  <clipPath id="ukraineFlagShape">
+                    <path d="M3 2.5c6-2 10 2 15 1.4 5-.6 8-3.1 13-1.5v17c-5-1.4-9 1.5-14 2.1-5 .6-8-2.9-14-1.2z" />
+                  </clipPath>
+                </defs>
+                <g clip-path="url(#ukraineFlagShape)">
+                  <path fill="#0057b8" d="M1 1h32v11H1z" />
+                  <path fill="#ffd700" d="M1 12h32v11H1z" />
+                </g>
+                <path class="brand-flag-highlight" d="M3 3c6-2 10 2 15 1.4 5-.6 8-3.1 13-1.5" />
+              </svg>
+            </span>
           </span>
         </a>
         <div class="queue-picker" id="queuePicker">
@@ -89,6 +103,60 @@
             <div class="mascot" id="mascot" aria-hidden="true">
               <img class="mascot-img mascot-on" src="/images/mascot-lightbulb.webp" alt="" width="616" height="708" fetchpriority="high" />
               <img class="mascot-img mascot-off" src="/images/mascot-lightbulb-off.webp" alt="" width="616" height="708" />
+              <svg class="mascot-eyes mascot-eyes-on" viewBox="0 0 616 708" aria-hidden="true" focusable="false">
+                <defs>
+                  <linearGradient id="onLidLeft" x1="0" y1="0" x2="1" y2="1">
+                    <stop stop-color="#ffed67" />
+                    <stop offset=".55" stop-color="#ffd640" />
+                    <stop offset="1" stop-color="#f8a926" />
+                  </linearGradient>
+                  <linearGradient id="onLidRight" x1="0" y1="0" x2="1" y2="1">
+                    <stop stop-color="#fff18a" />
+                    <stop offset=".6" stop-color="#ffda49" />
+                    <stop offset="1" stop-color="#f6a12a" />
+                  </linearGradient>
+                </defs>
+                <g class="on-blink">
+                  <path d="M258 221c3-23 21-42 43-43 23-1 39 18 43 40-3 22-21 44-43 48-22-3-39-22-43-45z" fill="url(#onLidLeft)" />
+                  <path d="M415 250c2-21 16-38 33-42 18-3 31 13 34 34-2 20-17 40-34 44-18-3-31-17-33-36z" fill="url(#onLidRight)" />
+                  <path d="M266 221c18 15 48 17 70-1m87 29c17 13 38 14 53-1" fill="none" stroke="#9a5b12" stroke-linecap="round" stroke-width="5" opacity=".85" />
+                  <path d="M270 220c18 11 44 13 62 0m95 27c13 10 30 10 43 0" fill="none" stroke="#fff0a1" stroke-linecap="round" stroke-width="2" opacity=".9" />
+                </g>
+              </svg>
+              <svg class="mascot-eyes mascot-eyes-off" viewBox="0 0 616 708" aria-hidden="true" focusable="false">
+                <defs>
+                  <linearGradient id="offLidLeft" x1="0" y1="0" x2="0" y2="1">
+                    <stop stop-color="#8d9aba" />
+                    <stop offset="1" stop-color="#7885a5" />
+                  </linearGradient>
+                  <linearGradient id="offLidRight" x1="0" y1="0" x2="0" y2="1">
+                    <stop stop-color="#94a0bd" />
+                    <stop offset="1" stop-color="#7d89a8" />
+                  </linearGradient>
+                </defs>
+                <g class="off-eye-patches">
+                  <path d="M228 221c4-19 27-28 57-28 31 0 55 10 62 30-5 22-30 35-59 34-31-1-55-14-60-36z" fill="url(#offLidLeft)" />
+                  <path d="M404 251c5-20 28-29 58-28 31 1 53 12 59 32-6 21-30 34-58 32-30-1-53-15-59-36z" fill="url(#offLidRight)" />
+                  <path d="M238 220c24-12 65-13 99 2m77 27c25-13 65-13 98 3" fill="none" stroke="#a7b1cc" stroke-linecap="round" stroke-width="3" opacity=".42" />
+                </g>
+                <g class="off-eyes-open">
+                  <path d="M242 202c22-13 54-18 81-2m99 23c23-14 52-17 75-1" fill="none" stroke="#626d89" stroke-linecap="round" stroke-width="6" opacity=".9" />
+                  <ellipse cx="287" cy="224" rx="43" ry="21" fill="#c5cde0" stroke="#636e8d" stroke-width="3" transform="rotate(2 287 224)" />
+                  <ellipse cx="462" cy="255" rx="42" ry="21" fill="#c5cde0" stroke="#636e8d" stroke-width="3" transform="rotate(3 462 255)" />
+                  <g class="off-pupil off-pupil-left">
+                    <ellipse cx="287" cy="225" rx="12" ry="16" fill="#22263d" />
+                    <circle cx="283" cy="219" r="4" fill="#f3f5ff" opacity=".92" />
+                  </g>
+                  <g class="off-pupil off-pupil-right">
+                    <ellipse cx="462" cy="256" rx="12" ry="16" fill="#22263d" />
+                    <circle cx="458" cy="250" r="4" fill="#f3f5ff" opacity=".92" />
+                  </g>
+                </g>
+                <g class="off-eyes-shut">
+                  <path d="M241 225c22-13 61-7 89 3m85 28c24-14 63-6 91 5" fill="none" stroke="#3c435f" stroke-linecap="round" stroke-width="8" />
+                  <path d="M247 223c22-9 57-4 78 4m96 26c22-10 57-3 79 5" fill="none" stroke="#aeb8d0" stroke-linecap="round" stroke-width="2.5" opacity=".9" />
+                </g>
+              </svg>
               <span class="zzz"><i>z</i><i>z</i><i>z</i></span>
             </div>
             <article class="status-card" id="statusCard" data-state="unknown" aria-live="polite">
