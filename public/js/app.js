@@ -334,6 +334,9 @@ function initCustomSelect(selectEl, { getOptionMeta } = {}) {
   }
 
   const parent = selectEl.parentElement;
+  if (parent && (parent.classList.contains("select-wrap") || parent.classList.contains("input-wrap"))) {
+    parent.classList.remove("input-wrap", "select-wrap");
+  }
   const wrap = document.createElement("div");
   wrap.className = "custom-select";
   parent.insertBefore(wrap, selectEl);

@@ -129,3 +129,9 @@ test("стилі містять правила для кастомних спи�
   assert.match(css, /\.custom-select-menu/, "має містити меню випадаючого списку");
   assert.match(css, /\.custom-select-option/, "має містити стилі пунктів списку");
 });
+
+test("поля вибору областей і типу запиту не містять конфліктних обгорток input-wrap select-wrap", () => {
+  assert.doesNotMatch(html, /input-wrap\s+select-wrap[\s\S]{0,80}id=["']settingsRegionSelect["']/);
+  assert.doesNotMatch(html, /input-wrap\s+select-wrap[\s\S]{0,80}id=["']requestType["']/);
+  assert.doesNotMatch(html, /input-wrap\s+select-wrap[\s\S]{0,80}id=["']requestRegion["']/);
+});

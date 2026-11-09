@@ -1135,6 +1135,20 @@ body[data-loading] .mascot-img { opacity: 0; }
 }
 
 
+/* Скидання подвійної рамки або системної стрілочки, якщо селект був обгорнутий у select-wrap */
+.select-wrap:has(.custom-select),
+.input-wrap.select-wrap:has(.custom-select) {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.select-wrap:has(.custom-select)::after,
+.input-wrap.select-wrap:has(.custom-select)::after {
+  display: none !important;
+  content: none !important;
+}
+
 /* ---------- Кастомні випадаючі списки у стилі додатку (замість стандартних системних select) ---------- */
 .custom-select {
   position: relative;
