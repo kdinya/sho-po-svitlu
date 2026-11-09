@@ -161,13 +161,15 @@ test("лампочка прив'язана до попередньої пози�
 });
 
 
-test("бренд розміщує прапор праворуч під назвою окремим візуальним шаром", () => {
+test("бренд вирівнює блискавку, назву й прапор по центру та ставить прапор за початком назви", () => {
   const brand = html.match(/<a class="brand"[\s\S]*?<\/a>/)?.[0] ?? "";
   assert.match(brand, /ШоПо<span>Світлу<\/span>/);
   assert.match(brand, /aria-label="Прапор України"/);
   assert.match(brand, /class="brand-flag-cloth"/);
-  assert.match(css, /\.brand-copy \{[^}]*position:\s*relative/);
-  assert.match(css, /\.brand-flag \{[^}]*position:\s*absolute;[^}]*top:\s*0;[^}]*right:\s*0;[^}]*z-index:\s*1;[^}]*width:\s*75px;[^}]*height:\s*54px;/);
+  assert.match(css, /\.topbar \{[^}]*align-items:\s*center/);
+  assert.match(css, /\.brand \{[^}]*align-items:\s*center/);
+  assert.match(css, /\.brand-copy \{[^}]*position:\s*relative;[^}]*justify-content:\s*center;[^}]*height:\s*52px/);
+  assert.match(css, /\.brand-flag \{[^}]*position:\s*absolute;[^}]*top:\s*50%;[^}]*left:\s*0;[^}]*transform:\s*translateY\(-50%\);[^}]*z-index:\s*1;[^}]*width:\s*75px;[^}]*height:\s*54px;/);
   assert.match(css, /\.brand-title \{[^}]*position:\s*relative;[^}]*z-index:\s*2;[^}]*white-space:\s*nowrap;/);
   assert.match(css, /@keyframes flagRipple/);
 });
