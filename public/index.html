@@ -36,6 +36,7 @@
       <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4"/></symbol>
           <symbol id="i-share" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="6" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="18" cy="19" r="3" fill="none" stroke="currentColor" stroke-width="2"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49" stroke="currentColor" stroke-width="2"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" stroke="currentColor" stroke-width="2"/></symbol>
       <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/></symbol>
+          <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5" fill="none" stroke="currentColor" stroke-width="2"/><line x1="12" y1="16.5" x2="12" y2="11.5" stroke="currentColor" stroke-linecap="round" stroke-width="2.2"/><circle cx="12" cy="7.8" r="1.2" fill="currentColor"/></symbol>
     </svg>
 
     <div class="sky" aria-hidden="true"><div class="sky-art"></div><div class="sky-lights"></div></div>
@@ -81,6 +82,7 @@
           </aside>
           <div class="status-wrap">
             <div class="channel-headline">
+              <span class="channel-region" id="homeRegionName">Кіровоградська область</span>
               <span class="brand-subtitle" id="homeSourceName">Світло Маловисківського району</span>
             </div>
             <div class="mascot" id="mascot" aria-hidden="true">
@@ -202,9 +204,14 @@
         </section>
 
         <section class="page-screen" id="sourceScreen" data-screen="source" hidden>
-          <div class="page-heading">
-            <p class="eyebrow">Канал та оновлення</p>
-            <h1>Налаштування</h1>
+          <div class="page-heading page-heading-row">
+            <div>
+              <p class="eyebrow">Канал та оновлення</p>
+              <h1>Налаштування</h1>
+            </div>
+            <button class="info-circle-btn" id="aboutAppBtn" type="button" aria-label="Як працює додаток" title="Як працює додаток">
+              <svg class="icon"><use href="#i-info" /></svg>
+            </button>
           </div>
           <article class="card source-panel">
             <div class="source-head">
@@ -376,6 +383,61 @@
           <div class="btn-pair" style="margin-top: 16px;">
             <button type="button" class="ghost-btn wide" id="cancelRequestBtn">Скасувати</button>
             <button type="button" class="primary-btn" id="submitRequestBtn">Надіслати запит</button>
+          </div>
+        </div>
+      </div>
+    </dialog>
+
+    <dialog class="sheet" id="aboutAppDialog" aria-labelledby="aboutDialogTitle">
+      <div class="sheet-box">
+        <div class="sheet-top">
+          <div><small class="eyebrow">Про ШоПоСвітлу</small><h2 id="aboutDialogTitle">Як працює додаток</h2></div>
+          <button class="sheet-close" id="closeAboutAppDialog" type="button" aria-label="Закрити">×</button>
+        </div>
+        <div class="sheet-body about-app-body">
+          <article class="about-card">
+            <div class="about-card-head">
+              <span class="about-icon"><svg class="icon"><use href="#i-bulb" /></svg></span>
+              <h3>Що це за додаток</h3>
+            </div>
+            <p><strong>ШоПоСвітлу</strong> розраховує актуальний стан електропостачання для вашої черги у зручному форматі: чи є зараз світло за графіком, скільки часу залишилося до наступного перемикання та який розклад діє на сьогодні і завтра.</p>
+          </article>
+
+          <article class="about-card">
+            <div class="about-card-head">
+              <span class="about-icon"><svg class="icon"><use href="#i-send" /></svg></span>
+              <h3>Звідки беруться дані</h3>
+            </div>
+            <p>Додаток зчитує інформацію з відкритих офіційних публічних каналів обленерго та місцевих енергетичних спільнот. Сервіс автоматично аналізує текстові публікації з графіками, розпізнає черги, дати й часові інтервали відключень та формує точний розклад.</p>
+          </article>
+
+          <article class="about-card">
+            <div class="about-card-head">
+              <span class="about-icon"><svg class="icon"><use href="#i-chart" /></svg></span>
+              <h3>Які дані ви бачите</h3>
+            </div>
+            <ul class="about-list">
+              <li>Поточний плановий стан (зі світлом чи без нього) та точний час до наступної зміни.</li>
+              <li>Погодинну лінійку доби та періоди відключень для вашої черги.</li>
+              <li>Сумарну тривалість годин зі світлом та без світла за обраний день.</li>
+            </ul>
+            <p class="about-subnote"><em>Зверніть увагу: це плановий розклад черг, а не фізичний датчик напруги в мережі. Диспетчери можуть вносити екстрені корективи відповідно до ситуації в енергосистемі.</em></p>
+          </article>
+
+          <article class="about-card about-card-action">
+            <div class="about-card-head">
+              <span class="about-icon"><svg class="icon"><use href="#i-bolt" /></svg></span>
+              <h3>Інтеграція вашого каналу</h3>
+            </div>
+            <p>Якщо для вашого міста, району чи громади є свій канал або якщо публікації змінилися чи не читаються — ви можете надіслати запит на інтеграцію або повідомити про збій прямо з додатка.</p>
+            <button type="button" class="primary-btn wide" id="aboutRequestChannelBtn">
+              <svg class="icon"><use href="#i-send" /></svg>
+              <span>Запропонувати канал або повідомити</span>
+            </button>
+          </article>
+
+          <div class="btn-pair" style="margin-top: 14px;">
+            <button type="button" class="ghost-btn wide" id="aboutCloseBtn">Зрозуміло</button>
           </div>
         </div>
       </div>

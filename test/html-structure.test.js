@@ -112,3 +112,13 @@ test("app.js скидає прокрутку на початок сторінк�
   assert.match(appJs, /window\.scrollTo\(0,\s*0\)/, "setActiveScreen має викликати scrollTo на початок");
   assert.match(appJs, /state\.powered\s*\?\s*"Вимкнуть:\s*о"\s*:\s*"Увімкнуть:\s*о"/, "наступна дія має залежати від поточного стану мережі");
 });
+
+test("головний екран виводить назву області над назвою каналу", () => {
+  assert.match(html, /class=["']channel-headline["'][\s\S]*?id=["']homeRegionName["'][\s\S]*?id=["']homeSourceName["']/);
+});
+
+test("налаштування містять кнопку довідки про додаток та діалог з описом роботи", () => {
+  assert.match(html, /id=["']aboutAppBtn["']/);
+  assert.match(html, /id=["']aboutAppDialog["'][\s\S]*?id=["']aboutDialogTitle["']/);
+  assert.match(html, /id=["']aboutRequestChannelBtn["']/);
+});
