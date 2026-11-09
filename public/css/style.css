@@ -480,8 +480,8 @@ body[data-power="off"] .zzz { display: block; }
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 5px 14px;
-  min-height: 64px;
+  padding: 4px 14px;
+  min-height: 72px;
   border-radius: 20px;
   background: rgba(12, 22, 52, 0.8);
   border: 1px solid var(--line);
@@ -496,7 +496,7 @@ body[data-power="off"] .zzz { display: block; }
   flex: none;
   margin-left: auto;
   align-self: center;
-  height: 52.8px;
+  height: 63.36px;
   width: auto;
   aspect-ratio: 616 / 708;
   object-fit: contain;
@@ -753,9 +753,9 @@ dialog.sheet[open] .sheet-box { animation: slide 0.28s cubic-bezier(0.2, 0.9, 0.
 }
 
 @media (max-width: 360px) {
-  .stat { padding: 5px 10px; gap: 6px; }
+  .stat { padding: 4px 10px; gap: 6px; min-height: 64px; }
   .stat b { font-size: 19px; }
-  .stat-bulb { height: 45.6px; }
+  .stat-bulb { height: 54.72px; }
   .status-card { grid-template-columns: 62px 1fr; gap: 10px; }
   .status-orb { width: 62px; height: 62px; }
   .status-orb .icon { width: 36px; height: 36px; }
@@ -915,3 +915,57 @@ dialog.sheet[open] .sheet-box { animation: slide 0.28s cubic-bezier(0.2, 0.9, 0.
 /* Без анімацій під час першого показу: правильний стан одразу, без перемикання */
 body:not(.is-ready) *, body:not(.is-ready) *::before, body:not(.is-ready) *::after { transition: none !important; }
 body[data-loading] .mascot-img { opacity: 0; }
+
+/* ---------- Вибір областей та форми зворотного зв'язку ---------- */
+.native-select {
+  width: 100%;
+  padding: 12px 4px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 650;
+  cursor: pointer;
+  outline: 0;
+  appearance: none;
+  -webkit-appearance: none;
+}
+.native-select option {
+  background: #0f193c;
+  color: #fff;
+}
+.select-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.select-wrap::after {
+  content: "▾";
+  font-size: 14px;
+  color: var(--muted);
+  pointer-events: none;
+  margin-left: auto;
+}
+.region-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  background: rgba(255, 210, 58, 0.15);
+  color: var(--sun);
+  margin-left: 6px;
+  vertical-align: middle;
+}
+.channel-region-tag {
+  display: inline-block;
+  font-size: 11px;
+  color: #7f95cc;
+  margin-top: 2px;
+}
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}

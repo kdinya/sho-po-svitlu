@@ -2,6 +2,14 @@ const TELEGRAM_HOST = "https://t.me";
 const MAX_MESSAGES = 5;
 const CACHE_SECONDS = 180;
 const TIME_ZONE = "Europe/Kyiv";
+const UKRAINE_REGIONS = new Set([
+  "Кіровоградська область", "Вінницька область", "Волинська область", "Дніпропетровська область",
+  "Донецька область", "Житомирська область", "Закарпатська область", "Запорізька область",
+  "Івано-Франківська область", "Київська область", "м. Київ", "Луганська область", "Львівська область",
+  "Миколаївська область", "Одеська область", "Полтавська область", "Рівненська область",
+  "Сумська область", "Тернопільська область", "Харківська область", "Херсонська область",
+  "Хмельницька область", "Черкаська область", "Чернівецька область", "Чернігівська область",
+]);
 
 export function normalizeChannel(input) {
   if (typeof input !== "string") throw new Error("Вкажіть публічний канал Telegram.");
@@ -203,10 +211,10 @@ async function fetchChannel(username, env, { force = false } = {}) {
   return result;
 }
 
-function corsHeaders(request) {
+function corsHeaders(request, methods = "GET, OPTIONS") {
   return {
     "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "GET, OPTIONS",
+    "Access-Control-Allow-Methods": methods,
     "Access-Control-Allow-Headers": "Content-Type",
     "Access-Control-Max-Age": "86400",
     "Content-Type": "application/json; charset=utf-8",
@@ -215,15 +223,115 @@ function corsHeaders(request) {
   };
 }
 
-function json(body, request, status = 200) {
-  return new Response(JSON.stringify(body), { status, headers: corsHeaders(request) });
+function json(body, request, status = 200, methods = "GET, OPTIONS") {
+  return new Response(JSON.stringify(body), { status, headers: corsHeaders(request, methods) });
+}
+
+function escapeHtml(text) {
+  return String(text ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }
 
 export async function handleRequest(request, env = {}) {
   const url = new URL(request.url);
-  if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders(request) });
+  const isPostRoute = url.pathname === "/api/request-channel";
+  const methods = isPostRoute ? "POST, OPTIONS" : "GET, OPTIONS";
+  if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders(request, methods) });
+
+  if (url.pathname === "/api/health") {
+    if (request.method !== "GET") return json({ error: "method_not_allowed", message: "Дозволені лише GET-запити." }, request, 405);
+    return json({ ok: true, service: "sho-po-svitlu-api", timestamp: new Date().toISOString() }, request);
+  }
+
+  if (url.pathname === "/api/request-channel") {
+    if (request.method !== "POST") return json({ error: "method_not_allowed", message: "Дозволені лише POST-запити." }, request, 405);
+    let body;
+    try {
+      body = await request.json();
+    } catch {
+      return json({ error: "invalid_json", message: "Некоректний JSON у тілі запиту." }, request, 400, "POST, OPTIONS");
+    }
+    const { region, channelUrl, senderName, requestType = "new", note } = body || {};
+    if (typeof region !== "string" || !UKRAINE_REGIONS.has(region.trim())) {
+      return json({ error: "invalid_region", message: "Оберіть область України зі списку." }, request, 400, "POST, OPTIONS");
+    }
+    let normalizedChannel;
+    try {
+      normalizedChannel = normalizeChannel(channelUrl);
+    } catch (error) {
+      return json({ error: "invalid_channel", message: error.message }, request, 400, "POST, OPTIONS");
+    }
+    if (!["new", "broken"].includes(requestType)) {
+      return json({ error: "invalid_request_type", message: "Оберіть коректний тип запиту." }, request, 400, "POST, OPTIONS");
+    }
+    if (senderName != null && (typeof senderName !== "string" || senderName.length > 100)) {
+      return json({ error: "invalid_sender", message: "Ім'я або нікнейм має бути до 100 символів." }, request, 400, "POST, OPTIONS");
+    }
+    if (note != null && (typeof note !== "string" || note.length > 500)) {
+      return json({ error: "invalid_note", message: "Коментар має бути до 500 символів." }, request, 400, "POST, OPTIONS");
+    }
+    if (!env.TELEGRAM_BOT_TOKEN) {
+      return json({ error: "not_configured", message: "Надсилання запитів ще не налаштоване. Спробуйте пізніше." }, request, 503, "POST, OPTIONS");
+    }
+
+    const typeLabel = requestType === "broken" ? "⚠️ Канал не працює / змінився формат" : "➕ Запит на додавання нового каналу";
+    const senderText = senderName?.trim() || "Не вказано (анонімно)";
+    const noteText = note?.trim() || "—";
+    const kyivTime = new Intl.DateTimeFormat("uk-UA", {
+      timeZone: TIME_ZONE,
+      dateStyle: "short",
+      timeStyle: "short",
+    }).format(new Date());
+
+    const messageText = `⚡ <b>Запит на канал у ШоПоСвітлу</b>\n\n` +
+      `📍 <b>Область:</b> ${escapeHtml(region.trim())}\n` +
+      `📌 <b>Тип:</b> ${escapeHtml(typeLabel)}\n` +
+      `🔗 <b>Канал:</b> ${escapeHtml(normalizedChannel.url)}\n` +
+      `👤 <b>Від кого:</b> ${escapeHtml(senderText)}\n` +
+      `📝 <b>Коментар:</b> ${escapeHtml(noteText)}\n` +
+      `⏰ <b>Час:</b> ${kyivTime}`;
+
+    const targetChat = env.TELEGRAM_CHANNEL_ID || "@sho_po_svitlu";
+    let sentToTelegram = false;
+    let telegramError = null;
+    try {
+      const tgRes = await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ chat_id: targetChat, text: messageText, parse_mode: "HTML", disable_web_page_preview: false }),
+      });
+      const tgData = await tgRes.json();
+      if (tgRes.ok && tgData.ok) sentToTelegram = true;
+      else telegramError = tgData.description || `HTTP ${tgRes.status}`;
+    } catch (err) {
+      telegramError = err.message;
+    }
+
+    if (env.KV_BINDING && typeof env.KV_BINDING.put === "function") {
+      try {
+        const reqKey = `req:${Date.now()}:${Math.random().toString(36).slice(2, 6)}`;
+        await env.KV_BINDING.put(reqKey, JSON.stringify({
+          region: region.trim(), channelUrl: normalizedChannel.url, senderName: senderText,
+          requestType, note: noteText, sentToTelegram, telegramError, createdAt: new Date().toISOString(),
+        }), { expirationTtl: 30 * 86400 });
+      } catch {}
+    }
+
+    if (!sentToTelegram) {
+      return json({ error: "telegram_delivery_failed", message: "Не вдалося доставити запит у Telegram. Перевірте канал і спробуйте ще раз." }, request, 502, "POST, OPTIONS");
+    }
+    return json({
+      ok: true,
+      sentToTelegram: true,
+      message: "Дякуємо! Запит успішно надіслано в наш Telegram-канал.",
+    }, request, 200, "POST, OPTIONS");
+  }
+
   if (request.method !== "GET") return json({ error: "method_not_allowed", message: "Дозволені лише GET-запити." }, request, 405);
-  if (url.pathname === "/api/health") return json({ ok: true, service: "sho-po-svitlu-api", timestamp: new Date().toISOString() }, request);
   if (url.pathname !== "/api/schedule") return json({ error: "not_found", message: "Маршрут не знайдено." }, request, 404);
   let channel;
   try {

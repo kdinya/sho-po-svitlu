@@ -221,6 +221,7 @@
               <span><small>Останнє оновлення</small><strong id="updatedAt">Ще не оновлювали</strong></span>
             </div>
             <button class="primary-btn" id="editSourceButton" type="button"><svg class="icon"><use href="#i-settings" /></svg>Змінити або додати канал</button>
+            <button class="ghost-btn" id="proposeChannelBtn" type="button" style="margin-top:8px;"><svg class="icon"><use href="#i-send" /></svg><span>Запропонувати канал або повідомити про збій</span></button>
           </article>
           <article class="card frequency-card" aria-labelledby="frequencyTitle">
             <div class="share-head">
@@ -281,7 +282,10 @@
         <div class="error-banner" id="errorBanner" role="status" aria-live="polite" hidden>
           <span class="error-icon">!</span>
           <div><strong id="errorTitle">Канал недоступний</strong><span id="errorText"></span></div>
-          <button id="errorRetry" type="button">Спробувати ще</button>
+          <div class="error-actions" style="display:flex;gap:6px;flex-wrap:wrap;">
+            <button id="errorRetry" type="button">Спробувати ще</button>
+            <button id="errorReport" type="button" class="ghost-btn sm" style="padding:6px 12px;font-size:13px;border-radius:10px;">Повідомити</button>
+          </div>
         </div>
         <span id="footerUpdate" hidden></span>
       </main>
@@ -301,8 +305,17 @@
         </div>
         <div class="sheet-body">
           <div class="sheet-row">
-            <span class="field-label">Доступні канали</span>
-            <button type="button" class="link-btn" id="toggleAddChannelBtn">+ Додати канал</button>
+            <span class="field-label">Область України</span>
+            <button type="button" class="link-btn" id="openRequestChannelBtn">Запропонувати канал</button>
+          </div>
+          <div class="region-select-wrap" style="margin-top: 8px;">
+            <div class="input-wrap select-wrap">
+              <select id="settingsRegionSelect" class="native-select" aria-label="Оберіть область"></select>
+            </div>
+          </div>
+          <div class="sheet-row" style="margin-top: 14px;">
+            <span class="field-label" id="regionChannelsHeading">Доступні канали</span>
+            <button type="button" class="link-btn" id="toggleAddChannelBtn">+ Додати свій</button>
           </div>
           <div class="add-channel-box" id="addChannelBox" hidden>
             <label class="field-hint" for="newChannelInput">Посилання на публічний канал або @username</label>
@@ -313,6 +326,57 @@
             </div>
           </div>
           <div class="channels-list" id="channelsList" role="radiogroup" aria-label="Список каналів"></div>
+        </div>
+      </div>
+    </dialog>
+
+    <dialog class="sheet" id="requestChannelDialog" aria-labelledby="requestDialogTitle">
+      <div class="sheet-box">
+        <div class="sheet-top">
+          <div><small class="eyebrow">Зворотний зв'язок</small><h2 id="requestDialogTitle">Запит на канал</h2></div>
+          <button class="sheet-close" id="closeRequestDialog" type="button" aria-label="Закрити">×</button>
+        </div>
+        <div class="sheet-body">
+          <p class="field-hint">Надішліть дані каналу, і нам автоматично надійде повідомлення у канал <a href="https://t.me/sho_po_svitlu" target="_blank" rel="noopener noreferrer" style="color: var(--sun); font-weight: 700;">@sho_po_svitlu</a>.</p>
+          <div class="form-group" style="margin-top: 10px;">
+            <label class="field-label" for="requestType">Тип запиту</label>
+            <div class="input-wrap select-wrap">
+              <select id="requestType" class="native-select">
+                <option value="new">➕ Додати новий канал</option>
+                <option value="broken">⚠️ Канал не працює / змінився формат</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group" style="margin-top: 10px;">
+            <label class="field-label" for="requestRegion">Область України</label>
+            <div class="input-wrap select-wrap">
+              <select id="requestRegion" class="native-select"></select>
+            </div>
+          </div>
+          <div class="form-group" style="margin-top: 10px;">
+            <label class="field-label" for="requestChannelUrl">Посилання на канал або @username</label>
+            <div class="input-wrap">
+              <svg class="icon"><use href="#i-send" /></svg>
+              <input id="requestChannelUrl" type="text" inputmode="url" autocapitalize="none" autocomplete="off" placeholder="https://t.me/... або @назва" />
+            </div>
+          </div>
+          <div class="form-group" style="margin-top: 10px;">
+            <label class="field-label" for="requestSender">Від кого (нікнейм або ім'я)</label>
+            <div class="input-wrap">
+              <input id="requestSender" type="text" placeholder="@нікнейм у Telegram або ім'я (необов'язково)" />
+            </div>
+          </div>
+          <div class="form-group" style="margin-top: 10px;">
+            <label class="field-label" for="requestNote">Коментар або район (необов'язково)</label>
+            <div class="input-wrap">
+              <input id="requestNote" type="text" placeholder="Населений пункт, особливості графіка тощо" />
+            </div>
+          </div>
+          <p class="form-error" id="requestError" role="alert" hidden></p>
+          <div class="btn-pair" style="margin-top: 16px;">
+            <button type="button" class="ghost-btn wide" id="cancelRequestBtn">Скасувати</button>
+            <button type="button" class="primary-btn" id="submitRequestBtn">Надіслати запит</button>
+          </div>
         </div>
       </div>
     </dialog>

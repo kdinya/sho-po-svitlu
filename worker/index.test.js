@@ -67,6 +67,60 @@ test("Worker додає CORS і повідомляє про невалідне �
   assert.match((await response.json()).message, /публічний канал/);
 });
 
+test("запит каналу надсилає коректно нормалізоване повідомлення й не довіряє HTML у полях", async () => {
+  const originalFetch = globalThis.fetch;
+  let telegramPayload;
+  globalThis.fetch = async (_url, options) => {
+    telegramPayload = JSON.parse(options.body);
+    return Response.json({ ok: true, result: { message_id: 1 } });
+  };
+  try {
+    const response = await handleRequest(new Request("https://worker.example/api/request-channel", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ region: "Кіровоградська область", channelUrl: "@sho_po_svitlu", senderName: "<b>Олена</b>", requestType: "new", note: "<script>bad</script>" }),
+    }), { TELEGRAM_BOT_TOKEN: "test-token", TELEGRAM_CHANNEL_ID: "@sho_po_svitlu" });
+    assert.equal(response.status, 200);
+    assert.equal((await response.json()).sentToTelegram, true);
+    assert.equal(telegramPayload.chat_id, "@sho_po_svitlu");
+    assert.match(telegramPayload.text, /https:\/\/t\.me\/s\/sho_po_svitlu/);
+    assert.match(telegramPayload.text, /&lt;b&gt;Олена&lt;\/b&gt;/);
+    assert.doesNotMatch(telegramPayload.text, /<script>/);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("запит каналу відхиляє невалідні дані й повертає помилку без налаштованого бота", async () => {
+  const invalid = await handleRequest(new Request("https://worker.example/api/request-channel", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ region: "Не область", channelUrl: "https://example.com" }),
+  }), { TELEGRAM_BOT_TOKEN: "test-token" });
+  assert.equal(invalid.status, 400);
+
+  const unconfigured = await handleRequest(new Request("https://worker.example/api/request-channel", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ region: "Кіровоградська область", channelUrl: "https://t.me/sho_po_svitlu" }),
+  }), {});
+  assert.equal(unconfigured.status, 503);
+  assert.equal((await unconfigured.json()).error, "not_configured");
+});
+
+test("запит каналу не повертає успіх, якщо Telegram не підтвердив доставку", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => Response.json({ ok: false, description: "Forbidden" }, { status: 403 });
+  try {
+    const response = await handleRequest(new Request("https://worker.example/api/request-channel", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ region: "Кіровоградська область", channelUrl: "https://t.me/sho_po_svitlu" }),
+    }), { TELEGRAM_BOT_TOKEN: "test-token" });
+    assert.equal(response.status, 502);
+    assert.equal((await response.json()).error, "telegram_delivery_failed");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test("Worker health endpoint повертає JSON і OPTIONS відповідає на CORS preflight", async () => {
   const health = await handleRequest(new Request("https://worker.example/api/health"), {});
   assert.equal(health.status, 200);
