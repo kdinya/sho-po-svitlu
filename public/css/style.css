@@ -131,7 +131,7 @@ body[data-power="off"] .sky-lights { opacity: 0.05; animation: none; }
 }
 .channel-headline .brand-subtitle {
   display: block;
-  font-size: clamp(14px, 4vw, 17px);
+  font-size: clamp(21px, 6vw, 25.5px);
   font-weight: 750;
   color: #a4baf3;
   letter-spacing: -0.01em;
@@ -541,7 +541,7 @@ body[data-power="off"] .zzz { display: block; }
   background: rgba(8, 16, 42, 0.6); border: 1px solid var(--line);
 }
 .source-names { display: flex; flex-direction: column; min-width: 0; }
-.source-names strong { font-size: 16px; overflow-wrap: anywhere; }
+.source-names strong { font-size: 24px; overflow-wrap: anywhere; }
 .source-names small { color: var(--muted); font-size: 12.5px; overflow-wrap: anywhere; }
 .source-link .icon { color: var(--sun); }
 .update-row { display: flex; align-items: center; gap: 12px; margin: 14px 2px; color: var(--sun); }
@@ -713,7 +713,7 @@ dialog.sheet[open] .sheet-box { animation: slide 0.28s cubic-bezier(0.2, 0.9, 0.
   .brand-mark .icon { width: 28px; height: 36px; }
   .brand-title { font-size: 22px; }
   .channel-headline { top: -52px; max-width: calc(100% - 100px); }
-  .channel-headline .brand-subtitle { font-size: 13px; }
+  .channel-headline .brand-subtitle { font-size: 19.5px; }
   .queue-trigger { padding: 8px 8px 8px 12px; font-size: 14.5px; gap: 5px; }
   .mascot { width: 94px; top: -70px; right: 0; }
   .status-wrap { margin-top: 74px; }
@@ -726,7 +726,7 @@ dialog.sheet[open] .sheet-box { animation: slide 0.28s cubic-bezier(0.2, 0.9, 0.
   .status-orb { width: 62px; height: 62px; }
   .status-orb .icon { width: 36px; height: 36px; }
   .channel-headline { top: -48px; max-width: calc(100% - 94px); }
-  .channel-headline .brand-subtitle { font-size: 12px; }
+  .channel-headline .brand-subtitle { font-size: 18px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

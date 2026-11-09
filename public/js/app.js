@@ -43,6 +43,8 @@ const els = {
   nextTime: $("nextTime"),
   statOn: $("statOn"),
   statOff: $("statOff"),
+  homeStatOn: $("homeStatOn"),
+  homeStatOff: $("homeStatOff"),
   onboardDialog: $("onboardDialog"),
   onboardStepChannel: $("onboardStepChannel"),
   onboardStepQueue: $("onboardStepQueue"),
@@ -426,8 +428,12 @@ function renderView() {
   for (const track of [els.timelineTrack, els.homeTimelineTrack]) track.classList.toggle("is-empty", !data || !hasSchedule);
 
   const off = hasSchedule ? totalMinutes(queuePeriods) : null;
-  els.statOff.textContent = off === null ? "—" : formatHours(off);
-  els.statOn.textContent = off === null ? "—" : formatHours(1440 - off);
+  const offText = off === null ? "—" : formatHours(off);
+  const onText = off === null ? "—" : formatHours(1440 - off);
+  els.statOff.textContent = offText;
+  els.statOn.textContent = onText;
+  if (els.homeStatOff) els.homeStatOff.textContent = offText;
+  if (els.homeStatOn) els.homeStatOn.textContent = onText;
 
   if (!data) {
     setPower("unknown");

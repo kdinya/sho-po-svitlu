@@ -30,6 +30,7 @@
 2. Popups, dialogs, pickers, confirmations, and notices must be application-styled and keyboard accessible. Do not use browser-native `alert`, `confirm`, or `prompt` dialogs.
 3. When the selected queue changes, immediately render that queue's status and schedule before starting any network refresh. Never leave the previous queue's status visible while new data is loading.
 4. Keep core controls functional: queue selection, today/tomorrow schedule tabs, manual refresh, source/channel settings, and bottom navigation.
+5. **Зафіксований блок відключень:** блок «Коли не буде світла» (відключення світла, його елементи, розмітка, стилі та розташування) є недоторканним при редагуванні будь-яких інших елементів додатку. Суворо заборонено змінювати цей блок без прямого попереднього дозволу або окремого запиту власника.
 
 ## 5. Key files and verification
 

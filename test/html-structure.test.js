@@ -86,3 +86,14 @@ test("блоки відключень на головній та в розкла
   assert.match(html, /id=["']scheduleOutagesHeading["'][^>]*>[\s\S]*?Коли не буде світла\s*<span class=["']count-chip["'] id=["']outageCount["']/);
   assert.match(html, /class=["']channel-headline["'][\s\S]*?id=["']homeSourceName["']/);
 });
+
+test("головний екран містить блоки статистики «Зі світлом» та «Без світла» над графіком", () => {
+  const homeScreen = html.slice(html.indexOf('id="homeScreen"'), html.indexOf('id="scheduleScreen"'));
+  const statPos = homeScreen.indexOf('id="homeStatRow"');
+  const chartPos = homeScreen.indexOf('id="homeOverviewHeading"');
+  assert.ok(statPos !== -1, "homeStatRow має бути на головній сторінці");
+  assert.ok(chartPos !== -1, "homeOverviewHeading має бути на головній сторінці");
+  assert.ok(statPos < chartPos, "homeStatRow має бути розташований над графіком");
+  assert.match(homeScreen, /id="homeStatOn"/);
+  assert.match(homeScreen, /id="homeStatOff"/);
+});
