@@ -480,7 +480,7 @@ body[data-power="off"] .zzz { display: block; }
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 10px 14px;
+  padding: 5px 14px;
   min-height: 64px;
   border-radius: 20px;
   background: rgba(12, 22, 52, 0.8);
@@ -496,7 +496,7 @@ body[data-power="off"] .zzz { display: block; }
   flex: none;
   margin-left: auto;
   align-self: center;
-  height: 44px;
+  height: 52.8px;
   width: auto;
   aspect-ratio: 616 / 708;
   object-fit: contain;
@@ -753,9 +753,9 @@ dialog.sheet[open] .sheet-box { animation: slide 0.28s cubic-bezier(0.2, 0.9, 0.
 }
 
 @media (max-width: 360px) {
-  .stat { padding: 9px 10px; gap: 6px; }
+  .stat { padding: 5px 10px; gap: 6px; }
   .stat b { font-size: 19px; }
-  .stat-bulb { height: 38px; }
+  .stat-bulb { height: 45.6px; }
   .status-card { grid-template-columns: 62px 1fr; gap: 10px; }
   .status-orb { width: 62px; height: 62px; }
   .status-orb .icon { width: 36px; height: 36px; }
