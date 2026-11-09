@@ -8,6 +8,7 @@ import {
   parseQueues,
   parseTelegramHtml,
   getTelegramBotToken,
+  recountUsers,
 } from "./index.js";
 
 const NOW = new Date("2026-11-08T18:00:00.000Z");
@@ -195,4 +196,67 @@ test("getTelegramBotToken: коректно розпізнає та нормал
   assert.equal(getTelegramBotToken({ BOT_TOKEN: ' "bot987654:XYZ" ' }), "987654:XYZ");
   assert.equal(getTelegramBotToken({ my_telegram_token: "555:DEF" }), "555:DEF");
   assert.equal(getTelegramBotToken({}), null);
+});
+
+function memoryKv() {
+  const entries = new Map();
+  return {
+    entries,
+    async get(key) { return entries.get(key) ?? null; },
+    async put(key, value) { entries.set(key, value); },
+    async list({ prefix = "", cursor } = {}) {
+      const keys = [...entries.keys()].filter((key) => key.startsWith(prefix)).map((name) => ({ name }));
+      const start = Number(cursor ?? 0);
+      const page = keys.slice(start, start + 2);
+      const done = start + 2 >= keys.length;
+      return { keys: page, list_complete: done, cursor: done ? undefined : String(start + 2) };
+    },
+  };
+}
+
+function ping(id) {
+  return new Request("https://worker.example/api/ping", { method: "POST", body: JSON.stringify({ id }) });
+}
+
+test("/api/ping: рахує унікальні пристрої й не дублює повторні візити", async () => {
+  const kv = memoryKv();
+  const env = { KV_BINDING: kv };
+  const first = await (await handleRequest(ping("aaaaaaaa-1111-4222-8333-bbbbbbbbbbbb"), env)).json();
+  assert.deepEqual({ ok: first.ok, users: first.users, isNew: first.isNew }, { ok: true, users: 1, isNew: true });
+  const repeat = await (await handleRequest(ping("aaaaaaaa-1111-4222-8333-bbbbbbbbbbbb"), env)).json();
+  assert.deepEqual({ users: repeat.users, isNew: repeat.isNew }, { users: 1, isNew: false });
+  const second = await (await handleRequest(ping("cccccccc-1111-4222-8333-dddddddddddd"), env)).json();
+  assert.equal(second.users, 2);
+  const stats = await handleRequest(new Request("https://worker.example/api/stats"), env);
+  assert.equal(stats.status, 200);
+  assert.deepEqual(await stats.json(), { ok: true, users: 2 });
+});
+
+test("/api/ping: відхиляє некоректні id, не-POST запити та не ламається без KV", async () => {
+  const env = { KV_BINDING: memoryKv() };
+  for (const id of ["", "short", "has spaces in it 1234567", "../../etc/passwd-1234567", 12345678901234567, null]) {
+    const response = await handleRequest(ping(id), env);
+    assert.equal(response.status, 400, `id ${JSON.stringify(id)} має бути відхилений`);
+  }
+  assert.equal(env.KV_BINDING.entries.size, 0);
+  const badJson = await handleRequest(new Request("https://worker.example/api/ping", { method: "POST", body: "{" }), env);
+  assert.equal(badJson.status, 400);
+  const get = await handleRequest(new Request("https://worker.example/api/ping"), env);
+  assert.equal(get.status, 405);
+  const options = await handleRequest(new Request("https://worker.example/api/ping", { method: "OPTIONS" }), env);
+  assert.equal(options.status, 204);
+  assert.equal(options.headers.get("Access-Control-Allow-Methods"), "POST, OPTIONS");
+  const noKv = await handleRequest(ping("aaaaaaaa-1111-4222-8333-bbbbbbbbbbbb"), {});
+  assert.equal(noKv.status, 200);
+  assert.equal((await noKv.json()).users, null);
+});
+
+test("recountUsers: точно перераховує користувачів по сторінках KV і виправляє лічильник", async () => {
+  const kv = memoryKv();
+  for (let index = 0; index < 5; index += 1) kv.entries.set(`user:device-number-${index}-padding`, "2026-11-09");
+  kv.entries.set("channel:abc", "{}");
+  kv.entries.set("stats:users", "2");
+  assert.equal(await recountUsers({ KV_BINDING: kv }), 5);
+  assert.equal(kv.entries.get("stats:users"), "5");
+  assert.equal(await recountUsers({}), null);
 });

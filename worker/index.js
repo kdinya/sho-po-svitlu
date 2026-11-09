@@ -2,6 +2,10 @@ const TELEGRAM_HOST = "https://t.me";
 const MAX_MESSAGES = 5;
 const CACHE_SECONDS = 180;
 const TIME_ZONE = "Europe/Kyiv";
+const USER_ID_PATTERN = /^[A-Za-z0-9_-]{16,64}$/;
+const USER_KEY_PREFIX = "user:";
+const USERS_COUNT_KEY = "stats:users";
+const USERS_RECOUNT_MAX_PAGES = 100;
 const UKRAINE_REGIONS = new Set([
   "Кіровоградська область", "Вінницька область", "Волинська область", "Дніпропетровська область",
   "Донецька область", "Житомирська область", "Закарпатська область", "Запорізька область",
@@ -211,6 +215,54 @@ async function fetchChannel(username, env, { force = false } = {}) {
   return result;
 }
 
+async function readUsersCount(env) {
+  if (!env.KV_BINDING) return null;
+  try {
+    const value = Number.parseInt(await env.KV_BINDING.get(USERS_COUNT_KEY) ?? "", 10);
+    return Number.isFinite(value) && value >= 0 ? value : 0;
+  } catch {
+    return null;
+  }
+}
+
+// Кожен пристрій — окремий ключ user:<id>, тож повторні візити не дублюються.
+// Загальне число зберігається окремо й раз на годину точно перераховується (recountUsers).
+async function registerUser(env, id) {
+  const kv = env.KV_BINDING;
+  if (!kv) return { count: null, isNew: false };
+  try {
+    const key = `${USER_KEY_PREFIX}${id}`;
+    const existing = await kv.get(key);
+    let count = (await readUsersCount(env)) ?? 0;
+    if (existing !== null) return { count, isNew: false };
+    await kv.put(key, new Date().toISOString());
+    count += 1;
+    await kv.put(USERS_COUNT_KEY, String(count));
+    return { count, isNew: true };
+  } catch {
+    return { count: await readUsersCount(env), isNew: false };
+  }
+}
+
+export async function recountUsers(env) {
+  const kv = env.KV_BINDING;
+  if (!kv || typeof kv.list !== "function") return null;
+  try {
+    let total = 0;
+    let cursor;
+    for (let page = 0; page < USERS_RECOUNT_MAX_PAGES; page += 1) {
+      const result = await kv.list({ prefix: USER_KEY_PREFIX, cursor });
+      total += result.keys.length;
+      if (result.list_complete) {
+        await kv.put(USERS_COUNT_KEY, String(total));
+        return total;
+      }
+      cursor = result.cursor;
+    }
+  } catch { /* Лічильник не критичний: лишаємо попереднє значення. */ }
+  return null;
+}
+
 function corsHeaders(request, methods = "GET, OPTIONS") {
   return {
     "Access-Control-Allow-Origin": "*",
@@ -273,7 +325,7 @@ function cleanBotToken(raw) {
 
 export async function handleRequest(request, env = {}) {
   const url = new URL(request.url);
-  const isPostRoute = url.pathname === "/api/request-channel";
+  const isPostRoute = url.pathname === "/api/request-channel" || url.pathname === "/api/ping";
   const methods = isPostRoute ? "POST, OPTIONS" : "GET, OPTIONS";
   if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders(request, methods) });
 
@@ -288,6 +340,27 @@ export async function handleRequest(request, env = {}) {
       availableKeys: envKeys,
       timestamp: new Date().toISOString(),
     }, request);
+  }
+
+  if (url.pathname === "/api/stats") {
+    if (request.method !== "GET") return json({ error: "method_not_allowed", message: "Дозволені лише GET-запити." }, request, 405);
+    return json({ ok: true, users: await readUsersCount(env) }, request);
+  }
+
+  if (url.pathname === "/api/ping") {
+    if (request.method !== "POST") return json({ error: "method_not_allowed", message: "Дозволені лише POST-запити." }, request, 405, "POST, OPTIONS");
+    let body;
+    try {
+      body = await request.json();
+    } catch {
+      return json({ error: "invalid_json", message: "Некоректний JSON у тілі запиту." }, request, 400, "POST, OPTIONS");
+    }
+    const id = body?.id;
+    if (typeof id !== "string" || !USER_ID_PATTERN.test(id)) {
+      return json({ error: "invalid_id", message: "Некоректний ідентифікатор пристрою." }, request, 400, "POST, OPTIONS");
+    }
+    const { count, isNew } = await registerUser(env, id);
+    return json({ ok: true, users: count, isNew }, request, 200, "POST, OPTIONS");
   }
 
   if (url.pathname === "/api/request-channel") {
@@ -395,8 +468,10 @@ export async function handleRequest(request, env = {}) {
 
 export default {
   fetch: handleRequest,
-  scheduled(_controller, env, context) {
+  scheduled(controller, env, context) {
     const username = env.DEFAULT_CHANNEL || "SvitloMalovyskivskohoRaionu";
     context.waitUntil(fetchChannel(username, env, { force: true }));
+    // Cron працює кожні 5 хв; точний перерахунок користувачів — лише раз на годину.
+    if (new Date(controller?.scheduledTime ?? Date.now()).getUTCMinutes() < 5) context.waitUntil(recountUsers(env));
   },
 };

@@ -3,6 +3,8 @@ import assert from "node:assert/strict";
 import {
   DEFAULT_CHANNEL,
   fetchSchedule,
+  fetchUsersCount,
+  pingUsers,
   normalizeChannelInput,
   normalizeWorkerUrl,
 } from "../public/js/api.js";
@@ -164,5 +166,29 @@ test("fetchSchedule: обробляє переривання за сигнало
     await assert.rejects(promise, /Worker довго не відповідає/);
   } finally {
     globalThis.fetch = originalFetch;
+  }
+});
+
+test("pingUsers / fetchUsersCount: надсилають id POST-запитом, читають число GET-запитом і ігнорують сміття у відповіді", async () => {
+  const original = globalThis.fetch;
+  const calls = [];
+  let reply = { ok: true, users: 42 };
+  globalThis.fetch = async (url, options) => {
+    calls.push({ url: String(url), method: options.method, body: options.body });
+    return new Response(JSON.stringify(reply), { status: 200 });
+  };
+  try {
+    assert.equal(await pingUsers({ workerUrl: "https://w.workers.dev/", clientId: "abcdefabcdefabcdef" }), 42);
+    assert.deepEqual(calls[0], { url: "https://w.workers.dev/api/ping", method: "POST", body: JSON.stringify({ id: "abcdefabcdefabcdef" }) });
+    assert.equal(await fetchUsersCount({ workerUrl: "https://w.workers.dev" }), 42);
+    assert.equal(calls[1].url, "https://w.workers.dev/api/stats");
+    assert.equal(calls[1].method, "GET");
+    reply = { ok: true, users: null };
+    assert.equal(await fetchUsersCount({ workerUrl: "https://w.workers.dev" }), null);
+    reply = { ok: true, users: "many" };
+    assert.equal(await fetchUsersCount({ workerUrl: "https://w.workers.dev" }), null);
+    assert.equal(await pingUsers({ workerUrl: "", clientId: "abcdefabcdefabcdef" }), null);
+  } finally {
+    globalThis.fetch = original;
   }
 });

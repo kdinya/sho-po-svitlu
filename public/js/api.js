@@ -122,3 +122,34 @@ export async function sendChannelRequest({ workerUrl, region, channelUrl, sender
     signal?.removeEventListener("abort", abort);
   }
 }
+
+async function requestUsersCount(endpoint, options = {}) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 6000);
+  try {
+    const response = await fetch(endpoint, { mode: "cors", cache: "no-store", ...options, signal: controller.signal });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data = await response.json();
+    return Number.isFinite(data?.users) && data.users >= 0 ? data.users : null;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+// Реєструє пристрій (анонімний випадковий id) і повертає кількість унікальних користувачів.
+export function pingUsers({ workerUrl, clientId } = {}) {
+  const base = normalizeWorkerUrl(workerUrl);
+  if (!base) return Promise.resolve(null);
+  return requestUsersCount(`${base}/api/ping`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    body: JSON.stringify({ id: clientId }),
+  });
+}
+
+// Лише читає поточну кількість користувачів, нікого не реєструючи.
+export function fetchUsersCount({ workerUrl } = {}) {
+  const base = normalizeWorkerUrl(workerUrl);
+  if (!base) return Promise.resolve(null);
+  return requestUsersCount(`${base}/api/stats`, { method: "GET", headers: { Accept: "application/json" } });
+}

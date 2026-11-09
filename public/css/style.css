@@ -126,23 +126,18 @@ body[data-power="off"] .sky-lights { opacity: 0.05; animation: none; }
   position: absolute;
   left: 2px;
   bottom: calc(100% + 10px);
-  max-width: calc(100% - 116px);
+  width: calc(100% - var(--mascot-w) - 12px);
   z-index: 2;
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
 .channel-headline .channel-region {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
+  display: block;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: normal;
-  word-break: normal;
-  overflow-wrap: break-word;
-  text-wrap: balance;
-  font-size: clamp(20px, 5.6vw, 24px);
+  white-space: nowrap;
+  font-size: clamp(15px, 4.6vw, 20px); /* запасний розмір; точний підбирає fitRegionName() */
   font-weight: 850;
   color: var(--text);
   letter-spacing: -0.02em;
@@ -159,7 +154,7 @@ body[data-power="off"] .sky-lights { opacity: 0.05; animation: none; }
   word-break: normal;
   overflow-wrap: break-word;
   text-wrap: balance;
-  font-size: clamp(12px, 3.2vw, 14px);
+  font-size: clamp(10.5px, 3vw, 12.5px);
   font-weight: 600;
   color: #9cb3ea;
   letter-spacing: normal;
@@ -239,6 +234,7 @@ body[data-power="off"] .sky-lights { opacity: 0.05; animation: none; }
 
 /* ---------- головна картка статусу ---------- */
 .status-wrap {
+  --mascot-w: clamp(100px, 28vw, 118px);
   position: relative;
   margin-top: 84px;
   filter: drop-shadow(0 0 16px var(--accent-glow)) drop-shadow(0 12px 22px rgba(0, 0, 0, 0.45));
@@ -338,7 +334,7 @@ body[data-power="off"] .sky-lights { opacity: 0.05; animation: none; }
 /* ---------- лампочка-талісман ---------- */
 .mascot {
   position: absolute; z-index: 3; right: 2px; top: -84px;
-  width: clamp(100px, 28vw, 118px);
+  width: var(--mascot-w);
   aspect-ratio: 616 / 708;
   pointer-events: none;
   transform-origin: 50% 100%;
@@ -615,6 +611,13 @@ body[data-power="off"] .zzz { display: block; }
 .share-secondary-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .share-secondary-row .ghost-btn { justify-content: center; font-size: 13.5px; padding: 11px 10px; text-decoration: none; color: inherit; }
 .share-secondary-row .ghost-btn:hover { color: var(--text); border-color: var(--sun); }
+.share-counter {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  margin: 14px 0 0; padding-top: 13px; border-top: 1px solid var(--line);
+  font-size: 14px; font-weight: 600; color: var(--muted);
+}
+.share-counter .icon { width: 19px; height: 19px; color: var(--sun); }
+.share-counter b { margin-left: 2px; font-size: 18px; font-weight: 900; color: var(--sun); font-variant-numeric: tabular-nums; }
 .pwa-buttons .primary-btn.wide { width: 100%; justify-content: center; }
 
 .pwa-head { display: flex; align-items: center; gap: 14px; }
@@ -763,12 +766,11 @@ dialog.sheet[open] .sheet-box { animation: slide 0.28s cubic-bezier(0.2, 0.9, 0.
   .brand-mark { width: 30px; }
   .brand-mark .icon { width: 28px; height: 36px; }
   .brand-title { font-size: 22px; }
-  .channel-headline { bottom: calc(100% + 8px); max-width: calc(100% - 100px); }
-  .channel-headline .channel-region { font-size: 18px; line-height: 1.16; }
-  .channel-headline .brand-subtitle { font-size: 11.5px; line-height: 1.2; }
+  .channel-headline { bottom: calc(100% + 8px); }
+  .channel-headline .brand-subtitle { line-height: 1.2; }
   .queue-trigger { padding: 8px 8px 8px 12px; font-size: 14.5px; gap: 5px; }
-  .mascot { width: 94px; top: -70px; right: 0; }
-  .status-wrap { margin-top: 74px; }
+  .mascot { top: -70px; right: 0; }
+  .status-wrap { --mascot-w: 94px; margin-top: 74px; }
   .status-title { max-width: calc(100% - 92px); }
   .status-card { -webkit-mask: radial-gradient(circle 54px at calc(100% - 47px) -8px, transparent 53px, #000 54px); mask: radial-gradient(circle 54px at calc(100% - 47px) -8px, transparent 53px, #000 54px); }
 }
@@ -780,9 +782,6 @@ dialog.sheet[open] .sheet-box { animation: slide 0.28s cubic-bezier(0.2, 0.9, 0.
   .status-card { grid-template-columns: 62px 1fr; gap: 10px; }
   .status-orb { width: 62px; height: 62px; }
   .status-orb .icon { width: 36px; height: 36px; }
-  .channel-headline { bottom: calc(100% + 8px); max-width: calc(100% - 94px); }
-  .channel-headline .channel-region { font-size: 16px; line-height: 1.16; }
-  .channel-headline .brand-subtitle { font-size: 11px; line-height: 1.2; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -993,15 +992,18 @@ body[data-loading] .mascot-img { opacity: 0; }
 }
 
 /* ---------- Шапка налаштувань з кнопкою довідки ---------- */
-.page-heading-row {
+.heading-title-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  justify-content: flex-start;
+  gap: 10px;
+  margin-top: 2px;
 }
+.heading-title-row h1 { margin: 0; line-height: 1.1; }
 .info-circle-btn {
-  width: 44px;
-  height: 44px;
+  position: relative;
+  width: 36px;
+  height: 36px;
   flex: none;
   display: grid;
   place-items: center;
@@ -1013,6 +1015,8 @@ body[data-loading] .mascot-img { opacity: 0; }
   transition: transform 0.15s, border-color 0.2s, background 0.2s, box-shadow 0.2s;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
+/* Збільшена зона дотику, щоб кнопка лишалася зручною на телефоні */
+.info-circle-btn::before { content: ""; position: absolute; inset: -4px; border-radius: 50%; }
 .info-circle-btn:hover {
   border-color: var(--sun);
   background: rgba(255, 210, 58, 0.12);
@@ -1022,8 +1026,8 @@ body[data-loading] .mascot-img { opacity: 0; }
   transform: scale(0.94);
 }
 .info-circle-btn .icon {
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
 }
 
 /* ---------- Спливаюче вікно «Як працює додаток» ---------- */

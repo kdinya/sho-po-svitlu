@@ -135,3 +135,19 @@ test("поля вибору областей і типу запиту не мі�
   assert.doesNotMatch(html, /input-wrap\s+select-wrap[\s\S]{0,80}id=["']requestType["']/);
   assert.doesNotMatch(html, /input-wrap\s+select-wrap[\s\S]{0,80}id=["']requestRegion["']/);
 });
+
+test("public/index.html: лічильник «Нас вже» стоїть у картці поділу під кнопками, а «і» — поруч зі словом «Налаштування»", () => {
+  const card = html.match(/<article class="card share-card" id="shareCard">([\s\S]*?)<\/article>/)?.[1];
+  assert.ok(card, "картка shareCard має існувати");
+  assert.ok(card.indexOf('id="shareCounter"') > card.indexOf('class="share-buttons"'), "лічильник має бути під кнопками");
+  assert.match(card, /Нас вже <b id="usersCount">/);
+  assert.match(html, /<div class="heading-title-row">\s*<h1>Налаштування<\/h1>\s*<button class="info-circle-btn" id="aboutAppBtn"/);
+});
+
+test("public/css/style.css: область займає один рядок і не заходить на лампочку", () => {
+  const region = css.match(/\.channel-headline \.channel-region \{([^}]*)\}/)?.[1] ?? "";
+  assert.match(region, /white-space:\s*nowrap/);
+  assert.doesNotMatch(region, /line-clamp/);
+  assert.match(css, /\.channel-headline \{[^}]*width:\s*calc\(100% - var\(--mascot-w\) - 12px\)/);
+  assert.match(appJs, /function fitRegionName\(/);
+});

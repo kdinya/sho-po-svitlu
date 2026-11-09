@@ -1,10 +1,14 @@
-import { DEFAULT_CHANNEL, DEFAULT_WORKER_URL, UKRAINE_REGIONS, fetchSchedule, normalizeChannelInput, sendChannelRequest } from "./api.js";
+import { DEFAULT_CHANNEL, DEFAULT_WORKER_URL, UKRAINE_REGIONS, fetchSchedule, fetchUsersCount, normalizeChannelInput, pingUsers, sendChannelRequest } from "./api.js";
 import { formatDate, formatHours, getLocalClock, getScheduleState, renderOutages, renderTimeline, totalMinutes } from "./timeline.js";
 
 const STORAGE_KEY = "sho-po-svitlu.settings.v1";
 const DATA_KEY = "sho-po-svitlu.last-data.v1";
 const CHANNELS_KEY = "sho-po-svitlu.channels.v1";
 const ONBOARD_KEY = "sho-po-svitlu.onboarded.v1";
+const CLIENT_ID_KEY = "sho-po-svitlu.client-id.v1";
+const USERS_KEY = "sho-po-svitlu.users-count.v1";
+const CLIENT_ID_COOKIE = "sps_cid";
+const CLIENT_ID_PATTERN = /^[A-Za-z0-9_-]{16,64}$/;
 
 const DEFAULT_CHANNELS = [
   {
@@ -118,6 +122,8 @@ const els = {
   copyShareLinkBtn: $("copyShareLinkBtn"),
   tgShareBtn: $("tgShareBtn"),
   shareCard: $("shareCard"),
+  shareCounter: $("shareCounter"),
+  usersCount: $("usersCount"),
   toast: $("toast"),
   navButtons: [...document.querySelectorAll(".nav-item")],
 };
@@ -298,7 +304,9 @@ function setActiveScreen(name) {
   const mainContent = document.getElementById("mainContent");
   if (mainContent) mainContent.scrollTop = 0;
   if (name === "schedule") renderView();
+  if (name === "home") fitRegionName();
   if (name === "source") {
+    syncUsersCount();
     const intervalRadio = document.querySelector(`input[name="interval"][value="${settings.intervalMinutes}"]`);
     if (intervalRadio) intervalRadio.checked = true;
   }
@@ -593,7 +601,26 @@ function updateSource() {
   els.homeSourceName.textContent = channelTitle;
   if (els.homeRegionName) {
     els.homeRegionName.textContent = regionTitle;
+    fitRegionName();
   }
+}
+
+// Підбирає розмір назви області так, щоб вона займала рівно один рядок і не заходила на лампочку.
+function fitRegionName() {
+  const el = els.homeRegionName;
+  const box = el?.parentElement;
+  const available = box?.clientWidth ?? 0;
+  if (!el || !available) return; // екран «Стан» приховано — підберемо після показу
+  const REFERENCE = 20;
+  const MAX = 26;
+  const MIN = 13;
+  el.style.fontSize = `${REFERENCE}px`;
+  const range = document.createRange();
+  range.selectNodeContents(el);
+  const needed = range.getBoundingClientRect().width;
+  if (!needed) return;
+  const size = Math.floor(((REFERENCE * (available - 1)) / needed) * 10) / 10;
+  el.style.fontSize = `${Math.max(MIN, Math.min(MAX, size))}px`;
 }
 
 function setStatusTitle(before, accent = "", after = "") {
@@ -1103,6 +1130,117 @@ els.homeDismissInstallBtn?.addEventListener("click", () => {
 // Первинна ініціалізація стану встановлення
 updateInstallUI();
 
+// Лічильник користувачів: анонімний випадковий id пристрою зберігається одразу у трьох сховищах
+// (localStorage, cookie, IndexedDB), щоб очищення одного з них не створювало «нового» користувача.
+function isClientId(value) {
+  return typeof value === "string" && CLIENT_ID_PATTERN.test(value);
+}
+
+function createClientId() {
+  try {
+    if (crypto.randomUUID) return crypto.randomUUID();
+  } catch {}
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  return [...bytes].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+function readIdCookie() {
+  try {
+    const match = document.cookie.match(new RegExp(`(?:^|;\\s*)${CLIENT_ID_COOKIE}=([^;]+)`));
+    return match && isClientId(match[1]) ? match[1] : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeIdCookie(id) {
+  try {
+    const secure = location.protocol === "https:" ? "; Secure" : "";
+    document.cookie = `${CLIENT_ID_COOKIE}=${id}; max-age=63072000; path=/; SameSite=Lax${secure}`;
+  } catch {}
+}
+
+function withIdStore(mode, action) {
+  return new Promise((resolve) => {
+    try {
+      const open = indexedDB.open("sho-po-svitlu", 1);
+      open.onupgradeneeded = () => open.result.createObjectStore("meta");
+      open.onerror = () => resolve(null);
+      open.onsuccess = () => {
+        try {
+          const request = action(open.result.transaction("meta", mode).objectStore("meta"));
+          request.onsuccess = () => { resolve(request.result ?? null); open.result.close(); };
+          request.onerror = () => { resolve(null); open.result.close(); };
+        } catch {
+          resolve(null);
+        }
+      };
+    } catch {
+      resolve(null);
+    }
+  });
+}
+
+async function getClientId() {
+  let id = null;
+  try { id = localStorage.getItem(CLIENT_ID_KEY); } catch {}
+  if (!isClientId(id)) id = readIdCookie();
+  if (!isClientId(id)) id = await withIdStore("readonly", (store) => store.get("clientId"));
+  if (!isClientId(id)) id = createClientId();
+  try { localStorage.setItem(CLIENT_ID_KEY, id); } catch {}
+  writeIdCookie(id);
+  withIdStore("readwrite", (store) => store.put(id, "clientId"));
+  return id;
+}
+
+function localDateKey(date = new Date()) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+function readUsersCache() {
+  try {
+    const value = JSON.parse(localStorage.getItem(USERS_KEY) || "null");
+    return value && typeof value === "object" ? value : {};
+  } catch {
+    return {};
+  }
+}
+
+function renderUsersCount(count) {
+  if (!els.shareCounter || !els.usersCount) return;
+  if (!Number.isFinite(count) || count < 1) {
+    els.shareCounter.hidden = true;
+    return;
+  }
+  els.usersCount.textContent = count.toLocaleString("uk-UA");
+  els.shareCounter.hidden = false;
+}
+
+let usersSyncedAt = 0;
+let usersSyncing = false;
+
+async function syncUsersCount() {
+  if (!settings.workerUrl || usersSyncing || Date.now() - usersSyncedAt < 60_000) return;
+  usersSyncing = true;
+  try {
+    const cache = readUsersCache();
+    const today = localDateKey();
+    // Раз на добу реєструємо пристрій, в інші рази лише читаємо число.
+    const pinged = cache.pingedOn === today;
+    const count = pinged
+      ? await fetchUsersCount({ workerUrl: settings.workerUrl })
+      : await pingUsers({ workerUrl: settings.workerUrl, clientId: await getClientId() });
+    usersSyncedAt = Date.now();
+    if (count === null) return;
+    try { localStorage.setItem(USERS_KEY, JSON.stringify({ count, pingedOn: pinged ? cache.pingedOn : today })); } catch {}
+    renderUsersCount(count);
+  } catch {
+    /* Лічильник не критичний: без мережі показуємо останнє збережене число. */
+  } finally {
+    usersSyncing = false;
+  }
+}
+
 // Share app
 function getAppShareUrl() {
   try {
@@ -1180,6 +1318,7 @@ initCustomSelect(els.settingsRegionSelect);
 initCustomSelect(els.requestRegion);
 initCustomSelect(els.requestType);
 updateShareLinks();
+renderUsersCount(readUsersCache().count);
 setActiveScreen("home");
 renderView();
 requestAnimationFrame(() => requestAnimationFrame(() => document.body.classList.add("is-ready")));
@@ -1190,5 +1329,17 @@ clockTimer = setInterval(() => {
 
 if (settings.workerUrl) {
   refresh({ manual: false, force: false });
+  syncUsersCount();
 }
+if (els.homeRegionName?.parentElement && "ResizeObserver" in window) {
+  let lastWidth = 0;
+  new ResizeObserver(() => {
+    const width = els.homeRegionName.parentElement.clientWidth;
+    if (width !== lastWidth) {
+      lastWidth = width;
+      fitRegionName();
+    }
+  }).observe(els.homeRegionName.parentElement);
+}
+document.fonts?.ready.then(fitRegionName);
 if (needsOnboarding()) openOnboarding();
