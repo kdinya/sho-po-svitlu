@@ -114,64 +114,20 @@ body[data-power="off"] .sky-lights { opacity: 0.05; animation: none; }
   display: block;
   width: 75px;
   height: 54px;
-  perspective: 120px;
-  perspective-origin: 3px 50%;
-  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.34));
+  overflow: visible;
 }
-.brand-flag-cloth {
+.brand-flag-image {
   display: block;
   width: 100%;
   height: 100%;
-  overflow: visible;
-  transform: translateZ(0);
-  shape-rendering: geometricPrecision;
-  text-rendering: geometricPrecision;
+  object-fit: contain;
+  image-rendering: auto;
+  user-select: none;
+  -webkit-user-drag: none;
 }
-.brand-flag-wave {
-  transform-box: fill-box;
-  transform-origin: 0 50%;
-  animation: flagFlutter 2.8s ease-in-out infinite;
+@media (prefers-reduced-motion: reduce) {
+  .brand-flag-image { animation: none; }
 }
-.brand-flag-shape,
-.brand-flag-yellow,
-.brand-flag-folds,
-.brand-flag-highlight {
-  vector-effect: non-scaling-stroke;
-}
-.brand-flag-folds {
-  opacity: .72;
-  animation: flagFolds 2.8s ease-in-out infinite;
-}
-.brand-flag-highlight {
-  fill: none;
-  stroke: rgba(255, 255, 255, 0.48);
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  animation: flagGleam 2.8s ease-in-out infinite;
-}
-@keyframes flagFlutter {
-  0%, 100% { transform: translateX(0) rotate(-1deg) skewX(0deg) scaleX(.99); }
-  18% { transform: translateX(1px) rotate(.15deg) skewX(-.8deg) scaleX(1); }
-  38% { transform: translateX(2px) rotate(1.2deg) skewX(-2deg) scaleX(.96); }
-  56% { transform: translateX(1px) rotate(-.45deg) skewX(-1deg) scaleX(.985); }
-  76% { transform: translateX(0) rotate(.55deg) skewX(.7deg) scaleX(.975); }
-}
-/* Historical 3D pose (rotateY(17deg)) remains documented but is intentionally not used. */
-@keyframes flagFolds {
-  0%, 100% { opacity: .58; }
-  38% { opacity: .88; }
-  62% { opacity: .68; }
-}
-@keyframes flagGleam {
-  0%, 100% { opacity: .42; }
-  40% { opacity: .78; }
-  70% { opacity: .52; }
-}
-/* Kept as named hooks for older themes; the contours now stay coherent and do not morph independently. */
-@keyframes flagWaveShape { from, to { d: path("M12 14 C35 7 49 22 72 16 C95 10 112 2 148 12 L148 100 C116 91 95 106 72 99 C48 92 35 104 12 96 Z"); } }
-@keyframes flagWaveYellow { from, to { d: path("M12 56 C35 49 49 64 72 58 C95 52 112 44 148 54 L148 100 C116 91 95 106 72 99 C48 92 35 104 12 96 Z"); } }
-@keyframes flagWaveGleam { from, to { d: path("M13 16 C35 9 49 24 72 18 C95 12 112 4 147 14"); } }
 
 .brand-title {
   position: relative;
