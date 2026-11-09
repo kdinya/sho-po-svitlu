@@ -324,6 +324,130 @@ function getRegionChannels(region) {
   return [...bundled, ...added];
 }
 
+
+const customSelectInstances = new Map();
+
+function initCustomSelect(selectEl, { getOptionMeta } = {}) {
+  if (!selectEl) return null;
+  if (customSelectInstances.has(selectEl)) {
+    return customSelectInstances.get(selectEl);
+  }
+
+  const parent = selectEl.parentElement;
+  const wrap = document.createElement("div");
+  wrap.className = "custom-select";
+  parent.insertBefore(wrap, selectEl);
+
+  const trigger = document.createElement("button");
+  trigger.type = "button";
+  trigger.className = "custom-select-trigger";
+  trigger.setAttribute("aria-haspopup", "listbox");
+  trigger.setAttribute("aria-expanded", "false");
+
+  const label = document.createElement("span");
+  label.className = "custom-select-label";
+
+  const chevronSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  chevronSvg.setAttribute("class", "custom-select-chevron");
+  chevronSvg.setAttribute("aria-hidden", "true");
+  const use = document.createElementNS("http://www.w3.org/2000/svg", "use");
+  use.setAttribute("href", "#i-chevron");
+  chevronSvg.appendChild(use);
+
+  trigger.append(label, chevronSvg);
+
+  const menu = document.createElement("div");
+  menu.className = "custom-select-menu";
+  menu.setAttribute("role", "listbox");
+  menu.hidden = true;
+
+  wrap.append(trigger, menu, selectEl);
+  selectEl.classList.add("sr-only");
+
+  trigger.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const willOpen = menu.hidden;
+    closeAllCustomSelects();
+    if (willOpen) {
+      menu.hidden = false;
+      trigger.setAttribute("aria-expanded", "true");
+      menu.querySelector(".custom-select-option.is-selected")?.scrollIntoView({ block: "nearest" });
+    }
+  });
+
+  function sync() {
+    menu.replaceChildren();
+    const options = Array.from(selectEl.options);
+    const selectedOption = options.find((opt) => opt.value === selectEl.value) || options[0];
+    label.textContent = selectedOption ? selectedOption.textContent : "Оберіть зі списку";
+
+    options.forEach((opt) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = `custom-select-option${opt.value === selectEl.value ? " is-selected" : ""}`;
+      btn.setAttribute("role", "option");
+      btn.setAttribute("aria-selected", String(opt.value === selectEl.value));
+
+      const titleSpan = document.createElement("span");
+      titleSpan.className = "custom-select-text";
+      titleSpan.textContent = opt.textContent;
+      btn.appendChild(titleSpan);
+
+      if (typeof getOptionMeta === "function") {
+        const meta = getOptionMeta(opt.value);
+        if (meta) {
+          const badge = document.createElement("span");
+          badge.className = `custom-select-badge${meta.empty ? " empty" : ""}`;
+          badge.textContent = meta.label;
+          btn.appendChild(badge);
+        }
+      }
+
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        selectEl.value = opt.value;
+        selectEl.dispatchEvent(new Event("change", { bubbles: true }));
+        close();
+        sync();
+      });
+
+      menu.appendChild(btn);
+    });
+  }
+
+  function close() {
+    menu.hidden = true;
+    trigger.setAttribute("aria-expanded", "false");
+  }
+
+  const instance = { sync, close, trigger, menu, wrap };
+  customSelectInstances.set(selectEl, instance);
+  sync();
+  return instance;
+}
+
+function syncCustomSelect(selectEl) {
+  if (selectEl && customSelectInstances.has(selectEl)) {
+    customSelectInstances.get(selectEl).sync();
+  }
+}
+
+function closeAllCustomSelects() {
+  customSelectInstances.forEach((inst) => inst.close());
+}
+
+document.addEventListener("click", (e) => {
+  if (!e.target.closest(".custom-select")) {
+    closeAllCustomSelects();
+  }
+});
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") {
+    closeAllCustomSelects();
+  }
+});
+
 function fillRegionSelect(select, selectedRegion = "Кіровоградська область", onlyAvailable = true) {
   if (!select) return;
   select.replaceChildren();
@@ -336,6 +460,7 @@ function fillRegionSelect(select, selectedRegion = "Кіровоградська
     select.append(option);
   });
   if (onlyAvailable && !availableRegions.includes(selectedRegion)) select.value = availableRegions[0] || "";
+  syncCustomSelect(select);
 }
 
 function renderChannelsList() {
@@ -738,6 +863,7 @@ els.saveIntervalBtn.addEventListener("click", () => {
 function openRequestDialog(type = "new", channelUrl = "") {
   fillRegionSelect(els.requestRegion, els.settingsRegionSelect?.value || currentRegion(), false);
   els.requestType.value = type;
+  syncCustomSelect(els.requestType);
   els.requestChannelUrl.value = channelUrl;
   els.requestSender.value = "";
   els.requestNote.value = "";
@@ -1047,6 +1173,9 @@ window.addEventListener("online", () => {
 
 // Initialize
 initQueueOptions();
+initCustomSelect(els.settingsRegionSelect);
+initCustomSelect(els.requestRegion);
+initCustomSelect(els.requestType);
 updateShareLinks();
 setActiveScreen("home");
 renderView();

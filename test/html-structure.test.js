@@ -6,6 +6,7 @@ import path from "node:path";
 const PUBLIC_DIR = path.resolve("public");
 const html = fs.readFileSync(path.join(PUBLIC_DIR, "index.html"), "utf8");
 const appJs = fs.readFileSync(path.join(PUBLIC_DIR, "js", "app.js"), "utf8");
+const css = fs.readFileSync(path.join(PUBLIC_DIR, "css", "style.css"), "utf8");
 
 test("public/index.html: містить усі DOM ID, які викликаються з js/app.js", () => {
   const idsInAppJs = new Set();
@@ -121,4 +122,10 @@ test("налаштування містять кнопку довідки про
   assert.match(html, /id=["']aboutAppBtn["']/);
   assert.match(html, /id=["']aboutAppDialog["'][\s\S]*?id=["']aboutDialogTitle["']/);
   assert.match(html, /id=["']aboutRequestChannelBtn["']/);
+});
+
+test("стилі містять правила для кастомних списків у неоновому стилі додатку", () => {
+  assert.match(css, /\.custom-select-trigger/, "має містити кнопку-тригер кастомного списку");
+  assert.match(css, /\.custom-select-menu/, "має містити меню випадаючого списку");
+  assert.match(css, /\.custom-select-option/, "має містити стилі пунктів списку");
 });

@@ -7,6 +7,7 @@ import {
   parseIntervals,
   parseQueues,
   parseTelegramHtml,
+  getTelegramBotToken,
 } from "./index.js";
 
 const NOW = new Date("2026-11-08T18:00:00.000Z");
@@ -187,4 +188,11 @@ test("розбирає черги з різними видами тире, дв�
 test("ігнорує повідомлення без графіків відключень", () => {
   const plainText = "Увага! Завтра плануються аварійно-відновлювальні роботи на підстанції. Слідкуйте за оновленнями.";
   assert.deepEqual(parseQueues(plainText), {});
+});
+
+test("getTelegramBotToken: коректно розпізнає та нормалізує токен бота з різних ключів env", () => {
+  assert.equal(getTelegramBotToken({ TELEGRAM_BOT_TOKEN: "123456:ABC" }), "123456:ABC");
+  assert.equal(getTelegramBotToken({ BOT_TOKEN: ' "bot987654:XYZ" ' }), "987654:XYZ");
+  assert.equal(getTelegramBotToken({ my_telegram_token: "555:DEF" }), "555:DEF");
+  assert.equal(getTelegramBotToken({}), null);
 });
