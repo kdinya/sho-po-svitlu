@@ -1,4 +1,4 @@
-# AI Agent Instructions for ШоПоСвітлу
+# AI Agent Instructions for ShoPoSvitlu
 
 ## 1. Operating rules
 
@@ -8,6 +8,7 @@
 4. **For app visits or tests, use the designated non-counted test profile.**
 5. **Keep repository history clean.** Do not add AI attribution, watermarks, generated-by notices, or AI-related commit trailers to source files or commit messages.
 6. **Use the owner's GitHub identity for commits:** `Denys <111563751+kdinya@users.noreply.github.com>`. Never invent or substitute another author identity.
+7. **Keep this entire instruction file in English.** Do not add or translate any part of it into another language.
 
 ## 2. Source of truth and Git workflow
 
@@ -31,7 +32,7 @@
 2. Popups, dialogs, pickers, confirmations, and notices must be application-styled and keyboard accessible. Do not use browser-native `alert`, `confirm`, or `prompt` dialogs.
 3. When the selected queue changes, immediately render that queue's status and schedule before starting any network refresh. Never leave the previous queue's status visible while new data is loading.
 4. Keep core controls functional: queue selection, today/tomorrow schedule tabs, manual refresh, source/channel settings, and bottom navigation.
-5. **Зафіксований блок відключень:** блок «Коли не буде світла» (відключення світла, його елементи, розмітка, стилі та розташування) є недоторканним при редагуванні будь-яких інших елементів додатку. Суворо заборонено змінювати цей блок без прямого попереднього дозволу або окремого запиту власника.
+5. **Protected outage block:** The "When the power will be off" block—including its elements, markup, styles, and position—is protected from edits made to any other app elements. Do not change this block without the owner's explicit prior permission or a separate direct request.
 
 ## 5. Key files and verification
 
@@ -50,3 +51,10 @@ Use `npm test` for the Worker test suite. Also run `node --check` on changed Jav
 ## 6. Security and configuration
 
 Never commit tokens, API keys, secrets, private Telegram credentials, or local environment files. The Telegram source is public; user-supplied channels must be normalized and validated through existing code. Preserve CORS and input validation in the Worker.
+
+## 7. Releases and versioning
+
+1. Format new release versions as `YYYY.MM.N`, where `N` is the sequence number within that calendar month; for example, `2026.11.1`. Start at `1` for a new month and increment the sequence for each explicitly requested new release in that month.
+2. Routine code changes must not create a new app version, Git tag, or GitHub Release. Keep the current release unchanged unless the owner asks to update or create one.
+3. When the owner asks to update an existing release, update that release in place where possible instead of creating another version. Do not move or force-update an existing Git tag.
+4. Create a new release and tag only when the owner explicitly asks for a new release. A general request to maintain this release policy is not a request to create a release.
