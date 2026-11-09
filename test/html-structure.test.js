@@ -7,6 +7,7 @@ const PUBLIC_DIR = path.resolve("public");
 const html = fs.readFileSync(path.join(PUBLIC_DIR, "index.html"), "utf8");
 const appJs = fs.readFileSync(path.join(PUBLIC_DIR, "js", "app.js"), "utf8");
 const css = fs.readFileSync(path.join(PUBLIC_DIR, "css", "style.css"), "utf8");
+const sw = fs.readFileSync(path.join(PUBLIC_DIR, "sw.js"), "utf8");
 
 test("public/index.html: містить усі DOM ID, які викликаються з js/app.js", () => {
   const idsInAppJs = new Set();
@@ -161,23 +162,21 @@ test("лампочка прив'язана до попередньої пози�
 });
 
 
-test("прапор у шапці — вбудований плавний SVG без 3D-композиції та враховує reduced motion", () => {
+test("прапор у шапці використовує оригінальний анімований GIF, зберігає розмір і має нерухомий варіант для reduced motion", () => {
   const brand = html.match(/<a class="brand"[\s\S]*?<\/a>/)?.[0] ?? "";
   assert.match(brand, /ШоПо<span>Світлу<\/span>/);
-  assert.match(brand, /aria-label="Прапор України"/);
-  assert.match(brand, /<svg class="brand-flag-cloth" viewBox="0 0 300 200"/);
-  assert.match(brand, /shape-rendering="geometricPrecision"/);
+  assert.match(brand, /<picture class="brand-flag"[^>]*aria-label="Прапор України"/);
+  assert.match(brand, /<source srcset="\/images\/ukraine-flag-header-still\.png" media="\(prefers-reduced-motion: reduce\)"/);
+  assert.match(brand, /<img class="brand-flag-image" src="\/images\/ukraine-flag-header\.gif"[^>]*width="511" height="340"/);
   assert.match(css, /\.topbar \{[^}]*align-items:\s*center/);
   assert.match(css, /\.brand \{[^}]*align-items:\s*center/);
   assert.match(css, /\.brand-copy \{[^}]*position:\s*relative;[^}]*justify-content:\s*center;[^}]*height:\s*52px/);
   assert.match(css, /\.brand-flag \{[^}]*position:\s*absolute;[^}]*top:\s*50%;[^}]*left:\s*0;[^}]*transform:\s*translateY\(-50%\);[^}]*z-index:\s*1;[^}]*width:\s*75px;[^}]*height:\s*54px;/);
   assert.match(css, /\.brand-title \{[^}]*position:\s*relative;[^}]*z-index:\s*2;[^}]*white-space:\s*nowrap;/);
-  assert.match(brand, /id="headerFlagCloth"/);
-  assert.match(brand, /fill="url\(#headerFlagBlue\)"/);
-  assert.match(brand, /fill="url\(#headerFlagYellow\)"/);
-  assert.match(css, /animation:\s*headerFlagFlutter 4\.2s/);
-  assert.doesNotMatch(`${brand}\n${css}`, /rotateY|perspective:|clipPath|clip-path:/);
-  assert.match(css, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.brand-flag-cloth \{ animation: none; \}/);
+  assert.match(css, /\.brand-flag-image \{[^}]*width:\s*100%;[^}]*height:\s*100%;[^}]*object-fit:\s*contain/);
+  assert.match(sw, /CACHE_NAME = "sho-po-svitlu-shell-v36"/);
+  assert.match(sw, /"\/images\/ukraine-flag-header\.gif"/);
+  assert.match(sw, /"\/images\/ukraine-flag-header-still\.png"/);
 });
 
 test("анімація очей керується станом живлення й враховує повагу до зменшення руху", () => {
