@@ -8,20 +8,20 @@
     <linearGradient id="edge" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".45"/><stop offset=".5" stop-color="#fff" stop-opacity=".04"/><stop offset="1" stop-color="#061b40" stop-opacity=".36"/></linearGradient>
     <linearGradient id="shine" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".02"/><stop offset=".58" stop-color="#fff" stop-opacity=".4"/><stop offset=".7" stop-color="#fff" stop-opacity=".03"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
     <path id="blue-field" d="M22 205 C75 187 123 217 183 200 C245 183 293 219 350 201 C408 184 466 193 581 209 C580 160 593 96 585 70 C586 59 581 52 572 50 C463 34 405 25 348 43 C291 61 244 27 183 43 C125 58 82 27 28 48 C22 51 20 55 19 62 C12 101 32 143 22 193 Z"/>
-    <path id="yellow-field" d="M22 205 C75 223 123 193 183 210 C245 227 293 191 350 209 C408 226 466 217 581 209 C571 265 592 307 579 356 C576 369 569 374 557 371 C475 352 428 385 359 369 C294 354 246 385 183 369 C124 354 82 385 31 364 C19 359 15 350 18 337 C29 283 12 244 22 205 Z"/>
-    <path id="cloth" d="M22 205 C75 187 123 217 183 200 C245 183 293 219 350 201 C408 184 466 193 581 209 C571 265 592 307 579 356 C576 369 569 374 557 371 C475 352 428 385 359 369 C294 354 246 385 183 369 C124 354 82 385 31 364 C19 359 15 350 18 337 C29 283 12 244 22 205 C32 143 12 101 19 62 C20 55 22 51 28 48 C82 27 125 58 183 43 C244 27 291 61 348 43 C405 25 463 34 572 50 C581 52 586 59 585 70 C580 126 593 164 581 209 Z"/>
+    <path id="yellow-field" d="M22 205 C75 187 123 217 183 200 C245 183 293 219 350 201 C408 184 466 193 581 209 C571 265 592 307 579 356 C576 369 569 374 557 371 C475 352 428 385 359 369 C294 354 246 385 183 369 C124 354 82 385 31 364 C19 359 15 350 18 337 C29 283 12 244 22 205 Z"/>
+    <path id="cloth" d="M28 48 C82 27 125 58 183 43 C244 27 291 61 348 43 C405 25 463 34 572 50 C581 52 586 59 585 70 C580 126 593 164 581 209 C593 264 571 306 579 356 C576 369 569 374 557 371 C475 352 428 385 359 369 C294 354 246 385 183 369 C124 354 82 385 31 364 C19 359 15 350 18 337 C29 283 12 244 22 193 C32 143 12 101 19 62 C20 55 22 51 28 48 Z"/>
   </defs>
   <g class="flag-shadow" opacity=".22"><use href="#cloth" fill="#000" transform="translate(0 9)"/></g>
   <g class="fabric">
     <use href="#blue-field" fill="url(#blue)"/>
     <use href="#yellow-field" fill="url(#yellow)"/>
     <use href="#cloth" fill="url(#silk)"/>
-    <path class="fold fold-a" d="M72 67 C158 139 91 250 158 350" fill="none" stroke="#071d43" stroke-width="39" stroke-linecap="round" opacity=".12"/>
-    <path class="fold fold-b" d="M255 58 C333 144 265 254 334 355" fill="none" stroke="#fff" stroke-width="34" stroke-linecap="round" opacity=".1"/>
-    <path class="fold fold-c" d="M430 59 C504 146 427 258 493 352" fill="none" stroke="#061b40" stroke-width="42" stroke-linecap="round" opacity=".14"/>
-    <path d="M-10 191 C80 166 130 211 200 191 S320 210 390 188 S510 184 610 204" fill="none" stroke="#fff" stroke-opacity=".11" stroke-width="10"/>
+    <path class="fold fold-a" d="M75 78 C145 142 102 245 158 323" fill="none" stroke="#071d43" stroke-width="27" stroke-linecap="round" opacity=".12"/>
+    <path class="fold fold-b" d="M260 78 C320 145 282 245 335 325" fill="none" stroke="#fff" stroke-width="25" stroke-linecap="round" opacity=".1"/>
+    <path class="fold fold-c" d="M435 78 C493 145 450 245 493 325" fill="none" stroke="#061b40" stroke-width="29" stroke-linecap="round" opacity=".14"/>
+    <path d="M30 198 C100 184 145 213 205 197 S320 213 390 196 S500 192 570 207" fill="none" stroke="#fff" stroke-opacity=".11" stroke-width="6"/>
     <path class="glint" d="M48 70 C140 145 78 252 145 350" fill="none" stroke="url(#shine)" stroke-width="25" stroke-linecap="round" opacity=".55"/>
-    <use href="#cloth" fill="none" stroke="url(#edge)" stroke-width="5"/>
+    <use href="#cloth" fill="none" stroke="url(#edge)" stroke-width="3.5"/>
     <path d="M29 49 C83 29 126 60 184 45 C244 29 292 63 349 45 C407 27 464 36 571 52" fill="none" stroke="#fff" stroke-opacity=".42" stroke-width="3.5" stroke-linecap="round"/>
     <path d="M30 365 C83 386 125 356 184 371 C246 387 294 356 359 371 C429 387 475 354 557 373" fill="none" stroke="#061b40" stroke-opacity=".22" stroke-width="3" stroke-linecap="round"/>
   </g>
