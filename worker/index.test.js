@@ -13,6 +13,7 @@ import {
   readSumySchedulePosts,
   readLimitedResponseBytes,
   callOcrSpace,
+  getOcrSpaceKeys,
   getTelegramBotToken,
   recountUsers,
   normalizeSetupNickname,
@@ -70,12 +71,27 @@ test("Cherkasy: parses all 12 official queue rows and rejects a missing row", ()
   assert.equal(parseCherkasyContent(rows.replace(/<p>6\.2[\s\S]*?<\/p>/, "")), null);
 });
 
+test("Sumy OCR keeps the last outage interval when it ends at midnight", () => {
+  const text = Array.from({ length: 12 }, (_, index) => `${Math.floor(index / 2) + 1}.${index % 2 + 1} | 00:00 - 02:00 | 22:00 - 00:00`).join("\n");
+  const queues = parseSumyOcr(text);
+  assert.equal(Object.keys(queues).length, 12);
+  assert.deepEqual(queues["1.1"], [{ start: 0, end: 120 }, { start: 1320, end: 1440 }]);
+});
+
 test("Sumy OCR fails closed unless all 12 subqueues have readable time ranges", () => {
   const text = Array.from({ length: 12 }, (_, index) => `${Math.floor(index / 2) + 1}.${index % 2 + 1} | 00:00 - 02:00 | 04:00 - 06:00`).join("\n");
   assert.equal(Object.keys(parseSumyOcr(text)).length, 12);
   assert.equal(parseSumyOcr(text.split("\n").slice(0, 11).join("\n")), null);
   assert.equal(parseSumyOcr(text.replace("1.1", "9.9")), null);
   assert.equal(parseSumyOcr(text.replace("00:00 - 02:00 | 04:00 - 06:00", "00:00 - 05:00 | 04:00 - 06:00")), null, "overlapping intervals are rejected");
+});
+
+test("OCR keys are discovered by numbered Cloudflare Secret name, deduplicated, and support the legacy first name", () => {
+  assert.deepEqual(getOcrSpaceKeys({ OCR_SPACE_API_KEY_1: "one", OCR_SPACE_API_KEY_2: "two", OCR_SPACE_API_KEY_4: "four" }), ["one", "two", "four"]);
+  assert.deepEqual(getOcrSpaceKeys({ OCR_SPACE_API_KEY: "legacy", OCR_SPACE_API_KEY_2: "two" }), ["legacy", "two"]);
+  assert.deepEqual(getOcrSpaceKeys({ OCR_SPACE_API_KEY_1: " same ", OCR_SPACE_API_KEY_2: "same", OCR_SPACE_API_KEY_3: "three" }), ["same", "three"]);
+  const fifty = Object.fromEntries(Array.from({ length: 50 }, (_, index) => [`OCR_SPACE_API_KEY_${index + 1}`, `key-${index + 1}`]));
+  assert.equal(getOcrSpaceKeys(fifty).length, 50);
 });
 
 test("Sumy Telegram parser binds an image to its post and explicit date", () => {
@@ -87,8 +103,8 @@ test("Sumy Telegram parser binds an image to its post and explicit date", () => 
   assert.equal(posts[0].photoUrl, "https://cdn4.telesco.pe/file/schedule.jpg");
 });
 
-test("розбирає інтервали з двокрапками, хвилинами та перевіряє межі доби", () => {
-  assert.deepEqual(parseIntervals("00-02, 04:15–06:00, 12-12:30, 22-24, 24:00-24:00, 25-26"), [
+test("розбирає інтервали з двокрапками, хвилинами та переходом через північ", () => {
+  assert.deepEqual(parseIntervals("00-02, 04:15–06:00, 12-12:30, 22-24, 22:00-00:00, 24:00-24:00, 25-26"), [
     { start: 0, end: 120 },
     { start: 255, end: 360 },
     { start: 720, end: 750 },
@@ -302,21 +318,30 @@ function memoryCompletedCounter() {
 test("OCR lock serializes same-image work and rotates the selected key", async () => {
   const counter = memoryCompletedCounter();
   const digest = "a".repeat(64);
-  const first = await (await counter.get("test").fetch(new Request("https://do/ocr/claim", {
-    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ digest, keyCount: 2 }),
-  }))).json();
-  const blocked = await (await counter.get("test").fetch(new Request("https://do/ocr/claim", {
-    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ digest, keyCount: 2 }),
-  }))).json();
+  const claim = (imageDigest, keyCount) => counter.get("test").fetch(new Request("https://do/ocr/claim", {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ digest: imageDigest, keyCount }),
+  }));
+  const release = (imageDigest) => counter.get("test").fetch(new Request("https://do/ocr/release", {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ digest: imageDigest }),
+  }));
+  const first = await (await claim(digest, 50)).json();
+  const blocked = await (await claim(digest, 50)).json();
   assert.deepEqual(first, { claimed: true, keyIndex: 0 });
   assert.deepEqual(blocked, { claimed: false });
-  await counter.get("test").fetch(new Request("https://do/ocr/release", {
-    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ digest }),
-  }));
-  const next = await (await counter.get("test").fetch(new Request("https://do/ocr/claim", {
-    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ digest: "b".repeat(64), keyCount: 2 }),
-  }))).json();
+  await release(digest);
+  const next = await (await claim("b".repeat(64), 50)).json();
   assert.deepEqual(next, { claimed: true, keyIndex: 1 });
+  await release("b".repeat(64));
+  for (let index = 2; index < 50; index += 1) {
+    const currentDigest = index.toString(16).padStart(64, "0");
+    const rotated = await (await claim(currentDigest, 50)).json();
+    assert.deepEqual(rotated, { claimed: true, keyIndex: index });
+    await release(currentDigest);
+  }
+  const wrapped = await (await claim("c".repeat(64), 50)).json();
+  assert.deepEqual(wrapped, { claimed: true, keyIndex: 0 }, "rotation index wraps at the configured key count");
+  const tooMany = await claim("d".repeat(64), 51);
+  assert.equal(tooMany.status, 400);
 });
 
 function ping(id) {
@@ -470,17 +495,19 @@ test("завантажувач повертає байти, якщо розмі�
 });
 
 
-test("OCR переходить на другий унікальний ключ, якщо перший текст не пройшов перевірку", async () => {
+test("OCR чергує багато ключів і зупиняється на першому валідному розпізнаванні", async () => {
   const acceptedText = Array.from({ length: 12 }, (_, index) => `${Math.floor(index / 2) + 1}.${index % 2 + 1} | 00:00 - 02:00 | 04:00 - 06:00`).join("\n");
   const calls = [];
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async (_url, options) => {
     calls.push(options.headers.apikey);
-    return Response.json({ ParsedResults: [{ ParsedText: options.headers.apikey === "key-2" ? acceptedText : "unreadable" }] });
+    if (options.headers.apikey === "key-4") return Response.json({ ParsedResults: [{ ParsedText: acceptedText }] });
+    return Response.json({ IsErroredOnProcessing: true, ErrorMessage: ["test failure"] });
   };
   try {
-    const result = await callOcrSpace(new Uint8Array([1, 2, 3]), "image/jpeg", ["key-1", "key-2", "key-2"], 0, parseSumyOcr);
-    assert.deepEqual(calls, ["key-1", "key-2"]);
+    const keys = Array.from({ length: 50 }, (_, index) => `key-${index + 1}`);
+    const result = await callOcrSpace(new Uint8Array([1, 2, 3]), "image/jpeg", keys, 2, parseSumyOcr);
+    assert.deepEqual(calls, ["key-3", "key-4"]);
     assert.equal(Object.keys(result.value).length, 12);
   } finally {
     globalThis.fetch = originalFetch;
