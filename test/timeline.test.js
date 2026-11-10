@@ -178,7 +178,7 @@ test("renderOutages: коректно формує список відключе
   ];
   renderOutages(container, countNode, periods, 300, { highlightPast: true });
   assert.equal(countNode.textContent, "3");
-  // 3 відключення + 2 розділювальні лінії з тривалістю без світла між ними = 5 елементів
+  // 3 відключення + 2 проміжки зі світлом між ними = 5 елементів
   assert.equal(container.children.length, 5);
 
   const firstItem = container.children[0];
@@ -191,16 +191,33 @@ test("renderOutages: коректно формує список відключе
 
   const firstDivider = container.children[1];
   assert.equal(firstDivider.classList.has("is-past"), true);
-  assert.equal(firstDivider.children[0].textContent, "без світла - 2 год");
+  assert.equal(firstDivider.children[0].textContent, "зі світлом — 0 хв");
 
   const secondItem = container.children[2];
   assert.equal(secondItem.classList.has("is-current"), true);
 
   const secondDivider = container.children[3];
-  assert.equal(secondDivider.classList.has("is-current"), true);
-  assert.equal(secondDivider.children[0].textContent, "без світла - 2 год");
+  assert.equal(secondDivider.classList.has("is-current"), false);
+  assert.equal(secondDivider.children[0].textContent, "зі світлом — 6 год");
 
   const thirdItem = container.children[4];
   assert.equal(thirdItem.classList.has("is-past"), false);
   assert.equal(thirdItem.classList.has("is-current"), false);
+});
+
+
+test("renderOutages: позначає активним саме проміжок зі світлом між відключеннями", () => {
+  const container = document.createElement("div");
+  const countNode = document.createElement("span");
+  const periods = [
+    { start: 120, end: 240 },  // 02:00 - 04:00
+    { start: 720, end: 840 },  // 12:00 - 14:00
+  ];
+
+  renderOutages(container, countNode, periods, 480, { highlightPast: true });
+
+  const divider = container.children[1];
+  assert.equal(divider.classList.has("is-current"), true);
+  assert.equal(divider.classList.has("is-past"), false);
+  assert.equal(divider.children[0].textContent, "зі світлом — 8 год");
 });

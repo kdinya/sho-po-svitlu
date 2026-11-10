@@ -104,11 +104,11 @@ export function renderOutages(container, countNode, periods = [], nowMinutes = 0
       const prev = visible[index - 1];
       const divider = document.createElement("div");
       divider.className = "outage-divider";
-      if (highlightPast && prev.end <= nowMinutes) divider.classList.add("is-past");
-      if (highlightPast && nowMinutes >= prev.start && nowMinutes < prev.end) divider.classList.add("is-current");
+      if (highlightPast && period.start <= nowMinutes) divider.classList.add("is-past");
+      if (highlightPast && nowMinutes >= prev.end && nowMinutes < period.start) divider.classList.add("is-current");
       const dividerLabel = document.createElement("span");
       dividerLabel.className = "outage-divider-label";
-      dividerLabel.textContent = `без світла - ${formatDuration(prev.start, prev.end)}`;
+      dividerLabel.textContent = `зі світлом — ${formatDuration(prev.end, period.start)}`;
       divider.append(dividerLabel);
       container.append(divider);
     }
