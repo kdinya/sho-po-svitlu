@@ -3,6 +3,7 @@ const MAX_MESSAGES = 5;
 const CACHE_SECONDS = 180;
 const OCR_FAILURE_CACHE_SECONDS = 15 * 60;
 const OCR_IMAGE_MAX_BYTES = 1_000_000;
+const OCR_TOTAL_TIMEOUT_MS = 55_000;
 const MAX_OCR_KEYS = 50;
 const SUMY_OCR_CACHE_VERSION = "v2";
 const EXPECTED_QUEUES = Array.from({ length: 12 }, (_, index) => `${Math.floor(index / 2) + 1}.${index % 2 + 1}`);
@@ -443,7 +444,13 @@ async function callOcrSpace(imageBytes, mimeType, keys, keyIndex, validate) {
   const startIndex = Number.isInteger(keyIndex) ? ((keyIndex % uniqueKeys.length) + uniqueKeys.length) % uniqueKeys.length : 0;
   const ordered = [...uniqueKeys.slice(startIndex), ...uniqueKeys.slice(0, startIndex)];
   let lastError = "OCR сервіс тимчасово недоступний.";
+  const deadline = Date.now() + OCR_TOTAL_TIMEOUT_MS;
   for (const apiKey of ordered) {
+    const remainingMs = deadline - Date.now();
+    if (remainingMs <= 0) {
+      lastError = "вичерпано час очікування для послідовних ключів OCR.space";
+      break;
+    }
     const form = new FormData();
     form.append("file", new Blob([imageBytes], { type: mimeType }), "official-sumy-schedule.jpg");
     form.append("OCREngine", "3");
@@ -454,7 +461,7 @@ async function callOcrSpace(imageBytes, mimeType, keys, keyIndex, validate) {
     let response;
     try {
       response = await fetch("https://api.ocr.space/parse/image", {
-        method: "POST", headers: { apikey: apiKey }, body: form, signal: AbortSignal.timeout(25_000),
+        method: "POST", headers: { apikey: apiKey }, body: form, signal: AbortSignal.timeout(Math.min(25_000, remainingMs)),
       });
     } catch {
       lastError = "Не вдалося з’єднатися з OCR.space.";
