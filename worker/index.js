@@ -3,6 +3,8 @@ const MAX_MESSAGES = 5;
 const CACHE_SECONDS = 180;
 const OCR_FAILURE_CACHE_SECONDS = 15 * 60;
 const OCR_IMAGE_MAX_BYTES = 1_000_000;
+const MAX_OCR_KEYS = 50;
+const SUMY_OCR_CACHE_VERSION = "v2";
 const EXPECTED_QUEUES = Array.from({ length: 12 }, (_, index) => `${Math.floor(index / 2) + 1}.${index % 2 + 1}`);
 const YASNO_SOURCE_BY_ID = {
   "source-dnipro-dtem": { title: "ДТЕК Дніпровські електромережі (ДнЕМ)", url: "https://static.yasno.ua/dnipro/outages" },
@@ -135,7 +137,9 @@ export function parseIntervals(value) {
   const expression = /(?<!\d)(\d{1,2}(?::[0-5]\d)?)\s*[-–—−]\s*(\d{1,2}(?::[0-5]\d)?)(?!\d)/g;
   for (const match of value.matchAll(expression)) {
     const start = toMinutes(match[1]);
-    const end = toMinutes(match[2]);
+    let end = toMinutes(match[2]);
+    // In outage tables, 00:00 at the end of a late-night interval means midnight (24:00).
+    if (start > 0 && end === 0) end = 1440;
     if (start === null || end === null || end <= start || end > 1440) continue;
     periods.push({ start, end });
   }
@@ -421,9 +425,21 @@ function readSumySchedulePosts(html, referenceDate) {
   }).filter(Boolean).sort((a, b) => (Date.parse(b.postedAt || 0) - Date.parse(a.postedAt || 0)));
 }
 
+export function getOcrSpaceKeys(env = {}) {
+  const firstKey = env.OCR_SPACE_API_KEY_1 || env.OCR_SPACE_API_KEY;
+  const numberedKeys = Array.from({ length: MAX_OCR_KEYS - 1 }, (_, index) => env[`OCR_SPACE_API_KEY_${index + 2}`]);
+  return [firstKey, ...numberedKeys]
+    .filter((key) => typeof key === "string" && key.trim())
+    .map((key) => key.trim())
+    .filter((key, index, all) => all.indexOf(key) === index);
+}
+
 async function callOcrSpace(imageBytes, mimeType, keys, keyIndex, validate) {
-  const uniqueKeys = Array.isArray(keys) ? keys.filter((key, index, all) => typeof key === "string" && key.trim() && all.indexOf(key) === index) : [];
-  if (uniqueKeys.length < 1 || uniqueKeys.length > 2) throw new Error("Не налаштовано жодного ключа OCR.space.");
+  const uniqueKeys = Array.isArray(keys)
+    ? keys.filter((key) => typeof key === "string" && key.trim()).map((key) => key.trim()).filter((key, index, all) => all.indexOf(key) === index)
+    : [];
+  if (uniqueKeys.length < 1) throw new Error("Не налаштовано жодного ключа OCR.space.");
+  if (uniqueKeys.length > MAX_OCR_KEYS) throw new Error(`Підтримується не більше ${MAX_OCR_KEYS} ключів OCR.space.`);
   const startIndex = Number.isInteger(keyIndex) ? ((keyIndex % uniqueKeys.length) + uniqueKeys.length) % uniqueKeys.length : 0;
   const ordered = [...uniqueKeys.slice(startIndex), ...uniqueKeys.slice(0, startIndex)];
   let lastError = "OCR сервіс тимчасово недоступний.";
@@ -542,14 +558,14 @@ async function fetchSumy(env, { force = false } = {}) {
     for (const date of [today, tomorrow]) {
       const post = latestByDate[date];
       if (!post?.photoUrl) continue;
-      const postCacheKey = `sumy:post:${post.postId}`;
+      const postCacheKey = `sumy:${SUMY_OCR_CACHE_VERSION}:post:${post.postId}`;
       const postCached = await readCache(env, postCacheKey);
       if (postCached?.photoUrl === post.photoUrl && postCached.schedule) {
         schedules[date] = postCached.schedule;
         continue;
       }
-      if (![env.OCR_SPACE_API_KEY, env.OCR_SPACE_API_KEY_2].some((key) => typeof key === "string" && key.trim())) {
-        throw new Error("OCR не налаштований як Secret у Cloudflare. Перевірте OCR_SPACE_API_KEY.");
+      if (!getOcrSpaceKeys(env).length) {
+        throw new Error("OCR не налаштований як Secret у Cloudflare. Перевірте OCR_SPACE_API_KEY_1 або OCR_SPACE_API_KEY.");
       }
       const imageResponse = await fetch(post.photoUrl, { headers: { "User-Agent": "ShoPoSvitlu/1.0 (+https://github.com/kdinya/sho-po-svitlu)" }, signal: AbortSignal.timeout(15_000) });
       if (!imageResponse.ok) throw new Error("Зображення з офіційного каналу тимчасово недоступне.");
@@ -560,7 +576,7 @@ async function fetchSumy(env, { force = false } = {}) {
       const bytes = await readLimitedResponseBytes(imageResponse, OCR_IMAGE_MAX_BYTES);
       const digestBytes = await crypto.subtle.digest("SHA-256", bytes);
       const digest = [...new Uint8Array(digestBytes)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
-      const imageCacheKey = `sumy:image:${digest}`;
+      const imageCacheKey = `sumy:${SUMY_OCR_CACHE_VERSION}:image:${digest}`;
       const imageCached = await readCache(env, imageCacheKey);
       if (imageCached?.schedule) {
         const schedule = { ...imageCached.schedule, date, postedAt: post.postedAt, postId: post.postId };
@@ -568,10 +584,10 @@ async function fetchSumy(env, { force = false } = {}) {
         await writeCache(env, postCacheKey, { photoUrl: post.photoUrl, schedule });
         continue;
       }
-      const failedCacheKey = `sumy:failed:${digest}`;
+      const failedCacheKey = `sumy:${SUMY_OCR_CACHE_VERSION}:failed:${digest}`;
       if (await readCache(env, failedCacheKey)) throw new Error("Це зображення вже не пройшло перевірку OCR. Щоб уникнути зайвих розпізнавань, спробуйте пізніше або відкрийте офіційне джерело.");
-      const keys = [env.OCR_SPACE_API_KEY, env.OCR_SPACE_API_KEY_2].filter((key, index, all) => typeof key === "string" && key.trim() && all.indexOf(key) === index);
-      if (!keys.length) throw new Error("OCR не налаштований як Secret у Cloudflare. Перевірте OCR_SPACE_API_KEY.");
+      const keys = getOcrSpaceKeys(env);
+      if (!keys.length) throw new Error("OCR не налаштований як Secret у Cloudflare. Перевірте OCR_SPACE_API_KEY_1 або OCR_SPACE_API_KEY.");
       const lock = await claimOcr(env, digest, keys.length);
       if (!lock?.claimed) {
         if (lock?.configurationError) throw new Error("Захист від повторного OCR не налаштований. Щоб не витрачати квоту двічі, розпізнавання не запускали.");
@@ -688,7 +704,7 @@ export class CompletedSetupCounter {
       try { body = await request.json(); } catch { return Response.json({ error: "invalid_json" }, { status: 400 }); }
       const digest = body?.digest;
       const keyCount = body?.keyCount;
-      if (typeof digest !== "string" || !/^[a-f0-9]{64}$/.test(digest) || !Number.isInteger(keyCount) || keyCount < 1 || keyCount > 2) {
+      if (typeof digest !== "string" || !/^[a-f0-9]{64}$/.test(digest) || !Number.isInteger(keyCount) || keyCount < 1 || keyCount > MAX_OCR_KEYS) {
         return Response.json({ error: "invalid_request" }, { status: 400 });
       }
       const result = await this.ctx.storage.transaction(async (transaction) => {
@@ -698,8 +714,9 @@ export class CompletedSetupCounter {
         if (until > now) return { claimed: false };
         await transaction.put(lockKey, now + 90_000);
         const nextKey = Math.max(0, Number(await transaction.get("ocr:next-key") ?? 0));
-        await transaction.put("ocr:next-key", nextKey + 1);
-        return { claimed: true, keyIndex: nextKey % keyCount };
+        const keyIndex = nextKey % keyCount;
+        await transaction.put("ocr:next-key", (keyIndex + 1) % keyCount);
+        return { claimed: true, keyIndex };
       });
       return Response.json(result);
     }
