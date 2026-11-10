@@ -1,7 +1,7 @@
 {
   "name": "sho-po-svitlu",
   "version": "1.0.0",
-  "description": "Графіки відключень електроенергії за чергою з публічних Telegram-каналів.",
+  "description": "Графіки відключень електроенергії за чергою з Telegram-каналів та офіційних джерел.",
   "private": true,
   "type": "module",
   "scripts": {

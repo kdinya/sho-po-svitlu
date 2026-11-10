@@ -220,3 +220,13 @@ test("complete setup API: normalizes nicknames, registers by browser ID and fetc
     globalThis.fetch = original;
   }
 });
+
+
+test("normalizeChannelInput accepts only built-in official schedule source URLs", () => {
+  assert.deepEqual(normalizeChannelInput("https://app.yasno.ua/api/blackout-service/public/shutdowns/regions/3/dsos/301/planned-outages"), {
+    username: "source-dnipro-dtem", url: "https://app.yasno.ua/api/blackout-service/public/shutdowns/regions/3/dsos/301/planned-outages",
+  });
+  assert.equal(normalizeChannelInput("https://www.cherkasyoblenergo.com/api/v1/posts/main?limit=2").username, "source-cherkasy");
+  assert.equal(normalizeChannelInput("https://t.me/s/SumyEnergo").username, "SumyEnergo");
+  assert.throws(() => normalizeChannelInput("https://evil.example/api/v1/posts/main"), /Введіть публічне посилання/);
+});

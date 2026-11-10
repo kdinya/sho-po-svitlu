@@ -14,12 +14,27 @@ export function normalizeWorkerUrl(input) {
   return url.toString().replace(/\/$/, "");
 }
 
+const OFFICIAL_SCHEDULE_SOURCES = [
+  { username: "source-dnipro-dtem", url: "https://app.yasno.ua/api/blackout-service/public/shutdowns/regions/3/dsos/301/planned-outages" },
+  { username: "source-dnipro-cek", url: "https://app.yasno.ua/api/blackout-service/public/shutdowns/regions/3/dsos/303/planned-outages" },
+  { username: "source-cherkasy", url: "https://www.cherkasyoblenergo.com/api/v1/posts/main?lang=uk&limit=10" },
+];
+
 export function normalizeChannelInput(input) {
   const value = String(input ?? "").trim();
   if (!value) throw new Error("Вкажіть посилання або @назву Telegram-каналу.");
+  let parsed;
+  try { parsed = new URL(value); } catch {}
+  if (parsed && parsed.protocol === "https:") {
+    const source = OFFICIAL_SCHEDULE_SOURCES.find((item) => {
+      const expected = new URL(item.url);
+      return parsed.origin === expected.origin && parsed.pathname === expected.pathname;
+    });
+    if (source) return { username: source.username, url: source.url };
+  }
   const match = value.match(/^(?:https?:\/\/)?(?:www\.)?(?:t\.me|telegram\.me)\/(?:s\/)?([A-Za-z0-9_]{5,32})\/?(?:\?.*)?$/i)
     || value.match(/^@?([A-Za-z0-9_]{5,32})$/);
-  if (!match) throw new Error("Введіть публічне посилання виду https://t.me/s/назва_каналу.");
+  if (!match) throw new Error("Введіть публічне посилання виду https://t.me/s/назва_каналу або оберіть офіційне джерело зі списку.");
   return { username: match[1], url: `https://t.me/s/${match[1]}` };
 }
 
@@ -31,7 +46,8 @@ export async function fetchSchedule({ workerUrl, channel, refresh = false, signa
   endpoint.searchParams.set("channel", normalized.url);
   if (refresh) endpoint.searchParams.set("refresh", "1");
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(new DOMException("Час очікування минув.", "TimeoutError")), 12000);
+  const timeoutMs = normalized.username === "SumyEnergo" ? 90_000 : 12_000;
+  const timeout = setTimeout(() => controller.abort(new DOMException("Час очікування минув.", "TimeoutError")), timeoutMs);
   const abort = () => controller.abort(signal?.reason);
   signal?.addEventListener("abort", abort, { once: true });
   try {

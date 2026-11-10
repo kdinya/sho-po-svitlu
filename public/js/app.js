@@ -57,6 +57,8 @@ const els = {
   onboardStepQueue: $("onboardStepQueue"),
   onboardStepNickname: $("onboardStepNickname"),
   onboardUseDefault: $("onboardUseDefault"),
+  onboardOfficialSource: $("onboardOfficialSource"),
+  onboardUseOfficial: $("onboardUseOfficial"),
   onboardUseCustom: $("onboardUseCustom"),
   onboardChannelInput: $("onboardChannelInput"),
   onboardError: $("onboardError"),
@@ -318,13 +320,59 @@ function setActiveScreen(name) {
   }
 }
 
+const BUILTIN_SOURCES = [
+  {
+    name: "Сумиобленерго · офіційний графік",
+    url: "https://t.me/s/SumyEnergo",
+    username: "SumyEnergo",
+    region: "Сумська область",
+    sourceLabel: "Офіційний Telegram-канал Сумиобленерго",
+    sourcePage: "https://t.me/SumyEnergo",
+    isDefault: true,
+  },
+  {
+    name: "ДТЕК Дніпровські електромережі (ДнЕМ)",
+    url: "https://app.yasno.ua/api/blackout-service/public/shutdowns/regions/3/dsos/301/planned-outages",
+    username: "source-dnipro-dtem",
+    region: "Дніпропетровська область",
+    sourceLabel: "Офіційні дані YASNO · ДТЕК ДнЕМ",
+    sourcePage: "https://static.yasno.ua/dnipro/outages",
+    isDefault: true,
+  },
+  {
+    name: "ЦЕК · Дніпропетровська область",
+    url: "https://app.yasno.ua/api/blackout-service/public/shutdowns/regions/3/dsos/303/planned-outages",
+    username: "source-dnipro-cek",
+    region: "Дніпропетровська область",
+    sourceLabel: "Офіційні дані YASNO · ЦЕК",
+    sourcePage: "https://static.yasno.ua/dnipro/outages",
+    isDefault: true,
+  },
+  {
+    name: "Черкасиобленерго · офіційний графік",
+    url: "https://www.cherkasyoblenergo.com/api/v1/posts/main?lang=uk&limit=10",
+    username: "source-cherkasy",
+    region: "Черкаська область",
+    sourceLabel: "Офіційний сайт Черкасиобленерго",
+    sourcePage: "https://www.cherkasyoblenergo.com/media?category=news&lang=uk",
+    isDefault: true,
+  },
+];
+
 const REGION_CHANNELS = {
   "Кіровоградська область": DEFAULT_CHANNELS,
+  "Сумська область": BUILTIN_SOURCES.filter((item) => item.region === "Сумська область"),
+  "Дніпропетровська область": BUILTIN_SOURCES.filter((item) => item.region === "Дніпропетровська область"),
+  "Черкаська область": BUILTIN_SOURCES.filter((item) => item.region === "Черкаська область"),
 };
+
+function findKnownSource(username) {
+  return [...channels, ...BUILTIN_SOURCES].find((item) => item.username.toLowerCase() === username.toLowerCase());
+}
 
 function currentRegion() {
   const normalized = normalizeChannelInput(settings.channel).username.toLowerCase();
-  const selected = channels.find((channel) => channel.username.toLowerCase() === normalized);
+  const selected = findKnownSource(normalized);
   return selected?.region || localStorage.getItem("sho-po-svitlu.region.v1") || "Кіровоградська область";
 }
 
@@ -524,7 +572,7 @@ function renderChannelsList() {
     const infoName = document.createElement("strong");
     infoName.textContent = ch.name;
     const infoHandle = document.createElement("small");
-    infoHandle.textContent = `t.me/s/${ch.username}`;
+    infoHandle.textContent = ch.sourceLabel || `t.me/s/${ch.username}`;
     info.append(infoName, infoHandle);
     const regionTag = document.createElement("small");
     regionTag.className = "channel-region-tag";
@@ -599,11 +647,14 @@ function closeSettings() {
 function updateSource() {
   const normalized = normalizeChannelInput(settings.channel);
   els.sourceLink.href = normalized.url;
-  const known = channels.find((ch) => ch.username.toLowerCase() === normalized.username.toLowerCase());
+  const known = findKnownSource(normalized.username);
   const channelTitle = data?.title || known?.name || normalized.username;
   const regionTitle = known?.region || "Кіровоградська область";
+  els.sourceLink.href = data?.sourceUrl || known?.sourcePage || normalized.url;
+  const sourceEyebrow = els.sourceLink.closest(".source-panel")?.querySelector(".source-head .eyebrow");
+  if (sourceEyebrow) sourceEyebrow.textContent = known?.sourceLabel || "Telegram";
   els.sourceName.textContent = channelTitle;
-  els.sourceHandle.textContent = `t.me/s/${normalized.username}`;
+  els.sourceHandle.textContent = known?.sourceLabel || `t.me/s/${normalized.username}`;
   els.homeSourceName.textContent = channelTitle;
   if (els.homeRegionName) {
     els.homeRegionName.textContent = regionTitle;
@@ -703,7 +754,7 @@ function renderView() {
     setPower("unknown");
     setStatusTitle("Перевіряємо графік");
     setNext("Очікуємо дані");
-    els.statusMeta.textContent = "Оновлюємо дані з Telegram...";
+    els.statusMeta.textContent = "Оновлюємо дані з обраного джерела...";
     els.footerUpdate.textContent = "Очікуємо перше оновлення";
     return;
   }
@@ -724,7 +775,9 @@ function renderView() {
       const nextAction = state.powered ? "Вимкнуть: о" : "Увімкнуть: о";
       setNext(nextAction, formatClock(state.changeAt), `через ${left}`);
     }
-    els.statusMeta.textContent = data.stale ? "Показано збережену копію графіка" : `Черга ${settings.queue} · оновлено ${formatTimestamp(data.fetchedAt)}`;
+    els.statusMeta.textContent = data.stale
+      ? `${data.warning || "Показано збережену копію графіка."} Перевірте першоджерело.`
+      : `Черга ${settings.queue} · оновлено ${formatTimestamp(data.fetchedAt)}`;
   }
 
   els.updatedAt.textContent = formatTimestamp(data.fetchedAt);
@@ -998,7 +1051,20 @@ function renderOnboardQueues() {
   );
 }
 
+function populateOnboardOfficialSources() {
+  if (!els.onboardOfficialSource) return;
+  const options = BUILTIN_SOURCES.map((source) => {
+    const option = document.createElement("option");
+    option.value = source.username;
+    option.textContent = `${source.region} · ${source.name}`;
+    return option;
+  });
+  els.onboardOfficialSource.replaceChildren(...options);
+  syncCustomSelect(els.onboardOfficialSource);
+}
+
 function openOnboarding({ nicknameOnly = false } = {}) {
+  populateOnboardOfficialSources();
   onboardMode = nicknameOnly ? "nickname" : "setup";
   onboardChannel = nicknameOnly ? channels.find((channel) => normalizeChannelInput(channel.url).url === normalizeChannelInput(settings.channel).url) || {
     name: normalizeChannelInput(settings.channel).username,
@@ -1091,6 +1157,10 @@ async function finishOnboarding() {
 }
 
 els.onboardUseDefault.addEventListener("click", () => pickOnboardChannel(DEFAULT_CHANNELS[0]));
+els.onboardUseOfficial?.addEventListener("click", () => {
+  const source = BUILTIN_SOURCES.find((item) => item.username === els.onboardOfficialSource?.value);
+  if (source) pickOnboardChannel(source);
+});
 els.onboardUseCustom.addEventListener("click", () => {
   try {
     const normalized = normalizeChannelInput(els.onboardChannelInput.value);
@@ -1410,6 +1480,7 @@ document.addEventListener("visibilitychange", () => {
 // Initialize
 initQueueOptions();
 initCustomSelect(els.settingsRegionSelect);
+initCustomSelect(els.onboardOfficialSource);
 initCustomSelect(els.requestRegion);
 initCustomSelect(els.requestType);
 updateShareLinks();

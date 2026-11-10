@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#06122d" />
-    <meta name="description" content="Зрозумілий графік світла за чергою з публічного Telegram-каналу." />
+    <meta name="description" content="Зрозумілий графік світла за чергою з офіційних джерел та публічних Telegram-каналів." />
     <meta name="color-scheme" content="dark" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="ШоПоСвітлу" />
@@ -276,7 +276,7 @@
           <article class="card source-panel">
             <div class="source-head">
               <span class="source-mark"><svg class="icon"><use href="#i-send" /></svg></span>
-              <div><small class="eyebrow">Telegram</small><h2>Першоджерело</h2></div>
+              <div><small class="eyebrow">Джерело графіка</small><h2>Першоджерело</h2></div>
               <span class="source-status" id="sourceStatus"><i></i>активне</span>
             </div>
             <a class="source-link" id="sourceLink" href="https://t.me/s/SvitloMalovyskivskohoRaionu" target="_blank" rel="noopener noreferrer">
@@ -376,7 +376,7 @@
     <dialog class="sheet" id="settingsDialog" aria-labelledby="settingsTitle">
       <div class="sheet-box">
         <div class="sheet-top">
-          <div><small class="eyebrow">Канали графіків</small><h2 id="settingsTitle">Оберіть Telegram-канал</h2></div>
+          <div><small class="eyebrow">Джерела графіків</small><h2 id="settingsTitle">Оберіть джерело</h2></div>
           <button class="sheet-close" id="closeSettings" type="button" aria-label="Закрити">×</button>
         </div>
         <div class="sheet-body">
@@ -511,12 +511,15 @@
         <div class="welcome-step" id="onboardStepChannel">
           <img class="welcome-mascot" src="/images/mascot-lightbulb.webp" alt="" width="616" height="708" />
           <h2 id="onboardTitle" tabindex="-1" autofocus>Привіт! Звідки брати графік?</h2>
-          <p class="welcome-lead">Графіки беремо з публічних Telegram-каналів. Оберіть готовий або додайте свій.</p>
+          <p class="welcome-lead">Оберіть готове джерело графіка або додайте свій публічний Telegram-канал.</p>
           <button type="button" class="choice-card" id="onboardUseDefault">
             <span class="source-mark"><svg class="icon"><use href="#i-send" /></svg></span>
-            <span class="source-copy"><small>Готовий канал</small><strong>Світло Маловисківського району</strong></span>
+            <span class="source-copy"><small>Кіровоградська область</small><strong>Світло Маловисківського району</strong></span>
             <span class="choice-go">Обрати</span>
           </button>
+          <label class="field-hint" for="onboardOfficialSource" style="display:block;margin-top:14px;">Інше готове офіційне джерело</label>
+          <div class="input-wrap" style="margin-top:6px;"><select id="onboardOfficialSource" class="native-select" aria-label="Оберіть готове офіційне джерело"></select></div>
+          <button type="button" class="primary-btn" id="onboardUseOfficial" style="margin-top:8px;">Далі з цим джерелом</button>
           <div class="or-line"><span>або свій канал</span></div>
           <div class="input-wrap"><svg class="icon"><use href="#i-send" /></svg><input id="onboardChannelInput" type="text" inputmode="url" autocapitalize="none" autocomplete="off" aria-label="Посилання на свій Telegram-канал" placeholder="https://t.me/s/назва або @канал" /></div>
           <p class="form-error" id="onboardError" role="alert" hidden></p>
