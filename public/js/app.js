@@ -656,6 +656,8 @@ function updateSource() {
   els.sourceName.textContent = channelTitle;
   els.sourceHandle.textContent = known?.sourceLabel || `t.me/s/${normalized.username}`;
   els.homeSourceName.textContent = channelTitle;
+  els.homeSourceName.href = els.sourceLink.href;
+  els.homeSourceName.setAttribute("aria-label", `Відкрити джерело графіка: ${channelTitle}`);
   if (els.homeRegionName) {
     els.homeRegionName.textContent = regionTitle;
     fitRegionName();

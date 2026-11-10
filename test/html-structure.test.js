@@ -119,6 +119,14 @@ test("головний екран виводить назву області н�
   assert.match(html, /class=["']channel-headline["'][\s\S]*?id=["']homeRegionName["'][\s\S]*?id=["']homeSourceName["']/);
 });
 
+test("назва джерела на головній є доступним посиланням на активне джерело", () => {
+  assert.match(html, /<a class="brand-subtitle home-source-link" id="homeSourceName"[^>]*target="_blank"[^>]*rel="noopener noreferrer"/);
+  assert.match(appJs, /els\.homeSourceName\.href = els\.sourceLink\.href/);
+  assert.match(appJs, /els\.homeSourceName\.setAttribute\("aria-label", `Відкрити джерело графіка:/);
+  assert.match(css, /\.home-source-link:focus-visible \{[^}]*outline: 2px solid var\(--sun\)/);
+  assert.match(css, /\.home-source-link:hover \{[^}]*text-decoration: underline/);
+});
+
 test("налаштування містять кнопку довідки про додаток та діалог з описом роботи", () => {
   assert.match(html, /id=["']aboutAppBtn["']/);
   assert.match(html, /id=["']aboutAppDialog["'][\s\S]*?id=["']aboutDialogTitle["']/);
@@ -174,7 +182,7 @@ test("прапор у шапці використовує оригінальни
   assert.match(css, /\.brand-flag \{[^}]*position:\s*absolute;[^}]*top:\s*50%;[^}]*left:\s*-8px;[^}]*transform:\s*translateY\(-50%\);[^}]*z-index:\s*1;[^}]*width:\s*75px;[^}]*height:\s*54px;/);
   assert.match(css, /\.brand-title \{[^}]*position:\s*relative;[^}]*z-index:\s*2;[^}]*white-space:\s*nowrap;/);
   assert.match(css, /\.brand-flag-image \{[^}]*width:\s*100%;[^}]*height:\s*100%;[^}]*object-fit:\s*contain/);
-  assert.match(sw, /CACHE_NAME = "sho-po-svitlu-shell-v39"/);
+  assert.match(sw, /CACHE_NAME = "sho-po-svitlu-shell-v40"/);
   assert.match(sw, /"\/images\/ukraine-flag-header\.gif"/);
   assert.match(sw, /"\/images\/ukraine-flag-header-still\.png"/);
 });

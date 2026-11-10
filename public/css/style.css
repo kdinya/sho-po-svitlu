@@ -183,6 +183,16 @@ body[data-power="off"] .sky-lights { opacity: 0.05; animation: none; }
   line-height: 1.22;
   text-shadow: 0 1px 6px rgba(0, 0, 0, 0.5);
 }
+.home-source-link {
+  text-decoration: none;
+  border-radius: 3px;
+  transition: color 160ms ease;
+}
+.home-source-link:hover { color: #c1d1ff; text-decoration: underline; }
+.home-source-link:focus-visible {
+  outline: 2px solid var(--sun);
+  outline-offset: 3px;
+}
 
 .queue-picker { position: relative; flex: none; margin-top: 4px; }
 .queue-trigger {
