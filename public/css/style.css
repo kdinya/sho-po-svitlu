@@ -214,7 +214,7 @@ body[data-power="off"] .sky-lights { opacity: 0.05; animation: none; }
 .queue-trigger.has-name { max-width: clamp(134px, calc(100vw - 180px), 238px); gap: 8px; padding-top: 7px; padding-bottom: 7px; }
 .queue-trigger.has-name .queue-trigger-copy { display: flex; min-width: 0; max-width: 100%; flex-direction: column; align-items: flex-start; gap: 2px; }
 .queue-trigger.has-name .queue-trigger-topline { display: inline-flex; align-items: center; gap: 5px; }
-.queue-trigger.has-name .queue-trigger-name { display: block; max-width: clamp(44px, calc(100vw - 260px), 150px); overflow: hidden; color: #ffd85b; font-size: 11px; font-weight: 700; line-height: 1.1; text-overflow: ellipsis; white-space: nowrap; }
+.queue-trigger.has-name .queue-trigger-name { display: block; max-width: clamp(44px, calc(100vw - 260px), 150px); overflow: hidden; color: #ffd85b; font-size: 22px; font-weight: 700; line-height: 1.1; text-overflow: ellipsis; white-space: nowrap; }
 .queue-chevron { width: 18px; height: 18px; transition: transform 0.2s; }
 .queue-trigger[aria-expanded="true"] .queue-chevron { transform: rotate(180deg); }
 
@@ -252,7 +252,13 @@ body[data-power="off"] .sky-lights { opacity: 0.05; animation: none; }
 .queue-menu.is-editing .queue-option-name { color: #ffd85b; }
 .queue-edit-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
 .queue-edit-actions .ghost-btn, .queue-edit-actions .primary-btn { min-width: 0; justify-content: center; padding: 10px 8px; font-size: 13px; }
-.queue-dialog .sheet-box { max-width: 460px; margin: 0 auto; border-bottom: 1px solid var(--line-strong); border-radius: 28px; }
+.queue-dialog .sheet-box {
+  max-height: min(84vh, 560px);
+  max-height: min(84dvh, 560px);
+  margin: 0 auto;
+  border-bottom: 1px solid var(--line-strong);
+  border-radius: 28px;
+}
 .queue-dialog-copy { margin: 0; color: #cfdaF5; font-size: 14px; line-height: 1.55; }
 .queue-dialog-actions { display: grid; grid-template-columns: 1fr 1.3fr; gap: 10px; margin-top: 18px; }
 .queue-dialog-actions .primary-btn, .queue-dialog-actions .ghost-btn { min-width: 0; justify-content: center; padding: 12px 10px; font-size: 14px; }
@@ -802,6 +808,16 @@ dialog.sheet {
 }
 dialog.sheet::backdrop { background: rgba(2, 6, 20, 0.72); backdrop-filter: blur(6px); }
 dialog.sheet[open] .sheet-box { animation: slide 0.28s cubic-bezier(0.2, 0.9, 0.3, 1); }
+dialog.sheet.queue-dialog {
+  width: min(calc(100% - 28px), 420px);
+  max-height: calc(100vh - 24px);
+  max-height: calc(100dvh - 24px);
+  margin: auto;
+  transform: translateY(var(--queue-dialog-viewport-shift, 0px));
+}
+dialog.sheet.queue-dialog[open] .sheet-box { animation: queue-dialog-appear 0.18s ease-out; }
+dialog.sheet.queue-dialog:focus { outline: none; }
+@keyframes queue-dialog-appear { from { opacity: 0; transform: scale(0.98); } }
 @keyframes slide { from { transform: translateY(40px); opacity: 0; } }
 .sheet-box {
   max-height: 92vh; overflow-y: auto;

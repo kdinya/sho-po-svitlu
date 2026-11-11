@@ -348,7 +348,7 @@ function beginQueueNameEdit() {
   els.queueEditActions.hidden = false;
   renderQueueOptions();
   setQueueMenu(true);
-  els.queueOptions.querySelector(".queue-option")?.focus();
+  els.queueOptions.querySelector(`[data-queue="${settings.queue}"]`)?.focus({ preventScroll: true });
 }
 
 function finishQueueNameEdit(save) {
@@ -378,8 +378,8 @@ function requestQueueNameEditExit() {
     finishQueueNameEdit(false);
     return;
   }
-  els.queueNameExitDialog.showModal();
-  els.continueQueueNamesBtn.focus();
+  showQueueDialog(els.queueNameExitDialog);
+  els.continueQueueNamesBtn.focus({ preventScroll: true });
 }
 
 function openQueueNameDialog(queue) {
@@ -388,15 +388,14 @@ function openQueueNameDialog(queue) {
   els.queueNameDialogTitle.textContent = `Черга ${queue}`;
   els.queueNameInput.value = currentName;
   els.queueNameInput.maxLength = QUEUE_NAME_MAX_LENGTH;
-  els.queueNameDialog.showModal();
-  els.queueNameInput.focus();
+  showQueueDialog(els.queueNameDialog);
 }
 
 function closeQueueNameDialog({ restoreFocus = true } = {}) {
   if (els.queueNameDialog.open) els.queueNameDialog.close();
   const queue = editingQueueName;
   editingQueueName = null;
-  if (restoreFocus && queue) els.queueOptions.querySelector(`[data-queue="${queue}"]`)?.focus();
+  if (restoreFocus && queue) els.queueOptions.querySelector(`[data-queue="${queue}"]`)?.focus({ preventScroll: true });
 }
 
 function formatHeroDate(isoDate, isToday) {
@@ -972,7 +971,7 @@ els.queueSelect.addEventListener("click", (e) => {
   if (queueNameDraft !== null) requestQueueNameEditExit();
   else setQueueMenu(els.queueMenu.hidden);
 });
-els.editQueueNamesBtn.addEventListener("click", () => els.queueNameIntroDialog.showModal());
+els.editQueueNamesBtn.addEventListener("click", () => showQueueDialog(els.queueNameIntroDialog));
 els.confirmQueueNameIntro.addEventListener("click", () => {
   els.queueNameIntroDialog.close();
   beginQueueNameEdit();
@@ -1004,7 +1003,7 @@ els.discardQueueNamesBtn.addEventListener("click", () => {
 });
 els.continueQueueNamesBtn.addEventListener("click", () => {
   els.queueNameExitDialog.close();
-  els.queueOptions.querySelector(".queue-option")?.focus();
+  els.queueOptions.querySelector(`[data-queue="${settings.queue}"]`)?.focus({ preventScroll: true });
 });
 els.confirmSaveQueueNamesBtn.addEventListener("click", () => {
   if (finishQueueNameEdit(true)) els.queueNameExitDialog.close();
@@ -1031,6 +1030,28 @@ document.addEventListener("keydown", (event) => {
     setQueueMenu(false);
   }
 });
+function showQueueDialog(dialog) {
+  dialog.showModal();
+  dialog.focus({ preventScroll: true });
+  updateQueueDialogPosition();
+}
+
+function updateQueueDialogPosition() {
+  const viewport = window.visualViewport;
+  const layoutHeight = document.documentElement.clientHeight;
+  const shift = viewport ? viewport.offsetTop + (viewport.height - layoutHeight) / 2 : 0;
+  document.querySelectorAll("dialog.queue-dialog").forEach((dialog) => {
+    dialog.style.setProperty("--queue-dialog-viewport-shift", `${Math.round(shift)}px`);
+  });
+}
+
+window.addEventListener("resize", updateQueueDialogPosition);
+window.visualViewport?.addEventListener("resize", updateQueueDialogPosition);
+window.visualViewport?.addEventListener("scroll", updateQueueDialogPosition);
+[els.queueNameIntroDialog, els.queueNameDialog, els.queueNameExitDialog].forEach((dialog) => {
+  dialog.addEventListener("close", () => dialog.style.removeProperty("--queue-dialog-viewport-shift"));
+});
+
 [els.queueNameIntroDialog, els.queueNameDialog].forEach((dialog) => {
   dialog.addEventListener("click", (event) => {
     if (event.target === dialog) {

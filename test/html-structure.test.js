@@ -149,6 +149,20 @@ test("після збереження назви черги фокус пове�
   const focusIndex = submitHandler.indexOf("querySelector(`[data-queue=\"${queue}\"]`)?.focus()", renderIndex);
   assert.ok(closeIndex >= 0 && closeIndex < renderIndex && renderIndex < focusIndex, "спочатку закриваємо діалог, перемальовуємо список, потім повертаємо фокус на ту саму чергу");
   assert.ok(appJs.includes("function closeQueueNameDialog({ restoreFocus = true } = {})"));
+  assert.doesNotMatch(appJs, /els\.queueNameInput\.focus\s*\(/, "відкриття редактора не повинно викликати клавіатуру автоматично");
+  assert.match(appJs, /function showQueueDialog\(dialog\)[\s\S]*?dialog\.focus\(\{ preventScroll: true \}\)/);
+  assert.match(appJs, /window\.visualViewport\?\.addEventListener\("resize", updateQueueDialogPosition\)/);
+  assert.match(appJs, /els\.queueOptions\.querySelector\(\`\[data-queue="\$\{settings\.queue\}"\]\`\)\?\.focus\(\{ preventScroll: true \}\)/, "початковий фокус редактора не повинен прокручувати сторінку");
+});
+
+test("діалоги назв черг відкриваються по центру, а підпис над лампочкою вдвічі більший", () => {
+  for (const id of ["queueNameIntroDialog", "queueNameDialog", "queueNameExitDialog"]) {
+    assert.match(html, new RegExp(`id="${id}" tabindex="-1" autofocus`));
+  }
+  assert.match(css, /dialog\.sheet\.queue-dialog \{[^}]*margin:\s*auto/);
+  assert.match(css, /transform:\s*translateY\(var\(--queue-dialog-viewport-shift, 0px\)\)/);
+  assert.match(css, /\.queue-trigger\.has-name \.queue-trigger-name \{[^}]*font-size:\s*22px/);
+  assert.match(sw, /sho-po-svitlu-shell-v45/);
 });
 
 test("стилі містять правила для кастомних списків у неоновому стилі додатку", () => {
@@ -200,7 +214,7 @@ test("прапор у шапці використовує оригінальни
   assert.match(css, /\.brand-flag \{[^}]*position:\s*absolute;[^}]*top:\s*50%;[^}]*left:\s*-8px;[^}]*transform:\s*translateY\(-50%\);[^}]*z-index:\s*1;[^}]*width:\s*75px;[^}]*height:\s*54px;/);
   assert.match(css, /\.brand-title \{[^}]*position:\s*relative;[^}]*z-index:\s*2;[^}]*white-space:\s*nowrap;/);
   assert.match(css, /\.brand-flag-image \{[^}]*width:\s*100%;[^}]*height:\s*100%;[^}]*object-fit:\s*contain/);
-  assert.match(sw, /CACHE_NAME = "sho-po-svitlu-shell-v44"/);
+  assert.match(sw, /CACHE_NAME = "sho-po-svitlu-shell-v45"/);
   assert.match(sw, /"\/images\/ukraine-flag-header\.gif"/);
   assert.match(sw, /"\/images\/ukraine-flag-header-still\.png"/);
 });
