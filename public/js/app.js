@@ -1097,9 +1097,11 @@ function scheduleQueuePickerPosition() {
     const topbar = els.queuePicker.closest(".topbar");
     if (!topbar) return;
     topbar.style.setProperty("--queue-picker-space", `${Math.round(els.queuePicker.offsetWidth + 10)}px`);
-    const lampTop = els.mascot.getBoundingClientRect().top;
-    const screenCenteredTop = (lampTop - els.queuePicker.offsetHeight) / 2;
-    const top = Math.max(0, screenCenteredTop);
+    const scrollY = window.scrollY || document.documentElement.scrollTop || 0;
+    const lampDocumentTop = els.mascot.getBoundingClientRect().top + scrollY;
+    const topbarDocumentTop = topbar.getBoundingClientRect().top + scrollY;
+    const centeredDocumentTop = (lampDocumentTop - els.queuePicker.offsetHeight) / 2;
+    const top = Math.max(0, centeredDocumentTop - topbarDocumentTop);
     els.queuePicker.style.setProperty("--queue-picker-top", `${Math.round(top)}px`);
   });
 }
