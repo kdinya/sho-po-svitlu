@@ -40,6 +40,7 @@
       <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M2.8 20c.4-3.6 3-5.6 6.2-5.6s5.8 2 6.2 5.6" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.8"/><path d="M15.6 4.9a3.2 3.2 0 0 1 0 6m1.6 3.9c2.4.6 3.8 2.3 4.1 5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.8"/></symbol>
           <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5" fill="none" stroke="currentColor" stroke-width="2"/><line x1="12" y1="16.5" x2="12" y2="11.5" stroke="currentColor" stroke-linecap="round" stroke-width="2.2"/><circle cx="12" cy="7.8" r="1.2" fill="currentColor"/></symbol>
       <symbol id="i-heart" viewBox="0 0 24 24"><path d="M20.8 8.8c0 5.3-8.8 11-8.8 11s-8.8-5.7-8.8-11A4.8 4.8 0 0 1 12 6.2a4.8 4.8 0 0 1 8.8 2.6Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/></symbol>
+      <symbol id="i-coffee" viewBox="0 0 24 24"><path d="M5 8h12v7a5 5 0 0 1-5 5h-2a5 5 0 0 1-5-5V8Zm12 2h1.5a2.5 2.5 0 0 1 0 5H17M8 3v2m4-2v2m4-2v2" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/><path d="M4 22h15" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.8"/></symbol>
     </svg>
 
     <div class="sky" aria-hidden="true"><div class="sky-art"></div><div class="sky-lights"></div></div>
@@ -377,10 +378,25 @@
       </main>
     </div>
 
-    <a class="support-link" href="https://send.monobank.ua/jar/e9Z2mHngN" target="_blank" rel="noopener noreferrer" aria-label="Підтримати проєкт через Банку Monobank, відкриється в новій вкладці">
-      <svg class="icon" aria-hidden="true"><use href="#i-heart" /></svg>
-      <span>Підтримати</span>
-    </a>
+    <button class="support-link" id="supportButton" type="button" aria-label="Пригостити автора кавою та підтримати проєкт" aria-haspopup="dialog" aria-controls="supportDialog" title="Пригостити кавою">
+      <svg class="icon" aria-hidden="true"><use href="#i-coffee" /></svg>
+    </button>
+
+    <dialog class="sheet support-dialog" id="supportDialog" aria-labelledby="supportDialogTitle">
+      <div class="sheet-box">
+        <div class="sheet-top">
+          <div><small class="eyebrow">Тепла підтримка</small><h2 id="supportDialogTitle">Кава для автора? ☕</h2></div>
+          <button class="sheet-close" id="closeSupportDialog" type="button" aria-label="Закрити">×</button>
+        </div>
+        <div class="sheet-body">
+          <p class="support-dialog-copy">Якщо ШоПоСвітлу допомагає тобі тримати графік під контролем — пригости автора кавою! Навіть маленька чашечка додає сил розвивати проєкт і робити його ще кориснішим 💛</p>
+          <div class="support-dialog-actions">
+            <button class="ghost-btn wide" id="laterSupportBtn" type="button">Може, потім</button>
+            <a class="primary-btn support-donate-btn" href="https://send.monobank.ua/jar/e9Z2mHngN" target="_blank" rel="noopener noreferrer"><svg class="icon" aria-hidden="true"><use href="#i-coffee" /></svg><span>Пригостити кавою</span></a>
+          </div>
+        </div>
+      </div>
+    </dialog>
 
     <nav class="bottom-nav" aria-label="Основна навігація">
       <button class="nav-item is-active" type="button" data-screen-target="home" aria-current="page"><svg class="icon"><use href="#i-home" /></svg><span>Стан</span></button>
