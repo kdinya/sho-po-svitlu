@@ -196,7 +196,7 @@ body[data-power="off"] .sky-lights { opacity: 0.05; animation: none; }
 }
 
 .queue-picker { position: relative; flex: none; margin-top: 4px; }
-body[data-screen="home"] .queue-picker { position: absolute; top: var(--queue-picker-top, 12px); right: 0; z-index: 20; margin-top: 0; }
+body[data-screen="home"] .queue-picker { position: fixed; top: var(--queue-picker-top, 12px); right: max(14px, calc((100vw - var(--shell)) / 2 + 14px)); z-index: 20; margin-top: 0; }
 .queue-trigger {
   display: inline-flex; align-items: center; gap: 7px;
   padding: 9px 12px 9px 16px;

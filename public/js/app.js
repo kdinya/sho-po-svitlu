@@ -1098,9 +1098,8 @@ function scheduleQueuePickerPosition() {
     if (!topbar) return;
     topbar.style.setProperty("--queue-picker-space", `${Math.round(els.queuePicker.offsetWidth + 10)}px`);
     const lampTop = els.mascot.getBoundingClientRect().top;
-    const topbarTop = topbar.getBoundingClientRect().top;
     const screenCenteredTop = (lampTop - els.queuePicker.offsetHeight) / 2;
-    const top = screenCenteredTop - topbarTop;
+    const top = Math.max(0, screenCenteredTop);
     els.queuePicker.style.setProperty("--queue-picker-top", `${Math.round(top)}px`);
   });
 }

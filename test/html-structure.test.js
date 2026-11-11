@@ -162,10 +162,11 @@ test("діалоги назв черг відкриваються по цент�
   }
   assert.match(css, /dialog\.sheet\.queue-dialog \{[^}]*margin:\s*auto/);
   assert.match(css, /transform:\s*translateY\(var\(--queue-dialog-viewport-shift, 0px\)\)/);
-  assert.match(css, /body\[data-screen="home"\] \.queue-picker \{[^}]*position:\s*absolute;[^}]*top:\s*var\(--queue-picker-top/);
+  assert.match(css, /body\[data-screen="home"\] \.queue-picker \{[^}]*position:\s*fixed;[^}]*top:\s*var\(--queue-picker-top/);
+  assert.match(css, /right:\s*max\(14px, calc\(\(100vw - var\(--shell\)\) \/ 2 \+ 14px\)\)/);
   assert.match(appJs, /const lampTop = els\.mascot\.getBoundingClientRect\(\)\.top/);
   assert.match(appJs, /const screenCenteredTop = \(lampTop - els\.queuePicker\.offsetHeight\) \/ 2/);
-  assert.match(appJs, /const top = screenCenteredTop - topbarTop/);
+  assert.match(appJs, /const top = Math\.max\(0, screenCenteredTop\)/);
   assert.match(appJs, /window\.addEventListener\("scroll", scheduleQueuePickerPosition/);
   assert.match(css, /\.queue-trigger\.has-name \.queue-trigger-name \{[^}]*font-size:\s*22px/);
   assert.match(appJs, /function hasUncommittedQueueNameInput\(\)/);
