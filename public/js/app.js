@@ -1,5 +1,6 @@
 import { DEFAULT_CHANNEL, DEFAULT_WORKER_URL, UKRAINE_REGIONS, fetchCompletedSetupsCount, fetchSchedule, normalizeChannelInput, normalizeSetupNickname, registerCompletedSetup, sendChannelRequest } from "./api.js";
 import { formatDate, formatHours, formatMissingScheduleMessage, getLocalClock, getScheduleState, renderOutages, renderTimeline, totalMinutes } from "./timeline.js";
+import { areQueueNamesEqual, normalizeQueueNames, QUEUE_NAME_MAX_LENGTH } from "./queue-names.js";
 
 const STORAGE_KEY = "sho-po-svitlu.settings.v1";
 const DATA_KEY = "sho-po-svitlu.last-data.v1";
@@ -8,6 +9,7 @@ const ONBOARD_KEY = "sho-po-svitlu.onboarded.v1";
 const CLIENT_ID_KEY = "sho-po-svitlu.client-id.v1";
 const USERS_KEY = "sho-po-svitlu.completed-settings-count.v1";
 const PROFILE_KEY = "sho-po-svitlu.profile.v1";
+const QUEUE_NAMES_KEY = "sho-po-svitlu.queue-names.v1";
 const CLIENT_ID_COOKIE = "sps_cid";
 const CLIENT_ID_PATTERN = /^[A-Za-z0-9_-]{16,64}$/;
 
@@ -29,7 +31,27 @@ const $ = (id) => document.getElementById(id);
 const els = {
   queueSelect: $("queueSelect"),
   queueValue: $("queueValue"),
+  queueNameValue: $("queueNameValue"),
   queueMenu: $("queueMenu"),
+  queueOptions: $("queueOptions"),
+  editQueueNamesBtn: $("editQueueNamesBtn"),
+  queueEditActions: $("queueEditActions"),
+  cancelQueueNamesBtn: $("cancelQueueNamesBtn"),
+  saveQueueNamesBtn: $("saveQueueNamesBtn"),
+  queueNameIntroDialog: $("queueNameIntroDialog"),
+  closeQueueNameIntro: $("closeQueueNameIntro"),
+  cancelQueueNameIntro: $("cancelQueueNameIntro"),
+  confirmQueueNameIntro: $("confirmQueueNameIntro"),
+  queueNameDialog: $("queueNameDialog"),
+  queueNameDialogTitle: $("queueNameDialogTitle"),
+  queueNameForm: $("queueNameForm"),
+  queueNameInput: $("queueNameInput"),
+  closeQueueNameDialog: $("closeQueueNameDialog"),
+  cancelQueueNameDialog: $("cancelQueueNameDialog"),
+  queueNameExitDialog: $("queueNameExitDialog"),
+  discardQueueNamesBtn: $("discardQueueNamesBtn"),
+  continueQueueNamesBtn: $("continueQueueNamesBtn"),
+  confirmSaveQueueNamesBtn: $("confirmSaveQueueNamesBtn"),
   queuePicker: $("queuePicker"),
   homeTimelineTrack: $("homeTimelineTrack"),
   homeNowMarker: $("homeNowMarker"),
@@ -149,6 +171,14 @@ function readStoredSettings() {
   }
 }
 
+function readStoredQueueNames() {
+  try {
+    return normalizeQueueNames(JSON.parse(localStorage.getItem(QUEUE_NAMES_KEY) || "{}"));
+  } catch {
+    return {};
+  }
+}
+
 function readStoredData() {
   try {
     const data = JSON.parse(localStorage.getItem(DATA_KEY) || "null");
@@ -181,6 +211,9 @@ function readStoredChannels() {
 let settings = readStoredSettings();
 let data = readStoredData();
 let channels = readStoredChannels();
+let queueNames = readStoredQueueNames();
+let queueNameDraft = null;
+let editingQueueName = null;
 let activeDay = "today";
 let timer = null;
 let clockTimer = null;
@@ -193,6 +226,16 @@ function saveSettings() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
   } catch {
     showToast("Не вдалося зберегти налаштування в браузері.");
+  }
+}
+
+function saveQueueNames(value) {
+  try {
+    localStorage.setItem(QUEUE_NAMES_KEY, JSON.stringify(normalizeQueueNames(value)));
+    return true;
+  } catch {
+    showToast("Не вдалося зберегти назви черг у цьому браузері.");
+    return false;
   }
 }
 
@@ -228,30 +271,55 @@ function availableQueues(scheduleData = data) {
   });
 }
 
-function initQueueOptions() {
-  QUEUES = availableQueues();
-  els.queueMenu.replaceChildren(
+function renderQueueOptions() {
+  const names = queueNameDraft ?? queueNames;
+  els.queueOptions.replaceChildren(
     ...QUEUES.map((queue) => {
+      const name = names[queue] || "";
       const option = document.createElement("button");
       option.type = "button";
       option.className = "queue-option";
       option.setAttribute("role", "option");
       option.dataset.queue = queue;
-      option.textContent = queue;
-      option.setAttribute("aria-label", `Черга ${queue}`);
-      option.addEventListener("click", () => selectQueue(queue));
+      option.setAttribute("aria-label", `Черга ${queue}${name ? `, ${name}` : ""}${queueNameDraft !== null ? ". Натисніть, щоб змінити назву" : ""}`);
+
+      const number = document.createElement("span");
+      number.className = "queue-option-number";
+      number.textContent = queue;
+      option.append(number);
+      if (name || queueNameDraft !== null) {
+        const label = document.createElement("span");
+        label.className = "queue-option-name";
+        label.textContent = name || "Додати назву";
+        option.append(label);
+      }
+      option.addEventListener("click", () => {
+        if (queueNameDraft !== null) openQueueNameDialog(queue);
+        else selectQueue(queue);
+      });
       return option;
     })
   );
   updateQueuePicker();
-  setQueueMenu(false);
+}
+
+function initQueueOptions() {
+  const wasEditing = queueNameDraft !== null;
+  QUEUES = availableQueues();
+  renderQueueOptions();
+  if (wasEditing) setQueueMenu(true);
+  else setQueueMenu(false);
 }
 
 function updateQueuePicker() {
   els.queueValue.textContent = settings.queue;
-  els.queueSelect.setAttribute("aria-label", QUEUES.length ? `Обрана черга ${settings.queue}. Натисніть, щоб змінити` : "Очікуємо список черг з Telegram");
+  const currentQueueName = queueNames[settings.queue] || "";
+  els.queueNameValue.textContent = currentQueueName;
+  els.queueNameValue.hidden = !currentQueueName;
+  els.queueSelect.classList.toggle("has-name", Boolean(currentQueueName));
+  els.queueSelect.setAttribute("aria-label", QUEUES.length ? `Обрана черга ${settings.queue}${currentQueueName ? `, ${currentQueueName}` : ""}. Натисніть, щоб змінити` : "Очікуємо список черг з Telegram");
   els.queueSelect.disabled = QUEUES.length === 0;
-  els.queueMenu.querySelectorAll(".queue-option").forEach((option) => {
+  els.queueOptions.querySelectorAll(".queue-option").forEach((option) => {
     const selected = option.dataset.queue === settings.queue;
     option.classList.toggle("is-selected", selected);
     option.setAttribute("aria-selected", String(selected));
@@ -271,6 +339,64 @@ function selectQueue(queue) {
   setQueueMenu(false);
   renderView();
   if (settings.workerUrl) refresh({ manual: false, force: false });
+}
+
+function beginQueueNameEdit() {
+  queueNameDraft = { ...queueNames };
+  els.queueMenu.classList.add("is-editing");
+  els.editQueueNamesBtn.hidden = true;
+  els.queueEditActions.hidden = false;
+  renderQueueOptions();
+  setQueueMenu(true);
+  els.queueOptions.querySelector(".queue-option")?.focus();
+}
+
+function finishQueueNameEdit(save) {
+  if (queueNameDraft === null) return true;
+  if (save) {
+    const names = normalizeQueueNames(queueNameDraft);
+    if (!saveQueueNames(names)) return false;
+    queueNames = names;
+    updateQueuePicker();
+  }
+  queueNameDraft = null;
+  editingQueueName = null;
+  els.queueMenu.classList.remove("is-editing");
+  els.editQueueNamesBtn.hidden = false;
+  els.queueEditActions.hidden = true;
+  renderQueueOptions();
+  setQueueMenu(false);
+  return true;
+}
+
+function requestQueueNameEditExit() {
+  if (queueNameDraft === null) {
+    setQueueMenu(false);
+    return;
+  }
+  if (areQueueNamesEqual(queueNames, queueNameDraft)) {
+    finishQueueNameEdit(false);
+    return;
+  }
+  els.queueNameExitDialog.showModal();
+  els.continueQueueNamesBtn.focus();
+}
+
+function openQueueNameDialog(queue) {
+  editingQueueName = queue;
+  const currentName = queueNameDraft?.[queue] || "";
+  els.queueNameDialogTitle.textContent = `Черга ${queue}`;
+  els.queueNameInput.value = currentName;
+  els.queueNameInput.maxLength = QUEUE_NAME_MAX_LENGTH;
+  els.queueNameDialog.showModal();
+  els.queueNameInput.focus();
+}
+
+function closeQueueNameDialog() {
+  if (els.queueNameDialog.open) els.queueNameDialog.close();
+  const queue = editingQueueName;
+  editingQueueName = null;
+  if (queue) els.queueOptions.querySelector(`[data-queue="${queue}"]`)?.focus();
 }
 
 function formatHeroDate(isoDate, isToday) {
@@ -843,14 +969,76 @@ function scheduleAutoRefresh() {
 // Event Listeners
 els.queueSelect.addEventListener("click", (e) => {
   e.stopPropagation();
-  setQueueMenu(els.queueMenu.hidden);
+  if (queueNameDraft !== null) requestQueueNameEditExit();
+  else setQueueMenu(els.queueMenu.hidden);
+});
+els.editQueueNamesBtn.addEventListener("click", () => els.queueNameIntroDialog.showModal());
+els.confirmQueueNameIntro.addEventListener("click", () => {
+  els.queueNameIntroDialog.close();
+  beginQueueNameEdit();
+});
+els.closeQueueNameIntro.addEventListener("click", () => els.queueNameIntroDialog.close());
+els.cancelQueueNameIntro.addEventListener("click", () => els.queueNameIntroDialog.close());
+els.queueNameForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  if (!editingQueueName || queueNameDraft === null) return;
+  const queue = editingQueueName;
+  const name = Array.from(els.queueNameInput.value.trim()).slice(0, QUEUE_NAME_MAX_LENGTH).join("");
+  if (name) queueNameDraft[queue] = name;
+  else delete queueNameDraft[queue];
+  closeQueueNameDialog();
+  renderQueueOptions();
+});
+els.closeQueueNameDialog.addEventListener("click", closeQueueNameDialog);
+els.cancelQueueNameDialog.addEventListener("click", closeQueueNameDialog);
+els.queueNameDialog.addEventListener("cancel", (event) => {
+  event.preventDefault();
+  closeQueueNameDialog();
+});
+els.saveQueueNamesBtn.addEventListener("click", () => finishQueueNameEdit(true));
+els.cancelQueueNamesBtn.addEventListener("click", requestQueueNameEditExit);
+els.discardQueueNamesBtn.addEventListener("click", () => {
+  els.queueNameExitDialog.close();
+  finishQueueNameEdit(false);
+});
+els.continueQueueNamesBtn.addEventListener("click", () => {
+  els.queueNameExitDialog.close();
+  els.queueOptions.querySelector(".queue-option")?.focus();
+});
+els.confirmSaveQueueNamesBtn.addEventListener("click", () => {
+  if (finishQueueNameEdit(true)) els.queueNameExitDialog.close();
 });
 document.addEventListener("pointerdown", (event) => {
-  if (!els.queuePicker.contains(event.target)) setQueueMenu(false);
+  if (els.queueNameIntroDialog.open || els.queueNameDialog.open || els.queueNameExitDialog.open) return;
+  if (!els.queuePicker.contains(event.target)) {
+    if (queueNameDraft !== null && !areQueueNamesEqual(queueNames, queueNameDraft)) {
+      event.preventDefault();
+      event.stopPropagation();
+      requestQueueNameEditExit();
+    } else {
+      if (queueNameDraft !== null) finishQueueNameEdit(false);
+      setQueueMenu(false);
+    }
+  }
 });
 document.addEventListener("keydown", (event) => {
-  if (event.key === "Escape") setQueueMenu(false);
+  if (event.key !== "Escape" || els.queueNameIntroDialog.open || els.queueNameDialog.open || els.queueNameExitDialog.open) return;
+  if (queueNameDraft !== null) {
+    event.preventDefault();
+    requestQueueNameEditExit();
+  } else {
+    setQueueMenu(false);
+  }
 });
+[els.queueNameIntroDialog, els.queueNameDialog].forEach((dialog) => {
+  dialog.addEventListener("click", (event) => {
+    if (event.target === dialog) {
+      if (dialog === els.queueNameDialog) closeQueueNameDialog();
+      else dialog.close();
+    }
+  });
+});
+els.queueNameExitDialog.addEventListener("cancel", (event) => event.preventDefault());
 
 const selectDay = (day) => {
   activeDay = day;

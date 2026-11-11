@@ -190,7 +190,7 @@ test("прапор у шапці використовує оригінальни
   assert.match(css, /\.brand-flag \{[^}]*position:\s*absolute;[^}]*top:\s*50%;[^}]*left:\s*-8px;[^}]*transform:\s*translateY\(-50%\);[^}]*z-index:\s*1;[^}]*width:\s*75px;[^}]*height:\s*54px;/);
   assert.match(css, /\.brand-title \{[^}]*position:\s*relative;[^}]*z-index:\s*2;[^}]*white-space:\s*nowrap;/);
   assert.match(css, /\.brand-flag-image \{[^}]*width:\s*100%;[^}]*height:\s*100%;[^}]*object-fit:\s*contain/);
-  assert.match(sw, /CACHE_NAME = "sho-po-svitlu-shell-v43"/);
+  assert.match(sw, /CACHE_NAME = "sho-po-svitlu-shell-v44"/);
   assert.match(sw, /"\/images\/ukraine-flag-header\.gif"/);
   assert.match(sw, /"\/images\/ukraine-flag-header-still\.png"/);
 });
@@ -239,4 +239,27 @@ test("налаштування доброзичливо пояснюють за�
   assert.match(appJs, /fetchCompletedSetupsCount\(/);
   assert.match(appJs, /openOnboarding\(\{ nicknameOnly: true \}\)/);
   assert.match(appJs, /sho-po-svitlu\.profile\.v1/);
+});
+
+test("вибір черги містить кнопку редагування, список черг і підпис обраної черги", () => {
+  assert.match(html, /id="editQueueNamesBtn"/);
+  assert.match(html, /id="queueOptions"[\s\S]*?role="listbox"/);
+  assert.match(html, /id="queueNameValue"[^>]*hidden/);
+  assert.match(appJs, /queueNames\[settings\.queue\]/);
+  assert.match(appJs, /areQueueNamesEqual\(queueNames, queueNameDraft\)/);
+  assert.match(appJs, /QUEUE_NAMES_KEY = "sho-po-svitlu\.queue-names\.v1"/);
+});
+
+test("редагування назв має початкове пояснення, введення і підтвердження виходу без native dialogs", () => {
+  assert.match(html, /id="queueNameIntroDialog"/);
+  assert.match(html, /id="queueNameDialog"/);
+  assert.match(html, /id="queueNameExitDialog"/);
+  assert.match(html, /id="confirmSaveQueueNamesBtn"/);
+  assert.match(appJs, /requestQueueNameEditExit/);
+  assert.doesNotMatch(appJs, /\b(?:window\.)?(?:alert|confirm)\s*\(/);
+});
+
+
+test("новий модуль назв черг входить до PWA кешу", () => {
+  assert.match(sw, /"\/js\/queue-names\.js"/);
 });
