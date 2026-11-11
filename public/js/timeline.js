@@ -77,7 +77,7 @@ export function formatMissingScheduleMessage(queue, { isTomorrow = false } = {})
   if (isTomorrow) {
     return `Графік на завтра для черги ${queue} ще не знайдено. Можливо, джерело ще не опублікувало його. Перевірте трохи пізніше.`;
   }
-  return `У каналі немає графіка для черги ${queue}.`;
+  return `Дані графіка для черги ${queue} поки не знайдено. Перевірте джерело пізніше.`;
 }
 
 export function totalMinutes(periods = []) {

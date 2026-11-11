@@ -166,8 +166,8 @@ test("formatMissingScheduleMessage: пояснює, що графік на за�
     formatMissingScheduleMessage("6.2", { isTomorrow: true }),
     "Графік на завтра для черги 6.2 ще не знайдено. Можливо, джерело ще не опублікувало його. Перевірте трохи пізніше."
   );
-  assert.equal(formatMissingScheduleMessage("6.2"), "У каналі немає графіка для черги 6.2.");
-  assert.equal(formatMissingScheduleMessage("6.2", { isTomorrow: false }), "У каналі немає графіка для черги 6.2.");
+  assert.equal(formatMissingScheduleMessage("6.2"), "Дані графіка для черги 6.2 поки не знайдено. Перевірте джерело пізніше.");
+  assert.equal(formatMissingScheduleMessage("6.2", { isTomorrow: false }), "Дані графіка для черги 6.2 поки не знайдено. Перевірте джерело пізніше.");
 });
 
 test("renderOutages: коректно формує список відключень або повідомлення про їх відсутність", () => {
