@@ -117,6 +117,7 @@ const els = {
   confirmAddChannelBtn: $("confirmAddChannelBtn"),
   saveIntervalBtn: $("saveIntervalBtn"),
   aboutAppBtn: $("aboutAppBtn"),
+  mascot: $("mascot"),
   aboutAppDialog: $("aboutAppDialog"),
   closeAboutAppDialog: $("closeAboutAppDialog"),
   aboutCloseBtn: $("aboutCloseBtn"),
@@ -871,6 +872,7 @@ function closeAboutApp() {
 }
 
 if (els.aboutAppBtn) els.aboutAppBtn.addEventListener("click", openAboutApp);
+if (els.mascot) els.mascot.addEventListener("click", openAboutApp);
 if (els.closeAboutAppDialog) els.closeAboutAppDialog.addEventListener("click", closeAboutApp);
 if (els.aboutCloseBtn) els.aboutCloseBtn.addEventListener("click", closeAboutApp);
 if (els.aboutRequestChannelBtn) {

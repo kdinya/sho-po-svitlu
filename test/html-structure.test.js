@@ -133,6 +133,14 @@ test("налаштування містять кнопку довідки про
   assert.match(html, /id=["']aboutRequestChannelBtn["']/);
 });
 
+test("лампочка на головній доступна як кнопка й відкриває наявний діалог про додаток", () => {
+  const homeScreen = html.slice(html.indexOf('id="homeScreen"'), html.indexOf('id="scheduleScreen"'));
+  assert.match(homeScreen, /<button class="mascot mascot-button" id="mascot" type="button" aria-label="Як працює додаток" aria-haspopup="dialog" aria-controls="aboutAppDialog">[\s\S]*?<\/button>/);
+  assert.match(appJs, /els\.mascot\.addEventListener\("click", openAboutApp\)/);
+  assert.match(css, /\.mascot-button \{[^}]*pointer-events:\s*auto/);
+  assert.match(css, /\.mascot-button:focus-visible \{[^}]*outline-offset:\s*4px/);
+});
+
 test("стилі містять правила для кастомних списків у неоновому стилі додатку", () => {
   assert.match(css, /\.custom-select-trigger/, "має містити кнопку-тригер кастомного списку");
   assert.match(css, /\.custom-select-menu/, "має містити меню випадаючого списку");
@@ -182,7 +190,7 @@ test("прапор у шапці використовує оригінальни
   assert.match(css, /\.brand-flag \{[^}]*position:\s*absolute;[^}]*top:\s*50%;[^}]*left:\s*-8px;[^}]*transform:\s*translateY\(-50%\);[^}]*z-index:\s*1;[^}]*width:\s*75px;[^}]*height:\s*54px;/);
   assert.match(css, /\.brand-title \{[^}]*position:\s*relative;[^}]*z-index:\s*2;[^}]*white-space:\s*nowrap;/);
   assert.match(css, /\.brand-flag-image \{[^}]*width:\s*100%;[^}]*height:\s*100%;[^}]*object-fit:\s*contain/);
-  assert.match(sw, /CACHE_NAME = "sho-po-svitlu-shell-v40"/);
+  assert.match(sw, /CACHE_NAME = "sho-po-svitlu-shell-v41"/);
   assert.match(sw, /"\/images\/ukraine-flag-header\.gif"/);
   assert.match(sw, /"\/images\/ukraine-flag-header-still\.png"/);
 });
