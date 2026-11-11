@@ -8,6 +8,7 @@ const html = fs.readFileSync(path.join(PUBLIC_DIR, "index.html"), "utf8");
 const appJs = fs.readFileSync(path.join(PUBLIC_DIR, "js", "app.js"), "utf8");
 const css = fs.readFileSync(path.join(PUBLIC_DIR, "css", "style.css"), "utf8");
 const sw = fs.readFileSync(path.join(PUBLIC_DIR, "sw.js"), "utf8");
+const readme = fs.readFileSync(path.resolve("README.md"), "utf8");
 
 test("public/index.html: містить усі DOM ID, які викликаються з js/app.js", () => {
   const idsInAppJs = new Set();
@@ -144,7 +145,7 @@ test("лампочка на головній доступна як кнопка 
 test("після збереження назви черги фокус повертається на перемальовану опцію", () => {
   const submitHandler = appJs.match(/els\.queueNameForm\.addEventListener\("submit", \(event\) => \{([\s\S]*?)\n\}\);/)?.[1] ?? "";
   assert.ok(submitHandler, "має бути обробник збереження назви черги");
-  const closeIndex = submitHandler.indexOf("closeQueueNameDialog({ restoreFocus: false })");
+  const closeIndex = submitHandler.indexOf("dismissQueueNameDialog({ restoreFocus: false })");
   const renderIndex = submitHandler.indexOf("renderQueueOptions()", closeIndex);
   const focusIndex = submitHandler.indexOf("querySelector(`[data-queue=\"${queue}\"]`)?.focus()", renderIndex);
   assert.ok(closeIndex >= 0 && closeIndex < renderIndex && renderIndex < focusIndex, "спочатку закриваємо діалог, перемальовуємо список, потім повертаємо фокус на ту саму чергу");
@@ -161,8 +162,20 @@ test("діалоги назв черг відкриваються по цент�
   }
   assert.match(css, /dialog\.sheet\.queue-dialog \{[^}]*margin:\s*auto/);
   assert.match(css, /transform:\s*translateY\(var\(--queue-dialog-viewport-shift, 0px\)\)/);
+  assert.match(css, /body\[data-screen="home"\] \.queue-picker \{[^}]*position:\s*absolute;[^}]*top:\s*var\(--queue-picker-top/);
+  assert.match(appJs, /const lampTop = els\.mascot\.getBoundingClientRect\(\)\.top/);
+  assert.match(appJs, /const screenCenteredTop = \(lampTop - els\.queuePicker\.offsetHeight\) \/ 2/);
+  assert.match(appJs, /const top = screenCenteredTop - topbarTop/);
+  assert.match(appJs, /window\.addEventListener\("scroll", scheduleQueuePickerPosition/);
   assert.match(css, /\.queue-trigger\.has-name \.queue-trigger-name \{[^}]*font-size:\s*22px/);
-  assert.match(sw, /sho-po-svitlu-shell-v45/);
+  assert.match(appJs, /function hasUncommittedQueueNameInput\(\)/);
+  assert.match(appJs, /els\.queueNameDialog\.open && hasUncommittedQueueNameInput\(\)/);
+  assert.match(appJs, /if \(wasNameDialogOpen\) commitQueueNameInput\(\)/);
+  assert.match(appJs, /pendingInput \? "Вийти без збереження\?"/);
+  assert.match(html, /id="queueNameExitCopy"/);
+  assert.match(readme, /\[\*\*Перейти до ШоПоСвітлу →\*\*\]\(https:\/\/sho-po-svitlu-ib61\.vercel\.app\/\)/);
+  assert.match(readme, /## Власні назви черг[\s\S]*?під номером вибраної черги[\s\S]*?підтвердження/);
+  assert.match(sw, /sho-po-svitlu-shell-v46/);
 });
 
 test("стилі містять правила для кастомних списків у неоновому стилі додатку", () => {
@@ -214,7 +227,7 @@ test("прапор у шапці використовує оригінальни
   assert.match(css, /\.brand-flag \{[^}]*position:\s*absolute;[^}]*top:\s*50%;[^}]*left:\s*-8px;[^}]*transform:\s*translateY\(-50%\);[^}]*z-index:\s*1;[^}]*width:\s*75px;[^}]*height:\s*54px;/);
   assert.match(css, /\.brand-title \{[^}]*position:\s*relative;[^}]*z-index:\s*2;[^}]*white-space:\s*nowrap;/);
   assert.match(css, /\.brand-flag-image \{[^}]*width:\s*100%;[^}]*height:\s*100%;[^}]*object-fit:\s*contain/);
-  assert.match(sw, /CACHE_NAME = "sho-po-svitlu-shell-v45"/);
+  assert.match(sw, /CACHE_NAME = "sho-po-svitlu-shell-v46"/);
   assert.match(sw, /"\/images\/ukraine-flag-header\.gif"/);
   assert.match(sw, /"\/images\/ukraine-flag-header-still\.png"/);
 });

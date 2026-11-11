@@ -49,6 +49,8 @@ const els = {
   closeQueueNameDialog: $("closeQueueNameDialog"),
   cancelQueueNameDialog: $("cancelQueueNameDialog"),
   queueNameExitDialog: $("queueNameExitDialog"),
+  queueNameExitTitle: $("queueNameExitTitle"),
+  queueNameExitCopy: $("queueNameExitCopy"),
   discardQueueNamesBtn: $("discardQueueNamesBtn"),
   continueQueueNamesBtn: $("continueQueueNamesBtn"),
   confirmSaveQueueNamesBtn: $("confirmSaveQueueNamesBtn"),
@@ -214,6 +216,8 @@ let channels = readStoredChannels();
 let queueNames = readStoredQueueNames();
 let queueNameDraft = null;
 let editingQueueName = null;
+let pendingQueueNameDialogExit = false;
+let queuePickerPositionFrame = null;
 let activeDay = "today";
 let timer = null;
 let clockTimer = null;
@@ -319,6 +323,7 @@ function updateQueuePicker() {
   els.queueSelect.classList.toggle("has-name", Boolean(currentQueueName));
   els.queueSelect.setAttribute("aria-label", QUEUES.length ? `Обрана черга ${settings.queue}${currentQueueName ? `, ${currentQueueName}` : ""}. Натисніть, щоб змінити` : "Очікуємо список черг з Telegram");
   els.queueSelect.disabled = QUEUES.length === 0;
+  scheduleQueuePickerPosition();
   els.queueOptions.querySelectorAll(".queue-option").forEach((option) => {
     const selected = option.dataset.queue === settings.queue;
     option.classList.toggle("is-selected", selected);
@@ -343,6 +348,7 @@ function selectQueue(queue) {
 
 function beginQueueNameEdit() {
   queueNameDraft = { ...queueNames };
+  pendingQueueNameDialogExit = false;
   els.queueMenu.classList.add("is-editing");
   els.editQueueNamesBtn.hidden = true;
   els.queueEditActions.hidden = false;
@@ -361,12 +367,22 @@ function finishQueueNameEdit(save) {
   }
   queueNameDraft = null;
   editingQueueName = null;
+  pendingQueueNameDialogExit = false;
   els.queueMenu.classList.remove("is-editing");
   els.editQueueNamesBtn.hidden = false;
   els.queueEditActions.hidden = true;
   renderQueueOptions();
   setQueueMenu(false);
   return true;
+}
+
+function showQueueNameExitConfirmation({ pendingInput = false } = {}) {
+  els.queueNameExitTitle.textContent = pendingInput ? "Вийти без збереження?" : "Зберегти назви черг?";
+  els.queueNameExitCopy.textContent = pendingInput
+    ? "Ти ввів назву, але ще не підтвердив її кнопкою «Готово». Вийти без збереження?"
+    : "Ти змінив назви черг. Зберегти їх перед виходом із редагування?";
+  showQueueDialog(els.queueNameExitDialog);
+  els.continueQueueNamesBtn.focus({ preventScroll: true });
 }
 
 function requestQueueNameEditExit() {
@@ -378,8 +394,7 @@ function requestQueueNameEditExit() {
     finishQueueNameEdit(false);
     return;
   }
-  showQueueDialog(els.queueNameExitDialog);
-  els.continueQueueNamesBtn.focus({ preventScroll: true });
+  showQueueNameExitConfirmation();
 }
 
 function openQueueNameDialog(queue) {
@@ -391,11 +406,36 @@ function openQueueNameDialog(queue) {
   showQueueDialog(els.queueNameDialog);
 }
 
-function closeQueueNameDialog({ restoreFocus = true } = {}) {
+function getQueueNameInputValue() {
+  return Array.from(els.queueNameInput.value.trim()).slice(0, QUEUE_NAME_MAX_LENGTH).join("");
+}
+
+function hasUncommittedQueueNameInput() {
+  if (!editingQueueName || queueNameDraft === null) return false;
+  return getQueueNameInputValue() !== (queueNameDraft[editingQueueName] || "");
+}
+
+function commitQueueNameInput() {
+  if (!editingQueueName || queueNameDraft === null) return;
+  const name = getQueueNameInputValue();
+  if (name) queueNameDraft[editingQueueName] = name;
+  else delete queueNameDraft[editingQueueName];
+}
+
+function dismissQueueNameDialog({ restoreFocus = true } = {}) {
   if (els.queueNameDialog.open) els.queueNameDialog.close();
   const queue = editingQueueName;
   editingQueueName = null;
   if (restoreFocus && queue) els.queueOptions.querySelector(`[data-queue="${queue}"]`)?.focus({ preventScroll: true });
+}
+
+function closeQueueNameDialog({ restoreFocus = true } = {}) {
+  if (els.queueNameDialog.open && hasUncommittedQueueNameInput()) {
+    pendingQueueNameDialogExit = true;
+    showQueueNameExitConfirmation({ pendingInput: true });
+    return;
+  }
+  dismissQueueNameDialog({ restoreFocus });
 }
 
 function formatHeroDate(isoDate, isToday) {
@@ -424,6 +464,7 @@ function showToast(message) {
 }
 
 function setActiveScreen(name) {
+  document.body.dataset.screen = name;
   document.querySelectorAll(".page-screen").forEach((screen) => {
     const active = screen.dataset.screen === name;
     screen.hidden = !active;
@@ -441,7 +482,10 @@ function setActiveScreen(name) {
   const mainContent = document.getElementById("mainContent");
   if (mainContent) mainContent.scrollTop = 0;
   if (name === "schedule") renderView();
-  if (name === "home") fitRegionName();
+  if (name === "home") {
+    fitRegionName();
+    scheduleQueuePickerPosition();
+  }
   if (name === "source") {
     syncUsersCount();
     const intervalRadio = document.querySelector(`input[name="interval"][value="${settings.intervalMinutes}"]`);
@@ -982,10 +1026,8 @@ els.queueNameForm.addEventListener("submit", (event) => {
   event.preventDefault();
   if (!editingQueueName || queueNameDraft === null) return;
   const queue = editingQueueName;
-  const name = Array.from(els.queueNameInput.value.trim()).slice(0, QUEUE_NAME_MAX_LENGTH).join("");
-  if (name) queueNameDraft[queue] = name;
-  else delete queueNameDraft[queue];
-  closeQueueNameDialog({ restoreFocus: false });
+  commitQueueNameInput();
+  dismissQueueNameDialog({ restoreFocus: false });
   renderQueueOptions();
   els.queueOptions.querySelector(`[data-queue="${queue}"]`)?.focus();
 });
@@ -998,15 +1040,26 @@ els.queueNameDialog.addEventListener("cancel", (event) => {
 els.saveQueueNamesBtn.addEventListener("click", () => finishQueueNameEdit(true));
 els.cancelQueueNamesBtn.addEventListener("click", requestQueueNameEditExit);
 els.discardQueueNamesBtn.addEventListener("click", () => {
+  const wasNameDialogOpen = pendingQueueNameDialogExit;
+  pendingQueueNameDialogExit = false;
+  if (wasNameDialogOpen) dismissQueueNameDialog({ restoreFocus: false });
   els.queueNameExitDialog.close();
   finishQueueNameEdit(false);
 });
 els.continueQueueNamesBtn.addEventListener("click", () => {
+  const wasNameDialogOpen = pendingQueueNameDialogExit;
+  pendingQueueNameDialogExit = false;
   els.queueNameExitDialog.close();
-  els.queueOptions.querySelector(`[data-queue="${settings.queue}"]`)?.focus({ preventScroll: true });
+  if (!wasNameDialogOpen) els.queueOptions.querySelector(`[data-queue="${settings.queue}"]`)?.focus({ preventScroll: true });
 });
 els.confirmSaveQueueNamesBtn.addEventListener("click", () => {
-  if (finishQueueNameEdit(true)) els.queueNameExitDialog.close();
+  const wasNameDialogOpen = pendingQueueNameDialogExit;
+  if (wasNameDialogOpen) commitQueueNameInput();
+  if (finishQueueNameEdit(true)) {
+    pendingQueueNameDialogExit = false;
+    if (wasNameDialogOpen) dismissQueueNameDialog({ restoreFocus: false });
+    els.queueNameExitDialog.close();
+  }
 });
 document.addEventListener("pointerdown", (event) => {
   if (els.queueNameIntroDialog.open || els.queueNameDialog.open || els.queueNameExitDialog.open) return;
@@ -1034,6 +1087,31 @@ function showQueueDialog(dialog) {
   dialog.showModal();
   dialog.focus({ preventScroll: true });
   updateQueueDialogPosition();
+}
+
+function scheduleQueuePickerPosition() {
+  if (queuePickerPositionFrame !== null) return;
+  queuePickerPositionFrame = requestAnimationFrame(() => {
+    queuePickerPositionFrame = null;
+    if (document.body.dataset.screen !== "home") return;
+    const topbar = els.queuePicker.closest(".topbar");
+    if (!topbar) return;
+    topbar.style.setProperty("--queue-picker-space", `${Math.round(els.queuePicker.offsetWidth + 10)}px`);
+    const lampTop = els.mascot.getBoundingClientRect().top;
+    const topbarTop = topbar.getBoundingClientRect().top;
+    const screenCenteredTop = (lampTop - els.queuePicker.offsetHeight) / 2;
+    const top = screenCenteredTop - topbarTop;
+    els.queuePicker.style.setProperty("--queue-picker-top", `${Math.round(top)}px`);
+  });
+}
+
+window.addEventListener("resize", scheduleQueuePickerPosition);
+window.addEventListener("scroll", scheduleQueuePickerPosition, { passive: true });
+if ("ResizeObserver" in window) {
+  const queuePickerResizeObserver = new ResizeObserver(scheduleQueuePickerPosition);
+  [els.queueSelect, els.queuePicker, els.homeInstallBanner, els.mascot].forEach((element) => {
+    if (element) queuePickerResizeObserver.observe(element);
+  });
 }
 
 function updateQueueDialogPosition() {
@@ -1419,6 +1497,7 @@ function updateInstallUI() {
   if (installed) {
     if (els.homeInstallBanner) els.homeInstallBanner.hidden = true;
     if (els.pwaPanel) els.pwaPanel.hidden = true;
+    scheduleQueuePickerPosition();
     return;
   }
 
@@ -1473,6 +1552,7 @@ els.installButton?.addEventListener("click", triggerInstallPrompt);
 
 els.homeDismissInstallBtn?.addEventListener("click", () => {
   if (els.homeInstallBanner) els.homeInstallBanner.hidden = true;
+  scheduleQueuePickerPosition();
   try {
     sessionStorage.setItem("sho-po-svitlu.install-dismissed", "1");
   } catch {}

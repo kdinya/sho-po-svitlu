@@ -90,6 +90,7 @@ body[data-power="off"] .sky-lights { opacity: 0.05; animation: none; }
 }
 
 .topbar {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -97,7 +98,7 @@ body[data-power="off"] .sky-lights { opacity: 0.05; animation: none; }
   padding: calc(14px + env(safe-area-inset-top)) 0 0;
 }
 
-.brand { display: flex; align-items: center; gap: 8px; min-width: 0; color: var(--text); text-decoration: none; transform: rotate(-5deg); transform-origin: left center; }
+.brand { display: flex; max-width: calc(100% - var(--queue-picker-space, 130px)); align-items: center; gap: 8px; min-width: 0; color: var(--text); text-decoration: none; transform: rotate(-5deg); transform-origin: left center; }
 .brand-mark {
   width: 42px; height: 52px; flex: none; display: grid; place-items: center;
   color: var(--sun);
@@ -195,6 +196,7 @@ body[data-power="off"] .sky-lights { opacity: 0.05; animation: none; }
 }
 
 .queue-picker { position: relative; flex: none; margin-top: 4px; }
+body[data-screen="home"] .queue-picker { position: absolute; top: var(--queue-picker-top, 12px); right: 0; z-index: 20; margin-top: 0; }
 .queue-trigger {
   display: inline-flex; align-items: center; gap: 7px;
   padding: 9px 12px 9px 16px;
