@@ -157,6 +157,10 @@ const els = {
   shareCard: $("shareCard"),
   shareCounter: $("shareCounter"),
   usersCount: $("usersCount"),
+  supportButton: $("supportButton"),
+  supportDialog: $("supportDialog"),
+  closeSupportDialog: $("closeSupportDialog"),
+  laterSupportBtn: $("laterSupportBtn"),
   toast: $("toast"),
   navButtons: [...document.querySelectorAll(".nav-item")],
 };
@@ -1146,6 +1150,13 @@ const selectDay = (day) => {
   renderView();
   if (settings.workerUrl) refresh({ manual: false, force: false });
 };
+els.supportButton.addEventListener("click", () => els.supportDialog.showModal());
+els.closeSupportDialog.addEventListener("click", () => els.supportDialog.close());
+els.laterSupportBtn.addEventListener("click", () => els.supportDialog.close());
+els.supportDialog.addEventListener("click", (event) => {
+  if (event.target === els.supportDialog) els.supportDialog.close();
+});
+
 els.todayTab.addEventListener("click", () => selectDay("today"));
 els.tomorrowTab.addEventListener("click", () => selectDay("tomorrow"));
 els.homeTodayTab.addEventListener("click", () => selectDay("today"));

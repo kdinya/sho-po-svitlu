@@ -762,22 +762,27 @@ body[data-power="off"] .zzz { display: block; }
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  min-height: 44px;
-  padding: 0 15px;
+  width: 50px;
+  height: 50px;
+  padding: 0;
   border: 1px solid rgba(255, 227, 108, 0.48);
   border-radius: 999px;
   background: linear-gradient(135deg, #ffe36c, #ffb515);
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.34), 0 0 16px rgba(255, 210, 58, 0.16);
   color: #1c1530;
-  font-size: 13px;
-  font-weight: 800;
-  text-decoration: none;
+  cursor: pointer;
   transition: transform 0.18s ease, box-shadow 0.18s ease;
 }
-.support-link .icon { width: 18px; height: 18px; }
+.support-link .icon { width: 25px; height: 25px; }
 .support-link:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), 0 0 20px rgba(255, 210, 58, 0.24); }
 .support-link:active { transform: scale(0.97); }
+.support-dialog { z-index: 50; }
+.support-dialog-copy { margin: 0; color: #cfdaF5; font-size: 15px; line-height: 1.6; }
+.support-dialog-actions { display: grid; grid-template-columns: 1fr 1.35fr; gap: 10px; margin-top: 20px; }
+.support-dialog-actions > * { min-width: 0; }
+.support-dialog-actions .ghost-btn { font-size: 14px; padding: 12px 8px; }
+.support-donate-btn { padding: 12px 8px; border-radius: 18px; font-size: 14px; text-decoration: none; }
+.support-donate-btn .icon { width: 20px; height: 20px; }
 
 /* ---------- нижня навігація ---------- */
 .bottom-nav {
@@ -932,6 +937,10 @@ dialog.sheet.queue-dialog:focus { outline: none; }
   .status-card { grid-template-columns: 62px 1fr; gap: 10px; }
   .status-orb { width: 62px; height: 62px; }
   .status-orb .icon { width: 36px; height: 36px; }
+}
+
+@media (max-width: 360px) {
+  .support-dialog-actions { grid-template-columns: 1fr; }
 }
 
 @media (prefers-reduced-motion: reduce) {

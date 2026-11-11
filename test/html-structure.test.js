@@ -176,7 +176,7 @@ test("діалоги назв черг відкриваються по цент�
   assert.match(html, /id="queueNameExitCopy"/);
   assert.match(readme, /\[\*\*Перейти до ШоПоСвітлу →\*\*\]\(https:\/\/sho-po-svitlu-ib61\.vercel\.app\/\)/);
   assert.match(readme, /## Власні назви черг[\s\S]*?під номером вибраної черги[\s\S]*?підтвердження/);
-  assert.match(sw, /sho-po-svitlu-shell-v46/);
+  assert.match(sw, /sho-po-svitlu-shell-v47/);
 });
 
 test("стилі містять правила для кастомних списків у неоновому стилі додатку", () => {
@@ -228,7 +228,7 @@ test("прапор у шапці використовує оригінальни
   assert.match(css, /\.brand-flag \{[^}]*position:\s*absolute;[^}]*top:\s*50%;[^}]*left:\s*-8px;[^}]*transform:\s*translateY\(-50%\);[^}]*z-index:\s*1;[^}]*width:\s*75px;[^}]*height:\s*54px;/);
   assert.match(css, /\.brand-title \{[^}]*position:\s*relative;[^}]*z-index:\s*2;[^}]*white-space:\s*nowrap;/);
   assert.match(css, /\.brand-flag-image \{[^}]*width:\s*100%;[^}]*height:\s*100%;[^}]*object-fit:\s*contain/);
-  assert.match(sw, /CACHE_NAME = "sho-po-svitlu-shell-v46"/);
+  assert.match(sw, /CACHE_NAME = "sho-po-svitlu-shell-v47"/);
   assert.match(sw, /"\/images\/ukraine-flag-header\.gif"/);
   assert.match(sw, /"\/images\/ukraine-flag-header-still\.png"/);
 });
@@ -253,15 +253,21 @@ test("опис у довідці пояснює вимоги до каналу �
 });
 
 
-test("кнопка підтримки доступна на всіх екранах і безпечно відкриває банку в новій вкладці", () => {
-  const link = html.match(/<a class="support-link"[^>]*>[\s\S]*?<\/a>/)?.[0];
-  assert.ok(link, "має бути постійна кнопка підтримки поза окремими екранами");
-  assert.match(link, /href="https:\/\/send\.monobank\.ua\/jar\/e9Z2mHngN"/);
-  assert.match(link, /target="_blank"/);
-  assert.match(link, /rel="noopener noreferrer"/);
-  assert.match(link, /aria-label="[^"]+"/);
-  assert.match(link, />\s*<span>Підтримати<\/span>/);
+test("кавова кнопка підтримки відкриває доступну пропозицію підтримати проєкт", () => {
+  const button = html.match(/<button class="support-link"[^>]*>[\s\S]*?<\/button>/)?.[0];
+  assert.ok(button, "має бути постійна кнопка підтримки поза окремими екранами");
+  assert.match(button, /id="supportButton"/);
+  assert.match(button, /aria-label="[^"]+"/);
+  assert.match(button, /<use href="#i-coffee"/);
+  assert.doesNotMatch(button, /<span>/);
+  assert.match(html, /<dialog class="sheet support-dialog" id="supportDialog"[^>]*aria-labelledby="supportDialogTitle"/);
+  assert.match(html, /Якщо ШоПоСвітлу допомагає тобі тримати графік під контролем/);
+  assert.match(html, /href="https:\/\/send\.monobank\.ua\/jar\/e9Z2mHngN"[^>]*target="_blank"[^>]*rel="noopener noreferrer"/);
+  assert.match(html, /Пригостити кавою/);
+  assert.match(appJs, /supportButton\.addEventListener\("click", \(\) => els\.supportDialog\.showModal\(\)\)/);
+  assert.match(appJs, /closeSupportDialog\.addEventListener/);
   assert.match(css, /\.support-link \{[\s\S]*?position:\s*fixed;[\s\S]*?right:\s*max\([\s\S]*?bottom:\s*calc\(var\(--nav-h\) \+ 14px \+ env\(safe-area-inset-bottom\)\)/);
+  assert.match(css, /\.support-dialog-actions/);
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
 });
 
