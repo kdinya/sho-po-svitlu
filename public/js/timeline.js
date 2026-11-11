@@ -73,6 +73,13 @@ function svgIcon(id) {
   return icon;
 }
 
+export function formatMissingScheduleMessage(queue, { isTomorrow = false } = {}) {
+  if (isTomorrow) {
+    return `Графік на завтра для черги ${queue} ще не знайдено. Можливо, джерело ще не опублікувало його. Перевірте трохи пізніше.`;
+  }
+  return `У каналі немає графіка для черги ${queue}.`;
+}
+
 export function totalMinutes(periods = []) {
   return periods.reduce((sum, period) => sum + Math.max(0, period.end - period.start), 0);
 }

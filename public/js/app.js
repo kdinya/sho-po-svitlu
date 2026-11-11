@@ -1,5 +1,5 @@
 import { DEFAULT_CHANNEL, DEFAULT_WORKER_URL, UKRAINE_REGIONS, fetchCompletedSetupsCount, fetchSchedule, normalizeChannelInput, normalizeSetupNickname, registerCompletedSetup, sendChannelRequest } from "./api.js";
-import { formatDate, formatHours, getLocalClock, getScheduleState, renderOutages, renderTimeline, totalMinutes } from "./timeline.js";
+import { formatDate, formatHours, formatMissingScheduleMessage, getLocalClock, getScheduleState, renderOutages, renderTimeline, totalMinutes } from "./timeline.js";
 
 const STORAGE_KEY = "sho-po-svitlu.settings.v1";
 const DATA_KEY = "sho-po-svitlu.last-data.v1";
@@ -735,12 +735,12 @@ function renderView() {
   renderTimeline(els.timelineTrack, els.nowMarker, els.currentTime, periods, now, { showNow: isCurrentDay });
   renderOutages(els.outageList, els.outageCount, periods, isCurrentDay ? nowMinutes : 0, {
     highlightPast: isCurrentDay,
-    emptyText: data && !hasSchedule ? `У каналі немає графіка для черги ${settings.queue}.` : data ? undefined : "Завантажуємо графік…",
+    emptyText: data && !hasSchedule ? formatMissingScheduleMessage(settings.queue, { isTomorrow: !isCurrentDay }) : data ? undefined : "Завантажуємо графік…",
   });
   renderTimeline(els.homeTimelineTrack, els.homeNowMarker, els.homeCurrentTime, periods, now, { showNow: isCurrentDay });
   renderOutages(els.homeOutageList, els.homeOutageCount, periods, isCurrentDay ? nowMinutes : 0, {
     highlightPast: isCurrentDay,
-    emptyText: data && !hasSchedule ? `У каналі немає графіка для черги ${settings.queue}.` : data ? undefined : "Завантажуємо графік…",
+    emptyText: data && !hasSchedule ? formatMissingScheduleMessage(settings.queue, { isTomorrow: !isCurrentDay }) : data ? undefined : "Завантажуємо графік…",
   });
 
   for (const track of [els.timelineTrack, els.homeTimelineTrack]) track.classList.toggle("is-empty", !data || !hasSchedule);

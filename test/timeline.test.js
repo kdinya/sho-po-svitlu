@@ -5,6 +5,7 @@ import {
   formatDate,
   formatDuration,
   formatHours,
+  formatMissingScheduleMessage,
   getLocalClock,
   getScheduleState,
   minutesToTime,
@@ -158,6 +159,15 @@ test("renderTimeline: створює сегменти графіка та вст
   assert.equal(marker.style.left, "50%");
   assert.equal(marker.hidden, false);
   assert.equal(currentTimeNode.textContent, "12:00");
+});
+
+test("formatMissingScheduleMessage: пояснює, що графік на завтра може бути ще не опублікований", () => {
+  assert.equal(
+    formatMissingScheduleMessage("6.2", { isTomorrow: true }),
+    "Графік на завтра для черги 6.2 ще не знайдено. Можливо, джерело ще не опублікувало його. Перевірте трохи пізніше."
+  );
+  assert.equal(formatMissingScheduleMessage("6.2"), "У каналі немає графіка для черги 6.2.");
+  assert.equal(formatMissingScheduleMessage("6.2", { isTomorrow: false }), "У каналі немає графіка для черги 6.2.");
 });
 
 test("renderOutages: коректно формує список відключень або повідомлення про їх відсутність", () => {
