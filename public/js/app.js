@@ -212,6 +212,9 @@ const DEFAULT_FALLBACK_QUEUES = ["1.1", "1.2", "2.1", "2.2", "3.1", "3.2", "4.1"
 
 function availableQueues(scheduleData = data) {
   const queues = new Set();
+  (Array.isArray(scheduleData?.knownQueues) ? scheduleData.knownQueues : []).forEach((queue) => {
+    if (/^[1-6]\.[12]$/.test(queue)) queues.add(queue);
+  });
   Object.values(scheduleData?.schedules || {}).forEach((day) => {
     Object.keys(day?.queues || {}).forEach((queue) => queues.add(queue));
   });

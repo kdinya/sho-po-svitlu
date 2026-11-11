@@ -5,6 +5,9 @@ const DEFAULT_FALLBACK_QUEUES = ["1.1", "1.2", "2.1", "2.2", "3.1", "3.2", "4.1"
 
 function availableQueues(scheduleData) {
   const queues = new Set();
+  (Array.isArray(scheduleData?.knownQueues) ? scheduleData.knownQueues : []).forEach((queue) => {
+    if (/^[1-6]\.[12]$/.test(queue)) queues.add(queue);
+  });
   Object.values(scheduleData?.schedules || {}).forEach((day) => {
     Object.keys(day?.queues || {}).forEach((queue) => queues.add(queue));
   });
@@ -82,6 +85,23 @@ test("availableQueues: об'єднує черги з сьогоднішньог�
 
   const queues = availableQueues(multiDayData);
   assert.deepEqual(queues, ["1.1", "2.1", "3.2"]);
+});
+
+test("availableQueues: не видаляє відомі черги, для яких у новому графіку ще немає даних", () => {
+  const data = {
+    knownQueues: ["1.1", "1.2", "2.1", "2.2", "3.1", "3.2", "4.1", "4.2"],
+    schedules: {
+      "2026-11-11": {
+        queues: {
+          "1.1": [{ start: 0, end: 120 }],
+          "1.2": [{ start: 120, end: 240 }],
+          "2.1": [{ start: 240, end: 360 }],
+          "2.2": [{ start: 360, end: 480 }],
+        },
+      },
+    },
+  };
+  assert.deepEqual(availableQueues(data), ["1.1", "1.2", "2.1", "2.2", "3.1", "3.2", "4.1", "4.2"]);
 });
 
 test("availableQueues: повертає стандартний список 1.1-6.2, якщо даних розкладу ще немає", () => {

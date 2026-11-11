@@ -164,15 +164,92 @@ export function parseQueues(text) {
     if (!match) continue;
     const queue = match[1];
     const periods = parseIntervals(match[2]);
-    if (periods.length) queues[queue] = periods;
+    const explicitlyNoOutages = /(?:нема(?:є)?\s+(?:планових\s+)?відключень|(?:планових\s+)?відключень\s+(?:не\s+буде|нема(?:є)?|не\s+планується)|без\s+відключень|відключення\s+(?:скасовано|відмінено)|графік\s+(?:відключень\s+)?(?:скасовано|відмінено)|(?:скасовано|відмінено)\s+відключення|не\s+вимикають|світло\s+є|(?:увімкнули|включили|відновили\s+електропостачання))/i.test(match[2]);
+    if (periods.length || explicitlyNoOutages) queues[queue] = periods;
   }
   return queues;
+}
+
+function compareQueueNames(left, right) {
+  const [leftGroup, leftSubqueue] = left.split(".").map(Number);
+  const [rightGroup, rightSubqueue] = right.split(".").map(Number);
+  return leftGroup - rightGroup || leftSubqueue - rightSubqueue;
+}
+
+function kyivMinutes(date) {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: TIME_ZONE, hour: "2-digit", minute: "2-digit", hourCycle: "h23",
+  }).formatToParts(date);
+  const hour = Number(parts.find((part) => part.type === "hour")?.value || 0);
+  const minute = Number(parts.find((part) => part.type === "minute")?.value || 0);
+  return hour * 60 + minute;
+}
+
+function mergeIntervals(periods) {
+  const merged = [];
+  for (const period of [...periods].sort((left, right) => left.start - right.start || left.end - right.end)) {
+    const last = merged.at(-1);
+    if (last && period.start <= last.end) last.end = Math.max(last.end, period.end);
+    else merged.push({ ...period });
+  }
+  return merged;
+}
+
+function preserveElapsedOutages(previousPeriods, currentPeriods = [], nowMinutes = 0) {
+  if (!Array.isArray(previousPeriods)) return currentPeriods;
+  const preserved = previousPeriods.flatMap((period) => {
+    if (period.end <= nowMinutes) return [period];
+    if (period.start < nowMinutes && period.end > nowMinutes
+      && !currentPeriods.some((current) => current.start <= nowMinutes && current.end > nowMinutes)) {
+      return [{ start: period.start, end: nowMinutes }];
+    }
+    return [];
+  });
+  const currentAndFuture = currentPeriods.filter((period) => period.end > nowMinutes);
+  return mergeIntervals([...preserved, ...currentAndFuture]);
+}
+
+export function mergeTelegramScheduleData(current, previous, historicalQueues = []) {
+  const schedules = {};
+  const fetchedAt = new Date(current.fetchedAt);
+  const nowMinutes = kyivMinutes(fetchedAt);
+  for (const date of [current.today, current.tomorrow]) {
+    const fresh = current.schedules?.[date];
+    const old = previous?.schedules?.[date];
+    const postedAt = fresh?.postedAt ? new Date(fresh.postedAt) : null;
+    const effectiveAt = postedAt && !Number.isNaN(postedAt.getTime()) && dateInKyiv(postedAt) === current.today
+      ? postedAt
+      : fetchedAt;
+    const effectiveMinutes = kyivMinutes(effectiveAt);
+    const queueNames = new Set([...Object.keys(old?.queues || {}), ...Object.keys(fresh?.queues || {})]);
+    const queues = {};
+    for (const queue of queueNames) {
+      if (fresh?.queues && Object.hasOwn(fresh.queues, queue)) {
+        const incoming = fresh.queues[queue];
+        queues[queue] = date === current.today
+          ? preserveElapsedOutages(old?.queues?.[queue], incoming, effectiveMinutes)
+          : incoming;
+      } else if (old?.queues && Object.hasOwn(old.queues, queue)) {
+        queues[queue] = old.queues[queue];
+      }
+    }
+    const base = fresh || old;
+    if (base && Object.keys(queues).length) schedules[date] = { ...old, ...fresh, queues };
+  }
+  const knownQueues = new Set([
+    ...historicalQueues,
+    ...(previous?.knownQueues || []),
+    ...(current.knownQueues || []),
+    ...Object.values(schedules).flatMap((schedule) => Object.keys(schedule.queues || {})),
+  ].filter((queue) => EXPECTED_QUEUES.includes(queue)));
+  return { ...current, schedules, knownQueues: [...knownQueues].sort(compareQueueNames) };
 }
 
 export function parseTelegramHtml(html, { channel, now = new Date() } = {}) {
   const today = dateInKyiv(now);
   const tomorrow = datePlusOne(today);
   const candidates = { [today]: [], [tomorrow]: [] };
+  const knownQueues = new Set();
   const messages = readMessageBlocks(html);
   for (const [index, message] of messages.entries()) {
     const queues = parseQueues(message.text);
@@ -182,15 +259,22 @@ export function parseTelegramHtml(html, { channel, now = new Date() } = {}) {
     const targetDates = mentionedDates.length ? mentionedDates : [postedDate ?? today];
     for (const date of targetDates) {
       if (date !== today && date !== tomorrow) continue;
+      Object.keys(queues).forEach((queue) => knownQueues.add(queue));
       candidates[date].push({ date, queues, postedAt: message.postedAt, messageText: message.text, rank: message.postedAt ? Date.parse(message.postedAt) : -index });
     }
   }
   const schedules = {};
   for (const date of [today, tomorrow]) {
-    const best = candidates[date].sort((a, b) => b.rank - a.rank)[0];
-    if (best) {
-      const { rank, ...schedule } = best;
-      schedules[date] = schedule;
+    const ordered = candidates[date].sort((a, b) => b.rank - a.rank);
+    if (ordered.length) {
+      const { rank, ...schedule } = ordered[0];
+      const queues = {};
+      for (const candidate of ordered) {
+        for (const [queue, periods] of Object.entries(candidate.queues)) {
+          if (!Object.hasOwn(queues, queue)) queues[queue] = periods;
+        }
+      }
+      schedules[date] = { ...schedule, queues };
     }
   }
   const title = html.match(/<meta\b[^>]*property=["']og:title["'][^>]*content=["']([^"']+)/i)?.[1]
@@ -204,6 +288,7 @@ export function parseTelegramHtml(html, { channel, now = new Date() } = {}) {
     today,
     tomorrow,
     schedules,
+    knownQueues: [...knownQueues].sort(compareQueueNames),
     analyzedMessages: messages.length,
   };
 }
@@ -220,7 +305,21 @@ async function readCache(env, key) {
 
 async function writeCache(env, key, value, expirationTtl = 86400) {
   if (!env.KV_BINDING) return;
-  try { await env.KV_BINDING.put(key, JSON.stringify(value), { expirationTtl }); } catch { /* The live API still works if KV is temporarily unavailable. */ }
+  try {
+    const serialized = JSON.stringify(value);
+    if (expirationTtl === null) await env.KV_BINDING.put(key, serialized);
+    else await env.KV_BINDING.put(key, serialized, { expirationTtl });
+  } catch { /* The live API still works if KV is temporarily unavailable. */ }
+}
+
+async function persistScheduleResult(cacheKey, parsed, env, cached = null) {
+  const previous = cached ?? await readCache(env, cacheKey);
+  const historyKey = `queues:${cacheKey.replace(/^(?:channel|official):/, "")}`;
+  const history = await readCache(env, historyKey);
+  const result = mergeTelegramScheduleData(parsed, previous, history?.queues || []);
+  await writeCache(env, cacheKey, result);
+  await writeCache(env, historyKey, { queues: result.knownQueues, updatedAt: result.fetchedAt }, null);
+  return result;
 }
 
 async function fetchChannel(username, env, { force = false } = {}) {
@@ -246,9 +345,8 @@ async function fetchChannel(username, env, { force = false } = {}) {
     return cached ? { ...cached, stale: true, warning: "Не вдалося прочитати канал. Показано останні збережені дані." }
       : { error: "channel_unavailable", message: "Канал не знайдено або його дописи недоступні для читання." };
   }
-  const result = parseTelegramHtml(html, { channel: username });
-  await writeCache(env, key, result);
-  return result;
+  const parsed = parseTelegramHtml(html, { channel: username });
+  return persistScheduleResult(key, parsed, env, cached);
 }
 
 function normalizedSchedule({ sourceId, title, sourceUrl, schedules, fetchedAt = new Date().toISOString() }) {
@@ -353,8 +451,7 @@ async function fetchYasno(sourceId, env, { force = false } = {}) {
     const payload = await fetchJson(`https://app.yasno.ua/api/blackout-service/public/shutdowns/regions/3/dsos/${dsoId}/planned-outages`);
     const result = normalizeYasno(payload, sourceId);
     if (!Object.keys(result.schedules).length) throw new Error("YASNO ще не опублікував перевірений графік на сьогодні або завтра.");
-    await writeCache(env, cacheKey, result);
-    return result;
+    return persistScheduleResult(cacheKey, result, env, cached);
   } catch (error) {
     return cached ? { ...cached, stale: true, warning: error.message } : { error: "official_source_unavailable", message: error.message || "Не вдалося отримати графік з YASNO." };
   }
@@ -387,8 +484,7 @@ async function fetchCherkasy(env, { force = false } = {}) {
     if (!Object.keys(schedules).length) throw new Error("Черкасиобленерго ще не опублікувало графік на сьогодні або завтра.");
     const latest = candidates[0]?.post;
     const result = { channel: sourceId, sourceUrl: "https://www.cherkasyoblenergo.com/media?category=news&lang=uk", title: "Черкасиобленерго · офіційний графік", fetchedAt: new Date().toISOString(), today, tomorrow: datePlusOne(today), schedules };
-    await writeCache(env, cacheKey, result);
-    return result;
+    return persistScheduleResult(cacheKey, result, env, cached);
   } catch (error) {
     return cached ? { ...cached, stale: true, warning: error.message } : { error: "official_source_unavailable", message: error.message || "Не вдалося прочитати Черкасиобленерго." };
   }
@@ -626,8 +722,7 @@ async function fetchSumy(env, { force = false } = {}) {
     if (!Object.keys(schedules).length) throw new Error("Не знайдено підтверджений графік Сумиобленерго на сьогодні або завтра. Відкрийте офіційний канал.");
     const latest = latestByDate[today] || latestByDate[tomorrow];
     const result = { channel: sourceId, sourceUrl: latest ? `https://t.me/${SUMY_CHANNEL}/${latest.postId}` : `https://t.me/${SUMY_CHANNEL}`, title: "Сумиобленерго · офіційний графік", fetchedAt: now.toISOString(), today, tomorrow, schedules };
-    await writeCache(env, cacheKey, result);
-    return result;
+    return persistScheduleResult(cacheKey, result, env, cached);
   } catch (error) {
     if (cached) {
       const today = dateInKyiv();

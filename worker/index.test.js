@@ -7,6 +7,7 @@ import {
   parseIntervals,
   parseQueues,
   parseTelegramHtml,
+  mergeTelegramScheduleData,
   normalizeYasno,
   parseCherkasyContent,
   parseSumyOcr,
@@ -116,6 +117,8 @@ test("витягує всі черги зі зразка та не плутає 
   const queues = parseQueues(`09.11.2026 за розпорядженням Укренерго:\nЧерга 1.1: 02-04, 06-08, 10-12\nЧерга 6.2: 00-02, 04-06, 12-12:30, 22-24`);
   assert.deepEqual(Object.keys(queues), ["1.1", "6.2"]);
   assert.deepEqual(queues["6.2"], [{ start: 0, end: 120 }, { start: 240, end: 360 }, { start: 720, end: 750 }, { start: 1320, end: 1440 }]);
+  assert.deepEqual(parseQueues("Черга 1.1: відключень не буде"), { "1.1": [] });
+  assert.deepEqual(parseQueues("Черга 1.2: світло є, відключення скасовано"), { "1.2": [] });
 });
 
 test("розпізнає українську дату й ISO дату тільки на сьогодні або завтра", () => {
@@ -211,7 +214,11 @@ test("Worker health endpoint повертає JSON і OPTIONS відповіда
 test("Worker використовує KV namespace через binding KV_BINDING", async () => {
   const entries = new Map();
   const kv = {
-    async get(key) { return entries.get(key) ?? null; },
+    async get(key) {
+      const value = entries.get(key);
+      if (value == null) return null;
+      try { return JSON.parse(value); } catch { return value; }
+    },
     async put(key, value) { entries.set(key, value); },
   };
   const originalFetch = globalThis.fetch;
@@ -220,11 +227,87 @@ test("Worker використовує KV namespace через binding KV_BINDING
     const response = await handleRequest(new Request("https://worker.example/api/schedule?channel=example_channel"), { KV_BINDING: kv });
     assert.equal(response.status, 200);
     assert.equal((await response.json()).channel, "example_channel");
-    assert.equal(entries.size, 1);
-    assert.match([...entries.keys()][0], /^channel:/);
+    assert.equal(entries.size, 2);
+    assert.ok([...entries.keys()].some((key) => /^channel:/.test(key)));
+    assert.ok([...entries.keys()].some((key) => /^queues:/.test(key)));
   } finally {
     globalThis.fetch = originalFetch;
   }
+});
+
+test("після часткового виправлення зберігає не згадані черги й запам'ятовує найбільший набір", async () => {
+  const kv = memoryKv();
+  const originalFetch = globalThis.fetch;
+  const now = new Date();
+  const parts = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Kyiv", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(now);
+  const get = (type) => parts.find((part) => part.type === type)?.value;
+  const tomorrow = new Date(Date.UTC(Number(get("year")), Number(get("month")) - 1, Number(get("day")) + 1));
+  const tomorrowDate = `${String(tomorrow.getUTCDate()).padStart(2, "0")}.${String(tomorrow.getUTCMonth() + 1).padStart(2, "0")}.${tomorrow.getUTCFullYear()}`;
+  const makeQueues = (count, corrected) => Array.from({ length: count }, (_, index) => {
+    const queue = `${Math.floor(index / 2) + 1}.${index % 2 + 1}`;
+    const start = corrected && index < 4 ? 12 + index * 2 : 2 + index * 2;
+    return `Черга ${queue}: ${String(start).padStart(2, "0")}-${String(start + 1).padStart(2, "0")}`;
+  }).join("\n");
+  let stage = 0;
+  globalThis.fetch = async () => {
+    const dateText = tomorrowDate;
+    const count = stage === 0 ? 6 : stage === 1 ? 4 : 8;
+    return new Response(`<html><head><meta property="og:title" content="Тест"></head><body>${messageBlock(`${dateText} графік\n${makeQueues(count, stage === 1)}`, now.toISOString(), stage + 1)}</body></html>`);
+  };
+  try {
+    const url = "https://worker.example/api/schedule?channel=example_channel";
+    const firstResponse = await handleRequest(new Request(url), { KV_BINDING: kv });
+    const first = await firstResponse.json();
+    const scheduleDate = Object.keys(first.schedules)[0];
+    assert.equal(scheduleDate, first.tomorrow);
+    assert.equal(Object.keys(first.schedules[scheduleDate].queues).length, 6);
+
+    stage = 1;
+    const correctionResponse = await handleRequest(new Request(`${url}&refresh=1`), { KV_BINDING: kv });
+    const result = await correctionResponse.json();
+    assert.equal(Object.keys(result.schedules[scheduleDate].queues).length, 6);
+    assert.deepEqual(result.schedules[scheduleDate].queues["1.1"], [{ start: 720, end: 780 }]);
+    assert.deepEqual(result.schedules[scheduleDate].queues["3.1"], first.schedules[scheduleDate].queues["3.1"]);
+    assert.deepEqual(result.knownQueues, ["1.1", "1.2", "2.1", "2.2", "3.1", "3.2"]);
+
+    stage = 2;
+    const tomorrowResponse = await handleRequest(new Request(`${url}&refresh=1`), { KV_BINDING: kv });
+    const tomorrowResult = await tomorrowResponse.json();
+    assert.equal(Object.keys(tomorrowResult.schedules[tomorrowResult.tomorrow].queues).length, 8);
+    assert.deepEqual(tomorrowResult.knownQueues, ["1.1", "1.2", "2.1", "2.2", "3.1", "3.2", "4.1", "4.2"]);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("після оновлення не підміняє вже минулі періоди новими плановими інтервалами", () => {
+  const date = "2026-11-11";
+  const merged = mergeTelegramScheduleData({
+    today: date, tomorrow: "2026-11-12", fetchedAt: "2026-11-11T12:50:00.000Z",
+    schedules: { [date]: { date, queues: { "1.1": [{ start: 480, end: 600 }, { start: 900, end: 1020 }] } } },
+  }, {
+    schedules: { [date]: { date, queues: { "1.1": [{ start: 480, end: 540 }] } } },
+  });
+  assert.deepEqual(merged.schedules[date].queues["1.1"], [
+    { start: 480, end: 540 },
+    { start: 900, end: 1020 },
+  ]);
+});
+
+test("після корекції зберігає минуле відключення й завершує активне часом оновлення", () => {
+  const date = "2026-11-11";
+  const now = new Date("2026-11-11T12:50:00.000Z"); // 14:50 in Kyiv
+  const merged = mergeTelegramScheduleData({
+    channel: "example_channel", today: date, tomorrow: "2026-11-12", fetchedAt: now.toISOString(),
+    schedules: { [date]: { date, postedAt: "2026-11-11T12:50:00.000Z", queues: { "1.1": [] } } }, knownQueues: ["1.1"],
+  }, {
+    schedules: { [date]: { date, queues: { "1.1": [{ start: 480, end: 540 }, { start: 840, end: 960 }] } } },
+    knownQueues: ["1.1"],
+  });
+  assert.deepEqual(merged.schedules[date].queues["1.1"], [
+    { start: 480, end: 540 },
+    { start: 840, end: 890 },
+  ]);
 });
 
 test("Worker повертає 405 для не-GET запитів", async () => {
@@ -278,7 +361,11 @@ function memoryKv() {
   const entries = new Map();
   return {
     entries,
-    async get(key) { return entries.get(key) ?? null; },
+    async get(key, type) {
+      const value = entries.get(key) ?? null;
+      if (value == null || type !== "json") return value;
+      try { return JSON.parse(value); } catch { return null; }
+    },
     async put(key, value) { entries.set(key, value); },
     async delete(key) { entries.delete(key); },
     async list({ prefix = "", cursor } = {}) {
