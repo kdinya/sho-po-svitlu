@@ -141,6 +141,16 @@ test("лампочка на головній доступна як кнопка 
   assert.match(css, /\.mascot-button:focus-visible \{[^}]*outline-offset:\s*4px/);
 });
 
+test("після збереження назви черги фокус повертається на перемальовану опцію", () => {
+  const submitHandler = appJs.match(/els\.queueNameForm\.addEventListener\("submit", \(event\) => \{([\s\S]*?)\n\}\);/)?.[1] ?? "";
+  assert.ok(submitHandler, "має бути обробник збереження назви черги");
+  const closeIndex = submitHandler.indexOf("closeQueueNameDialog({ restoreFocus: false })");
+  const renderIndex = submitHandler.indexOf("renderQueueOptions()", closeIndex);
+  const focusIndex = submitHandler.indexOf("querySelector(`[data-queue=\"${queue}\"]`)?.focus()", renderIndex);
+  assert.ok(closeIndex >= 0 && closeIndex < renderIndex && renderIndex < focusIndex, "спочатку закриваємо діалог, перемальовуємо список, потім повертаємо фокус на ту саму чергу");
+  assert.ok(appJs.includes("function closeQueueNameDialog({ restoreFocus = true } = {})"));
+});
+
 test("стилі містять правила для кастомних списків у неоновому стилі додатку", () => {
   assert.match(css, /\.custom-select-trigger/, "має містити кнопку-тригер кастомного списку");
   assert.match(css, /\.custom-select-menu/, "має містити меню випадаючого списку");

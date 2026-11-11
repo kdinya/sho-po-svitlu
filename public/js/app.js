@@ -392,11 +392,11 @@ function openQueueNameDialog(queue) {
   els.queueNameInput.focus();
 }
 
-function closeQueueNameDialog() {
+function closeQueueNameDialog({ restoreFocus = true } = {}) {
   if (els.queueNameDialog.open) els.queueNameDialog.close();
   const queue = editingQueueName;
   editingQueueName = null;
-  if (queue) els.queueOptions.querySelector(`[data-queue="${queue}"]`)?.focus();
+  if (restoreFocus && queue) els.queueOptions.querySelector(`[data-queue="${queue}"]`)?.focus();
 }
 
 function formatHeroDate(isoDate, isToday) {
@@ -986,8 +986,9 @@ els.queueNameForm.addEventListener("submit", (event) => {
   const name = Array.from(els.queueNameInput.value.trim()).slice(0, QUEUE_NAME_MAX_LENGTH).join("");
   if (name) queueNameDraft[queue] = name;
   else delete queueNameDraft[queue];
-  closeQueueNameDialog();
+  closeQueueNameDialog({ restoreFocus: false });
   renderQueueOptions();
+  els.queueOptions.querySelector(`[data-queue="${queue}"]`)?.focus();
 });
 els.closeQueueNameDialog.addEventListener("click", closeQueueNameDialog);
 els.cancelQueueNameDialog.addEventListener("click", closeQueueNameDialog);
