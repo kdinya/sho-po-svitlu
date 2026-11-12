@@ -32,6 +32,17 @@ test("public/index.html: містить усі DOM ID, які викликают
   assert.deepEqual(missing, [], `Усі ID з app.js мають бути присутні в index.html. Відсутні: ${missing.join(", ")}`);
 });
 
+test("відкриті модальні вікна блокують прокручування та взаємодію з фоном", () => {
+  assert.match(css, /html:has\(dialog\[open\]\) \{[^}]*overflow:\s*hidden;[^}]*overscroll-behavior:\s*none/);
+  assert.match(css, /dialog\.sheet::backdrop \{[^}]*background:/);
+  const dialogs = [...html.matchAll(/<dialog\b[^>]*\bid="([^"]+)"/g)].map((match) => match[1]);
+  assert.ok(dialogs.length >= 7, "усі спливаючі вікна мають залишатися нативними модальними діалогами");
+  assert.match(appJs, /els\.settingsDialog\.showModal\(\)/);
+  assert.match(appJs, /els\.requestChannelDialog\.showModal\(\)/);
+  assert.match(appJs, /els\.onboardDialog\.showModal\(\)/);
+  assert.match(appJs, /dialog\.showModal\(\)/);
+});
+
 test("public/index.html: не містить дублікатів ідентифікаторів (id)", () => {
   const idMatches = [...html.matchAll(/\bid=["']([^"']+)["']/g)].map((m) => m[1]);
   const seen = new Set();
@@ -176,7 +187,7 @@ test("діалоги назв черг відкриваються по цент�
   assert.match(html, /id="queueNameExitCopy"/);
   assert.match(readme, /\[\*\*Перейти до ШоПоСвітлу →\*\*\]\(https:\/\/sho-po-svitlu-ib61\.vercel\.app\/\)/);
   assert.match(readme, /## Власні назви черг[\s\S]*?під номером вибраної черги[\s\S]*?підтвердження/);
-  assert.match(sw, /sho-po-svitlu-shell-v53/);
+  assert.match(sw, /sho-po-svitlu-shell-v54/);
 });
 
 test("стилі містять правила для кастомних списків у неоновому стилі додатку", () => {
@@ -228,7 +239,7 @@ test("прапор у шапці використовує оригінальни
   assert.match(css, /\.brand-flag \{[^}]*position:\s*absolute;[^}]*top:\s*50%;[^}]*left:\s*-8px;[^}]*transform:\s*translateY\(-50%\);[^}]*z-index:\s*1;[^}]*width:\s*75px;[^}]*height:\s*54px;/);
   assert.match(css, /\.brand-title \{[^}]*position:\s*relative;[^}]*z-index:\s*2;[^}]*white-space:\s*nowrap;/);
   assert.match(css, /\.brand-flag-image \{[^}]*width:\s*100%;[^}]*height:\s*100%;[^}]*object-fit:\s*contain/);
-  assert.match(sw, /CACHE_NAME = "sho-po-svitlu-shell-v53"/);
+  assert.match(sw, /CACHE_NAME = "sho-po-svitlu-shell-v54"/);
   assert.match(sw, /"\/images\/ukraine-flag-header\.gif"/);
   assert.match(sw, /"\/images\/ukraine-flag-header-still\.png"/);
 });

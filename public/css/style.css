@@ -25,6 +25,7 @@
 [hidden] { display: none !important; }
 
 html { min-height: 100%; background: var(--bg); color-scheme: dark; }
+html:has(dialog[open]) { overflow: hidden; overscroll-behavior: none; }
 
 body {
   min-height: 100vh;
