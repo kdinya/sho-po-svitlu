@@ -176,7 +176,7 @@ test("діалоги назв черг відкриваються по цент�
   assert.match(html, /id="queueNameExitCopy"/);
   assert.match(readme, /\[\*\*Перейти до ШоПоСвітлу →\*\*\]\(https:\/\/sho-po-svitlu-ib61\.vercel\.app\/\)/);
   assert.match(readme, /## Власні назви черг[\s\S]*?під номером вибраної черги[\s\S]*?підтвердження/);
-  assert.match(sw, /sho-po-svitlu-shell-v49/);
+  assert.match(sw, /sho-po-svitlu-shell-v50/);
 });
 
 test("стилі містять правила для кастомних списків у неоновому стилі додатку", () => {
@@ -228,7 +228,7 @@ test("прапор у шапці використовує оригінальни
   assert.match(css, /\.brand-flag \{[^}]*position:\s*absolute;[^}]*top:\s*50%;[^}]*left:\s*-8px;[^}]*transform:\s*translateY\(-50%\);[^}]*z-index:\s*1;[^}]*width:\s*75px;[^}]*height:\s*54px;/);
   assert.match(css, /\.brand-title \{[^}]*position:\s*relative;[^}]*z-index:\s*2;[^}]*white-space:\s*nowrap;/);
   assert.match(css, /\.brand-flag-image \{[^}]*width:\s*100%;[^}]*height:\s*100%;[^}]*object-fit:\s*contain/);
-  assert.match(sw, /CACHE_NAME = "sho-po-svitlu-shell-v49"/);
+  assert.match(sw, /CACHE_NAME = "sho-po-svitlu-shell-v50"/);
   assert.match(sw, /"\/images\/ukraine-flag-header\.gif"/);
   assert.match(sw, /"\/images\/ukraine-flag-header-still\.png"/);
 });
@@ -264,6 +264,14 @@ test("перший запуск спочатку обирає область і 
   assert.match(appJs, /function populateOnboardRegions\(/);
   assert.match(appJs, /function renderOnboardSources\(/);
   assert.match(appJs, /getRegionChannels\(region\)/);
+  assert.match(appJs, /getOptionMeta: \(region\) => \{/);
+  assert.match(appJs, /label: "Немає каналів", empty: true/);
+  assert.match(appJs, /Надіслати заявку на додавання каналу в Telegram/);
+  assert.match(appJs, /openRequestDialog\("new", els\.onboardChannelInput\.value\.trim\(\), requestReturnRegion\)/);
+  assert.match(appJs, /sendChannelRequest\(\{/);
+  assert.match(css, /\.custom-select-option\.is-unavailable/);
+  assert.match(css, /\.onboard-sources-list \.choice-card \{[^}]*padding: 8px 10px/);
+  assert.match(css, /\.onboard-sources-list \.choice-card \.source-mark \{ width: 36px; height: 36px; \}/);
   assert.match(appJs, /Спочатку оберіть область для цього каналу/);
   assert.match(appJs, /requestReturnRegion/);
 });

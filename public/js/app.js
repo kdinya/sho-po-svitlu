@@ -628,7 +628,8 @@ function initCustomSelect(selectEl, { getOptionMeta } = {}) {
     options.forEach((opt) => {
       const btn = document.createElement("button");
       btn.type = "button";
-      btn.className = `custom-select-option${opt.value === selectEl.value ? " is-selected" : ""}`;
+      const meta = typeof getOptionMeta === "function" ? getOptionMeta(opt.value) : null;
+      btn.className = `custom-select-option${opt.value === selectEl.value ? " is-selected" : ""}${meta?.empty ? " is-unavailable" : ""}`;
       btn.setAttribute("role", "option");
       btn.setAttribute("aria-selected", String(opt.value === selectEl.value));
 
@@ -637,14 +638,11 @@ function initCustomSelect(selectEl, { getOptionMeta } = {}) {
       titleSpan.textContent = opt.textContent;
       btn.appendChild(titleSpan);
 
-      if (typeof getOptionMeta === "function") {
-        const meta = getOptionMeta(opt.value);
-        if (meta) {
-          const badge = document.createElement("span");
-          badge.className = `custom-select-badge${meta.empty ? " empty" : ""}`;
-          badge.textContent = meta.label;
-          btn.appendChild(badge);
-        }
+      if (meta) {
+        const badge = document.createElement("span");
+        badge.className = `custom-select-badge${meta.empty ? " empty" : ""}`;
+        badge.textContent = meta.label;
+        btn.appendChild(badge);
       }
 
       btn.addEventListener("click", (e) => {
@@ -1379,8 +1377,7 @@ function populateOnboardRegions() {
   const options = UKRAINE_REGIONS.map((region) => {
     const option = document.createElement("option");
     option.value = region;
-    const count = getRegionChannels(region).length;
-    option.textContent = count ? `${region} · ${count} ${count === 1 ? "канал" : "канали"}` : `${region} · джерел поки немає`;
+    option.textContent = region;
     return option;
   });
   els.onboardRegionSelect.replaceChildren(placeholder, ...options);
@@ -1396,11 +1393,16 @@ function renderOnboardSources() {
   if (!region) return;
 
   const regionChannels = getRegionChannels(region);
-  els.onboardSourcesHeading.textContent = regionChannels.length ? `Доступні канали · ${region}` : `Для ${region.toLowerCase()} поки немає готових каналів`;
-  if (!regionChannels.length) {
+  const hasChannels = regionChannels.length > 0;
+  els.onboardSourcesHeading.textContent = hasChannels ? `Доступні канали · ${region}` : `Для ${region.toLowerCase()} поки немає готових каналів`;
+  els.onboardRequestRegionBtn.classList.toggle("onboard-request-btn", !hasChannels);
+  els.onboardRequestRegionBtn.textContent = hasChannels
+    ? "Не знайшли свій канал? Запропонуйте його"
+    : "Надіслати заявку на додавання каналу в Telegram";
+  if (!hasChannels) {
     const empty = document.createElement("p");
     empty.className = "welcome-lead onboard-empty-copy";
-    empty.textContent = "Можете одразу запропонувати свій канал, щоб додати графік для цієї області.";
+    empty.textContent = "Надішліть заявку, і я отримаю її в Telegram. Область уже буде вказана.";
     els.onboardSourcesList.append(empty);
     return;
   }
@@ -1529,7 +1531,7 @@ els.onboardRequestRegionBtn.addEventListener("click", () => {
   requestReturnRegion = els.onboardRegionSelect.value;
   returnToOnboardingAfterRequest = true;
   els.onboardDialog.close();
-  openRequestDialog("new", "", requestReturnRegion);
+  openRequestDialog("new", els.onboardChannelInput.value.trim(), requestReturnRegion);
 });
 els.onboardUseCustom.addEventListener("click", () => {
   try {
@@ -1857,6 +1859,16 @@ document.addEventListener("visibilitychange", () => {
 // Initialize
 initQueueOptions();
 initCustomSelect(els.settingsRegionSelect);
+initCustomSelect(els.onboardRegionSelect, {
+  getOptionMeta: (region) => {
+    if (!region) return null;
+    const count = getRegionChannels(region).length;
+    const suffix = count === 1 ? "канал" : count >= 2 && count <= 4 ? "канали" : "каналів";
+    return count
+      ? { label: `${count} ${suffix}`, empty: false }
+      : { label: "Немає каналів", empty: true };
+  },
+});
 initCustomSelect(els.onboardOfficialSource);
 initCustomSelect(els.requestRegion);
 initCustomSelect(els.requestType);
