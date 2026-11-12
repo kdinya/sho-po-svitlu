@@ -176,7 +176,7 @@ test("діалоги назв черг відкриваються по цент�
   assert.match(html, /id="queueNameExitCopy"/);
   assert.match(readme, /\[\*\*Перейти до ШоПоСвітлу →\*\*\]\(https:\/\/sho-po-svitlu-ib61\.vercel\.app\/\)/);
   assert.match(readme, /## Власні назви черг[\s\S]*?під номером вибраної черги[\s\S]*?підтвердження/);
-  assert.match(sw, /sho-po-svitlu-shell-v51/);
+  assert.match(sw, /sho-po-svitlu-shell-v52/);
 });
 
 test("стилі містять правила для кастомних списків у неоновому стилі додатку", () => {
@@ -228,7 +228,7 @@ test("прапор у шапці використовує оригінальни
   assert.match(css, /\.brand-flag \{[^}]*position:\s*absolute;[^}]*top:\s*50%;[^}]*left:\s*-8px;[^}]*transform:\s*translateY\(-50%\);[^}]*z-index:\s*1;[^}]*width:\s*75px;[^}]*height:\s*54px;/);
   assert.match(css, /\.brand-title \{[^}]*position:\s*relative;[^}]*z-index:\s*2;[^}]*white-space:\s*nowrap;/);
   assert.match(css, /\.brand-flag-image \{[^}]*width:\s*100%;[^}]*height:\s*100%;[^}]*object-fit:\s*contain/);
-  assert.match(sw, /CACHE_NAME = "sho-po-svitlu-shell-v51"/);
+  assert.match(sw, /CACHE_NAME = "sho-po-svitlu-shell-v52"/);
   assert.match(sw, /"\/images\/ukraine-flag-header\.gif"/);
   assert.match(sw, /"\/images\/ukraine-flag-header-still\.png"/);
 });
@@ -269,6 +269,16 @@ test("перший екран налаштування показує облас
   assert.match(css, /dialog\.sheet\.welcome \{[^}]*margin:\s*auto/);
   assert.match(css, /dialog\.sheet\.welcome \{[^}]*max-height:\s*calc\(100dvh - 24px\)/);
   assert.match(css, /dialog\.sheet\.welcome \.sheet-box \{[^}]*border-radius:\s*30px/);
+});
+
+test("список областей у першому запуску підлаштовується до вільного місця діалогу", () => {
+  assert.match(appJs, /selectEl\.id === "onboardRegionSelect"/);
+  assert.match(appJs, /const spaceAbove = Math\.max\(0, triggerRect\.top - bounds\.top - 10\)/);
+  assert.match(appJs, /const spaceBelow = Math\.max\(0, bounds\.bottom - triggerRect\.bottom - 10\)/);
+  assert.match(appJs, /menu\.classList\.toggle\("opens-up", spaceAbove > spaceBelow\)/);
+  assert.match(appJs, /menu\.style\.maxHeight = `\$\{Math\.min\(240, Math\.max\(spaceAbove, spaceBelow\)\)\}px`/);
+  assert.match(css, /\.custom-select-menu\.opens-up \{[^}]*bottom:\s*calc\(100% \+ 6px\)/);
+  assert.match(css, /\.custom-select-menu \{[^}]*overscroll-behavior:\s*contain/);
 });
 
 test("перший запуск спочатку обирає область і показує тільки її джерела", () => {

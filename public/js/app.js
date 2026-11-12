@@ -615,6 +615,17 @@ function initCustomSelect(selectEl, { getOptionMeta } = {}) {
     if (willOpen) {
       menu.hidden = false;
       trigger.setAttribute("aria-expanded", "true");
+      if (selectEl.id === "onboardRegionSelect") {
+        const triggerRect = trigger.getBoundingClientRect();
+        const sheetBox = selectEl.closest(".sheet-box");
+        const bounds = sheetBox?.getBoundingClientRect();
+        if (bounds) {
+          const spaceAbove = Math.max(0, triggerRect.top - bounds.top - 10);
+          const spaceBelow = Math.max(0, bounds.bottom - triggerRect.bottom - 10);
+          menu.classList.toggle("opens-up", spaceAbove > spaceBelow);
+          menu.style.maxHeight = `${Math.min(240, Math.max(spaceAbove, spaceBelow))}px`;
+        }
+      }
       menu.querySelector(".custom-select-option.is-selected")?.scrollIntoView({ block: "nearest" });
     }
   });
