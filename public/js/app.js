@@ -9,6 +9,7 @@ const ONBOARD_KEY = "sho-po-svitlu.onboarded.v1";
 const CLIENT_ID_KEY = "sho-po-svitlu.client-id.v1";
 const USERS_KEY = "sho-po-svitlu.completed-settings-count.v1";
 const PROFILE_KEY = "sho-po-svitlu.profile.v1";
+const NICKNAME_PROMPT_VERSION = 1;
 const QUEUE_NAMES_KEY = "sho-po-svitlu.queue-names.v1";
 const CLIENT_ID_COOKIE = "sps_cid";
 const CLIENT_ID_PATTERN = /^[A-Za-z0-9_-]{16,64}$/;
@@ -1524,7 +1525,11 @@ function readStoredProfile() {
   try {
     const profile = JSON.parse(localStorage.getItem(PROFILE_KEY) || "null");
     if (!profile || typeof profile.nickname !== "string") return null;
-    return { nickname: profile.nickname, registered: profile.registered === true, nicknamePromptCompleted: profile.nicknamePromptCompleted === true };
+    return {
+      nickname: profile.nickname,
+      registered: profile.registered === true,
+      nicknamePromptVersion: Number.isInteger(profile.nicknamePromptVersion) ? profile.nicknamePromptVersion : 0,
+    };
   } catch {
     return null;
   }
@@ -1565,7 +1570,7 @@ async function finishOnboarding() {
       saveSettings();
       if (changed) data = null;
     }
-    saveProfile({ nickname, registered: false, nicknamePromptCompleted: true });
+    saveProfile({ nickname, registered: false, nicknamePromptVersion: NICKNAME_PROMPT_VERSION });
     markOnboarded();
     els.onboardDialog.close();
     initQueueOptions();
@@ -2016,11 +2021,11 @@ if (requiresFirstSetup) {
   openOnboarding();
 } else {
   const profile = readStoredProfile();
-  if (!profile?.nickname || profile.nicknamePromptCompleted !== true) {
+  if (!profile?.nickname || profile.nicknamePromptVersion < NICKNAME_PROMPT_VERSION) {
     // Defer until the app's first paint so a returning user's nickname-only dialog is not lost during startup.
     requestAnimationFrame(() => {
       const currentProfile = readStoredProfile();
-      if (!needsOnboarding() && (!currentProfile?.nickname || currentProfile.nicknamePromptCompleted !== true) && !els.onboardDialog.open) {
+      if (!needsOnboarding() && (!currentProfile?.nickname || currentProfile.nicknamePromptVersion < NICKNAME_PROMPT_VERSION) && !els.onboardDialog.open) {
         openOnboarding({ nicknameOnly: true });
       }
     });
