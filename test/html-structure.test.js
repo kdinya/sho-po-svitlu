@@ -176,7 +176,7 @@ test("діалоги назв черг відкриваються по цент�
   assert.match(html, /id="queueNameExitCopy"/);
   assert.match(readme, /\[\*\*Перейти до ШоПоСвітлу →\*\*\]\(https:\/\/sho-po-svitlu-ib61\.vercel\.app\/\)/);
   assert.match(readme, /## Власні назви черг[\s\S]*?під номером вибраної черги[\s\S]*?підтвердження/);
-  assert.match(sw, /sho-po-svitlu-shell-v50/);
+  assert.match(sw, /sho-po-svitlu-shell-v51/);
 });
 
 test("стилі містять правила для кастомних списків у неоновому стилі додатку", () => {
@@ -228,7 +228,7 @@ test("прапор у шапці використовує оригінальни
   assert.match(css, /\.brand-flag \{[^}]*position:\s*absolute;[^}]*top:\s*50%;[^}]*left:\s*-8px;[^}]*transform:\s*translateY\(-50%\);[^}]*z-index:\s*1;[^}]*width:\s*75px;[^}]*height:\s*54px;/);
   assert.match(css, /\.brand-title \{[^}]*position:\s*relative;[^}]*z-index:\s*2;[^}]*white-space:\s*nowrap;/);
   assert.match(css, /\.brand-flag-image \{[^}]*width:\s*100%;[^}]*height:\s*100%;[^}]*object-fit:\s*contain/);
-  assert.match(sw, /CACHE_NAME = "sho-po-svitlu-shell-v50"/);
+  assert.match(sw, /CACHE_NAME = "sho-po-svitlu-shell-v51"/);
   assert.match(sw, /"\/images\/ukraine-flag-header\.gif"/);
   assert.match(sw, /"\/images\/ukraine-flag-header-still\.png"/);
 });
@@ -253,6 +253,23 @@ test("опис у довідці пояснює вимоги до каналу �
 });
 
 
+
+test("перший екран налаштування показує області за абеткою та відкривається по центру", () => {
+  const apiJs = fs.readFileSync(path.join(PUBLIC_DIR, "js", "api.js"), "utf8");
+  const regionsBlock = apiJs.match(/export const UKRAINE_REGIONS = \[([\s\S]*?)\];/)?.[1] ?? "";
+  const regions = [...regionsBlock.matchAll(/"([^"]+)"/g)].map((match) => match[1]);
+  assert.deepEqual(regions, [
+    "Вінницька область", "Волинська область", "Дніпропетровська область", "Донецька область",
+    "Житомирська область", "Закарпатська область", "Запорізька область", "Івано-Франківська область",
+    "Київська область", "м. Київ", "Кіровоградська область", "Луганська область", "Львівська область",
+    "Миколаївська область", "Одеська область", "Полтавська область", "Рівненська область",
+    "Сумська область", "Тернопільська область", "Харківська область", "Херсонська область",
+    "Хмельницька область", "Черкаська область", "Чернігівська область", "Чернівецька область",
+  ]);
+  assert.match(css, /dialog\.sheet\.welcome \{[^}]*margin:\s*auto/);
+  assert.match(css, /dialog\.sheet\.welcome \{[^}]*max-height:\s*calc\(100dvh - 24px\)/);
+  assert.match(css, /dialog\.sheet\.welcome \.sheet-box \{[^}]*border-radius:\s*30px/);
+});
 
 test("перший запуск спочатку обирає область і показує тільки її джерела", () => {
   const onboarding = html.slice(html.indexOf('id="onboardDialog"'), html.indexOf('id="toast"'));

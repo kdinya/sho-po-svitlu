@@ -69,7 +69,6 @@ export async function fetchSchedule({ workerUrl, channel, refresh = false, signa
 
 
 export const UKRAINE_REGIONS = [
-  "Кіровоградська область",
   "Вінницька область",
   "Волинська область",
   "Дніпропетровська область",
@@ -80,6 +79,7 @@ export const UKRAINE_REGIONS = [
   "Івано-Франківська область",
   "Київська область",
   "м. Київ",
+  "Кіровоградська область",
   "Луганська область",
   "Львівська область",
   "Миколаївська область",
@@ -92,8 +92,8 @@ export const UKRAINE_REGIONS = [
   "Херсонська область",
   "Хмельницька область",
   "Черкаська область",
-  "Чернівецька область",
   "Чернігівська область",
+  "Чернівецька область",
 ];
 
 export async function sendChannelRequest({ workerUrl, region, channelUrl, senderName, requestType = "new", note = "", signal } = {}) {

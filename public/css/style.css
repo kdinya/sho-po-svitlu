@@ -824,6 +824,20 @@ dialog.sheet.queue-dialog {
 }
 dialog.sheet.queue-dialog[open] .sheet-box { animation: queue-dialog-appear 0.18s ease-out; }
 dialog.sheet.queue-dialog:focus { outline: none; }
+/* Keep the first-run setup centered on every screen size, not docked like a bottom sheet. */
+dialog.sheet.welcome {
+  width: min(calc(100% - 24px), var(--shell));
+  max-height: calc(100vh - 24px);
+  max-height: calc(100dvh - 24px);
+  margin: auto;
+  overflow-y: auto;
+}
+dialog.sheet.welcome .sheet-box {
+  max-height: calc(100vh - 24px);
+  max-height: calc(100dvh - 24px);
+  border-radius: 30px;
+  border-bottom: 1px solid var(--line-strong);
+}
 @keyframes queue-dialog-appear { from { opacity: 0; transform: scale(0.98); } }
 @keyframes slide { from { transform: translateY(40px); opacity: 0; } }
 .sheet-box {
