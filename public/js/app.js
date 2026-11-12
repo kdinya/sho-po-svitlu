@@ -2011,5 +2011,18 @@ if (els.homeRegionName?.parentElement && "ResizeObserver" in window) {
   }).observe(els.homeRegionName.parentElement);
 }
 document.fonts?.ready.then(fitRegionName);
-if (needsOnboarding()) openOnboarding();
-else if (!readStoredProfile()?.nickname || !readStoredProfile()?.nicknameListed) openOnboarding({ nicknameOnly: true });
+const requiresFirstSetup = needsOnboarding();
+if (requiresFirstSetup) {
+  openOnboarding();
+} else {
+  const profile = readStoredProfile();
+  if (!profile?.nickname || profile.nicknameListed !== true) {
+    // Defer until the app's first paint so a returning user's nickname-only dialog is not lost during startup.
+    requestAnimationFrame(() => {
+      const currentProfile = readStoredProfile();
+      if (!needsOnboarding() && (!currentProfile?.nickname || currentProfile.nicknameListed !== true) && !els.onboardDialog.open) {
+        openOnboarding({ nicknameOnly: true });
+      }
+    });
+  }
+}
