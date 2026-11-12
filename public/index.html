@@ -453,33 +453,24 @@
       </div>
     </dialog>
 
-    <dialog class="sheet" id="settingsDialog" aria-labelledby="settingsTitle">
+    <dialog class="sheet welcome settings-picker" id="settingsDialog" aria-labelledby="settingsTitle">
       <div class="sheet-box">
-        <div class="sheet-top">
-          <div><small class="eyebrow">Джерела графіків</small><h2 id="settingsTitle">Оберіть джерело</h2></div>
-          <button class="sheet-close" id="closeSettings" type="button" aria-label="Закрити">×</button>
-        </div>
-        <div class="sheet-body">
-          <div class="sheet-row">
-            <span class="field-label">Область України</span>
-            <button type="button" class="link-btn" id="openRequestChannelBtn">Запропонувати канал</button>
+        <button class="sheet-close settings-picker-close" id="closeSettings" type="button" aria-label="Закрити">×</button>
+        <div class="welcome-step">
+          <img class="welcome-mascot" src="/images/mascot-lightbulb.webp" alt="" width="616" height="708" />
+          <h2 id="settingsTitle" tabindex="-1">Оберіть область</h2>
+          <p class="welcome-lead">Спершу оберіть область — я покажу канали з графіками, доступні саме для неї.</p>
+          <label class="field-label" for="settingsRegionSelect">Область України</label>
+          <div class="input-wrap onboard-region-wrap"><select id="settingsRegionSelect" class="native-select" aria-label="Оберіть область України"></select></div>
+          <div class="onboard-sources settings-sources" id="settingsSourcesArea" hidden>
+            <p class="field-label" id="regionChannelsHeading">Доступні канали</p>
+            <div class="onboard-sources-list settings-channel-list" id="channelsList" role="radiogroup" aria-label="Список каналів"></div>
+            <button type="button" class="link-btn center" id="settingsRequestRegionBtn">Подати заявку на свій канал у Telegram</button>
           </div>
-          <div class="region-select-wrap" style="margin-top: 8px;">
-            <select id="settingsRegionSelect" class="native-select" aria-label="Оберіть область"></select>
-          </div>
-          <div class="sheet-row" style="margin-top: 14px;">
-            <span class="field-label" id="regionChannelsHeading">Доступні канали</span>
-            <button type="button" class="link-btn" id="toggleAddChannelBtn">+ Додати свій</button>
-          </div>
-          <div class="add-channel-box" id="addChannelBox" hidden>
-            <label class="field-hint" for="newChannelInput">Посилання на публічний канал або @username</label>
-            <div class="input-wrap"><svg class="icon"><use href="#i-send" /></svg><input id="newChannelInput" type="text" inputmode="url" autocapitalize="none" autocomplete="off" placeholder="https://t.me/s/назва або @канал" /></div>
-            <div class="btn-pair">
-              <button type="button" class="ghost-btn wide" id="cancelAddChannelBtn">Скасувати</button>
-              <button type="button" class="primary-btn" id="confirmAddChannelBtn">Зберегти та обрати</button>
-            </div>
-          </div>
-          <div class="channels-list" id="channelsList" role="radiogroup" aria-label="Список каналів"></div>
+          <div class="or-line"><span>або свій канал</span></div>
+          <div class="input-wrap"><svg class="icon"><use href="#i-send" /></svg><input id="newChannelInput" type="text" inputmode="url" autocapitalize="none" autocomplete="off" aria-label="Посилання на свій Telegram-канал" placeholder="https://t.me/s/назва або @канал" /></div>
+          <p class="form-error" id="settingsChannelError" role="alert" hidden></p>
+          <button type="button" class="primary-btn" id="confirmAddChannelBtn">Далі зі своїм каналом</button>
         </div>
       </div>
     </dialog>

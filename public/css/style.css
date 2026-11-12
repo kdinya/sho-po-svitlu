@@ -833,6 +833,18 @@ dialog.sheet.welcome {
   margin: auto;
   overflow-y: auto;
 }
+.settings-picker .sheet-box { position: relative; }
+.settings-picker-close { position: absolute; top: 14px; right: 14px; z-index: 2; }
+.settings-picker .welcome-mascot { margin-top: 2px; }
+.settings-sources { width: 100%; }
+.settings-channel-list { max-height: min(28vh, 220px); }
+.settings-channel-choice { width: 100%; cursor: pointer; }
+.settings-channel-choice[aria-checked="true"] {
+  background: linear-gradient(160deg, rgba(255, 210, 58, 0.24), rgba(255, 210, 58, 0.1));
+  box-shadow: 0 0 16px rgba(255, 210, 58, 0.1);
+}
+.settings-channel-choice .channel-delete-btn { margin-left: -4px; color: #ffb3a3; }
+.settings-channel-choice .channel-delete-btn .icon { width: 19px; height: 19px; }
 dialog.sheet.welcome .sheet-box {
   max-height: calc(100vh - 24px);
   max-height: calc(100dvh - 24px);

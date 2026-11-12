@@ -187,7 +187,7 @@ test("діалоги назв черг відкриваються по цент�
   assert.match(html, /id="queueNameExitCopy"/);
   assert.match(readme, /\[\*\*Перейти до ШоПоСвітлу →\*\*\]\(https:\/\/sho-po-svitlu-ib61\.vercel\.app\/\)/);
   assert.match(readme, /## Власні назви черг[\s\S]*?під номером вибраної черги[\s\S]*?підтвердження/);
-  assert.match(sw, /sho-po-svitlu-shell-v54/);
+  assert.match(sw, /sho-po-svitlu-shell-v55/);
 });
 
 test("стилі містять правила для кастомних списків у неоновому стилі додатку", () => {
@@ -239,7 +239,7 @@ test("прапор у шапці використовує оригінальни
   assert.match(css, /\.brand-flag \{[^}]*position:\s*absolute;[^}]*top:\s*50%;[^}]*left:\s*-8px;[^}]*transform:\s*translateY\(-50%\);[^}]*z-index:\s*1;[^}]*width:\s*75px;[^}]*height:\s*54px;/);
   assert.match(css, /\.brand-title \{[^}]*position:\s*relative;[^}]*z-index:\s*2;[^}]*white-space:\s*nowrap;/);
   assert.match(css, /\.brand-flag-image \{[^}]*width:\s*100%;[^}]*height:\s*100%;[^}]*object-fit:\s*contain/);
-  assert.match(sw, /CACHE_NAME = "sho-po-svitlu-shell-v54"/);
+  assert.match(sw, /CACHE_NAME = "sho-po-svitlu-shell-v55"/);
   assert.match(sw, /"\/images\/ukraine-flag-header\.gif"/);
   assert.match(sw, /"\/images\/ukraine-flag-header-still\.png"/);
 });
@@ -283,7 +283,7 @@ test("перший екран налаштування показує облас
 });
 
 test("список областей у першому запуску підлаштовується до вільного місця діалогу", () => {
-  assert.match(appJs, /selectEl\.id === "onboardRegionSelect"/);
+  assert.match(appJs, /\["onboardRegionSelect", "settingsRegionSelect"\]\.includes\(selectEl\.id\)/);
   assert.match(appJs, /const spaceAbove = Math\.max\(0, triggerRect\.top - bounds\.top - 10\)/);
   assert.match(appJs, /const spaceBelow = Math\.max\(0, bounds\.bottom - triggerRect\.bottom - 10\)/);
   assert.match(appJs, /menu\.classList\.toggle\("opens-up", spaceAbove > spaceBelow\)/);
@@ -342,6 +342,29 @@ test("кавова кнопка підтримки відкриває досту
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
 });
 
+
+test("вибір каналу в налаштуваннях повторює центрований екран першого запуску", () => {
+  const dialogStart = html.lastIndexOf("<dialog", html.indexOf('id="settingsDialog"'));
+  const dialog = html.slice(dialogStart, html.indexOf('id="requestChannelDialog"'));
+  assert.match(dialog, /class="sheet welcome settings-picker"/);
+  assert.match(dialog, /class="welcome-mascot"/);
+  assert.match(dialog, /id="settingsRegionSelect"/);
+  assert.match(dialog, /id="settingsSourcesArea"[^>]*hidden/);
+  assert.match(dialog, /id="channelsList"/);
+  assert.match(dialog, /id="settingsRequestRegionBtn"/);
+  assert.match(dialog, /id="newChannelInput"/);
+  assert.match(appJs, /function openSettings\(\{ region = "" \} = \{\}\)/);
+  assert.match(appJs, /els\.settingsRegionSelect\.replaceChildren\(placeholder, \.\.\.options\)/);
+  assert.match(appJs, /function renderChannelsList\(\)[\s\S]*?getRegionChannels\(region\)/);
+  assert.match(appJs, /className = "choice-card settings-channel-choice"/);
+  assert.match(appJs, /settingsRequestRegionBtn\.addEventListener/);
+  assert.match(appJs, /returnToSettingsAfterRequest/);
+  assert.match(appJs, /if \(dialog === els\.requestChannelDialog\) closeRequestDialog\(\)/);
+  assert.match(appJs, /requestChannelDialog\.addEventListener\("cancel", \(event\) => \{ event\.preventDefault\(\); closeRequestDialog\(\); \}\)/);
+  assert.match(css, /dialog\.sheet\.welcome \{[^}]*margin:\s*auto/);
+  assert.match(css, /dialog\.sheet\.welcome \.sheet-box \{[^}]*border-radius:\s*30px/);
+  assert.match(css, /\.settings-channel-choice\[aria-checked="true"\]/);
+});
 
 test("налаштування доброзичливо пояснюють запит імені або ніку без технічних пояснень", () => {
   assert.match(html, /id="onboardNickname"[^>]*required/);

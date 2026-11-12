@@ -120,7 +120,9 @@ const els = {
   errorReport: $("errorReport"),
   settingsDialog: $("settingsDialog"),
   requestChannelDialog: $("requestChannelDialog"),
-  openRequestChannelBtn: $("openRequestChannelBtn"),
+  settingsSourcesArea: $("settingsSourcesArea"),
+  settingsRequestRegionBtn: $("settingsRequestRegionBtn"),
+  settingsChannelError: $("settingsChannelError"),
   proposeChannelBtn: $("proposeChannelBtn"),
   closeRequestDialog: $("closeRequestDialog"),
   cancelRequestBtn: $("cancelRequestBtn"),
@@ -136,10 +138,7 @@ const els = {
   closeSettings: $("closeSettings"),
   editSourceButton: $("editSourceButton"),
   channelsList: $("channelsList"),
-  toggleAddChannelBtn: $("toggleAddChannelBtn"),
-  addChannelBox: $("addChannelBox"),
   newChannelInput: $("newChannelInput"),
-  cancelAddChannelBtn: $("cancelAddChannelBtn"),
   confirmAddChannelBtn: $("confirmAddChannelBtn"),
   saveIntervalBtn: $("saveIntervalBtn"),
   aboutAppBtn: $("aboutAppBtn"),
@@ -615,7 +614,7 @@ function initCustomSelect(selectEl, { getOptionMeta } = {}) {
     if (willOpen) {
       menu.hidden = false;
       trigger.setAttribute("aria-expanded", "true");
-      if (selectEl.id === "onboardRegionSelect") {
+      if (["onboardRegionSelect", "settingsRegionSelect"].includes(selectEl.id)) {
         const triggerRect = trigger.getBoundingClientRect();
         const sheetBox = selectEl.closest(".sheet-box");
         const bounds = sheetBox?.getBoundingClientRect();
@@ -717,75 +716,73 @@ function fillRegionSelect(select, selectedRegion = "Кіровоградська
 }
 
 function renderChannelsList() {
-  if (!els.channelsList) return;
+  if (!els.channelsList || !els.settingsRegionSelect) return;
   els.channelsList.replaceChildren();
-  const currentNormalized = normalizeChannelInput(settings.channel).username.toLowerCase();
+  const region = els.settingsRegionSelect.value;
+  els.settingsSourcesArea.hidden = !region;
+  if (!region) return;
 
-  const region = els.settingsRegionSelect?.value || currentRegion();
+  const currentNormalized = normalizeChannelInput(settings.channel).username.toLowerCase();
   const regionChannels = getRegionChannels(region);
-  if (els.regionChannelsHeading) els.regionChannelsHeading.textContent = `Доступні канали (${region})`;
+  els.regionChannelsHeading.textContent = regionChannels.length
+    ? `Доступні канали · ${region}`
+    : `Для ${region.toLowerCase()} поки немає готових каналів`;
 
   if (regionChannels.length === 0) {
-    const empty = document.createElement("div");
-    empty.className = "channels-empty";
-    const p = document.createElement("p");
-    p.textContent = "Для цієї області ще немає доданих каналів.";
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "primary-btn";
-    btn.style.padding = "8px 16px";
-    btn.style.fontSize = "13.5px";
-    btn.textContent = "Запропонувати канал";
-    btn.addEventListener("click", () => openRequestDialog("new"));
-    empty.append(p, btn);
+    const empty = document.createElement("p");
+    empty.className = "welcome-lead onboard-empty-copy";
+    empty.textContent = "Надішліть заявку, і я отримаю її в Telegram. Область уже буде вказана.";
     els.channelsList.append(empty);
     return;
   }
 
-  regionChannels.forEach((ch) => {
-    const index = channels.findIndex((channel) => channel.username.toLowerCase() === ch.username.toLowerCase());
-    const isSelected = ch.username.toLowerCase() === currentNormalized;
+  regionChannels.forEach((channel) => {
+    const index = channels.findIndex((item) => item.username.toLowerCase() === channel.username.toLowerCase());
+    const isSelected = channel.username.toLowerCase() === currentNormalized;
     const item = document.createElement("div");
-    item.className = `channel-item ${isSelected ? "is-selected" : ""}`;
+    item.className = "choice-card settings-channel-choice";
     item.setAttribute("role", "radio");
     item.setAttribute("aria-checked", String(isSelected));
     item.setAttribute("tabindex", "0");
 
-    const radio = document.createElement("span");
-    radio.className = "channel-radio";
-    radio.innerHTML = "<i></i>";
+    const mark = document.createElement("span");
+    mark.className = "source-mark";
+    mark.innerHTML = '<svg class="icon" aria-hidden="true"><use href="#i-send" /></svg>';
+    const copy = document.createElement("span");
+    copy.className = "source-copy";
+    const regionLabel = document.createElement("small");
+    regionLabel.textContent = channel.sourceLabel || region;
+    const name = document.createElement("strong");
+    name.textContent = channel.name;
+    copy.append(regionLabel, name);
+    const action = document.createElement("span");
+    action.className = "choice-go";
+    action.textContent = isSelected ? "Обрано" : "Обрати";
+    item.append(mark, copy, action);
 
-    const info = document.createElement("div");
-    info.className = "channel-info";
-    const infoName = document.createElement("strong");
-    infoName.textContent = ch.name;
-    const infoHandle = document.createElement("small");
-    infoHandle.textContent = ch.sourceLabel || `t.me/s/${ch.username}`;
-    info.append(infoName, infoHandle);
-    const regionTag = document.createElement("small");
-    regionTag.className = "channel-region-tag";
-    regionTag.textContent = ch.region || region;
-    info.append(regionTag);
-
-    item.append(radio, info);
-
-    if (!ch.isDefault) {
+    if (!channel.isDefault && index >= 0) {
       const del = document.createElement("button");
       del.type = "button";
       del.className = "channel-delete-btn";
-      del.setAttribute("aria-label", "Видалити канал зі списку");
-      del.innerHTML = `<svg class="icon"><use href="#i-trash" /></svg>`;
-      del.addEventListener("click", (e) => {
-        e.stopPropagation();
+      del.setAttribute("aria-label", `Видалити канал ${channel.name} зі списку`);
+      del.innerHTML = '<svg class="icon" aria-hidden="true"><use href="#i-trash" /></svg>';
+      del.addEventListener("click", (event) => {
+        event.stopPropagation();
         deleteChannel(index);
       });
       item.append(del);
     }
 
-    item.addEventListener("click", () => {
-      selectChannel(ch);
+    const choose = () => selectChannel(channel);
+    item.addEventListener("click", (event) => {
+      if (!event.target.closest(".channel-delete-btn")) choose();
     });
-
+    item.addEventListener("keydown", (event) => {
+      if (event.target === item && (event.key === "Enter" || event.key === " ")) {
+        event.preventDefault();
+        choose();
+      }
+    });
     els.channelsList.append(item);
   });
 }
@@ -820,11 +817,25 @@ function deleteChannel(index) {
   }
 }
 
-function openSettings() {
-  fillRegionSelect(els.settingsRegionSelect, currentRegion());
-  renderChannelsList();
-  els.addChannelBox.hidden = true;
+function openSettings({ region = "" } = {}) {
+  const placeholder = document.createElement("option");
+  placeholder.value = "";
+  placeholder.textContent = "Спочатку оберіть область";
+  placeholder.disabled = true;
+  placeholder.selected = true;
+  const options = UKRAINE_REGIONS.map((item) => {
+    const option = document.createElement("option");
+    option.value = item;
+    option.textContent = item;
+    return option;
+  });
+  els.settingsRegionSelect.replaceChildren(placeholder, ...options);
+  els.settingsRegionSelect.value = region;
+  syncCustomSelect(els.settingsRegionSelect);
+  els.settingsChannelError.hidden = true;
+  els.settingsChannelError.textContent = "";
   els.newChannelInput.value = "";
+  renderChannelsList();
   els.settingsDialog.showModal();
 }
 
@@ -1199,20 +1210,25 @@ if (els.aboutRequestChannelBtn) {
 [els.settingsDialog, els.requestChannelDialog, els.aboutAppDialog].forEach((dialog) => {
   if (dialog) {
     dialog.addEventListener("click", (event) => {
-      if (event.target === dialog) dialog.close();
+      if (event.target !== dialog) return;
+      if (dialog === els.requestChannelDialog) closeRequestDialog();
+      else dialog.close();
     });
   }
 });
 
-els.openRequestChannelBtn.addEventListener("click", () => openRequestDialog("new"));
 els.proposeChannelBtn.addEventListener("click", () => openRequestDialog("new"));
 els.errorReport.addEventListener("click", () => openRequestDialog("broken", settings.channel));
 els.closeRequestDialog.addEventListener("click", closeRequestDialog);
 els.cancelRequestBtn.addEventListener("click", closeRequestDialog);
 els.submitRequestBtn.addEventListener("click", submitChannelRequest);
-els.settingsRegionSelect.addEventListener("change", () => {
-  setSelectedRegion(els.settingsRegionSelect.value);
-  renderChannelsList();
+els.requestChannelDialog.addEventListener("cancel", (event) => { event.preventDefault(); closeRequestDialog(); });
+els.settingsRegionSelect.addEventListener("change", renderChannelsList);
+els.settingsRequestRegionBtn.addEventListener("click", () => {
+  const region = els.settingsRegionSelect.value || currentRegion();
+  returnToSettingsAfterRequest = true;
+  requestReturnRegion = region;
+  openRequestDialog("new", "", region);
 });
 els.requestType.addEventListener("change", () => {
   if (els.requestType.value === "broken" && !els.requestChannelUrl.value.trim()) {
@@ -1220,31 +1236,36 @@ els.requestType.addEventListener("change", () => {
   }
 });
 
-els.toggleAddChannelBtn.addEventListener("click", () => {
-  els.addChannelBox.hidden = !els.addChannelBox.hidden;
-  if (!els.addChannelBox.hidden) els.newChannelInput.focus();
-});
-els.cancelAddChannelBtn.addEventListener("click", () => {
-  els.addChannelBox.hidden = true;
-  els.newChannelInput.value = "";
-});
 els.confirmAddChannelBtn.addEventListener("click", () => {
   const val = els.newChannelInput.value.trim();
   if (!val) {
-    showToast("Введіть посилання на Telegram-канал або його @username.");
+    els.settingsChannelError.textContent = "Введіть посилання на Telegram-канал або його @username.";
+    els.settingsChannelError.hidden = false;
+    return;
+  }
+  const region = els.settingsRegionSelect.value;
+  if (!region) {
+    els.settingsChannelError.textContent = "Спочатку оберіть область для цього каналу.";
+    els.settingsChannelError.hidden = false;
+    els.settingsRegionSelect.focus();
     return;
   }
   try {
     const normalized = normalizeChannelInput(val);
-    const existing = channels.find((c) => c.username.toLowerCase() === normalized.username.toLowerCase());
-    if (existing) {
-      selectChannel(existing);
+    els.settingsChannelError.hidden = true;
+    const existing = channels.find((channel) => channel.username.toLowerCase() === normalized.username.toLowerCase());
+    const known = BUILTIN_SOURCES.find((channel) => channel.username.toLowerCase() === normalized.username.toLowerCase());
+    const existingChannel = existing || known;
+    if (existingChannel) {
+      const knownRegion = existingChannel.region || "Кіровоградська область";
+      if (knownRegion !== region) throw new Error(`Це джерело належить до ${knownRegion}. Оберіть цю область у списку.`);
+      selectChannel(existingChannel);
     } else {
       const newChannel = {
         name: normalized.username,
         url: normalized.url,
         username: normalized.username,
-        region: els.settingsRegionSelect?.value || currentRegion(),
+        region,
         isDefault: false,
       };
       channels.push(newChannel);
@@ -1252,7 +1273,8 @@ els.confirmAddChannelBtn.addEventListener("click", () => {
       selectChannel(newChannel);
     }
   } catch (err) {
-    showToast(err.message);
+    els.settingsChannelError.textContent = err.message;
+    els.settingsChannelError.hidden = false;
   }
 });
 
@@ -1281,6 +1303,7 @@ function openRequestDialog(type = "new", channelUrl = "", selectedRegion = "") {
 }
 
 let returnToOnboardingAfterRequest = false;
+let returnToSettingsAfterRequest = false;
 let requestReturnRegion = "";
 
 function closeRequestDialog() {
@@ -1290,6 +1313,11 @@ function closeRequestDialog() {
     const region = requestReturnRegion;
     requestReturnRegion = "";
     setTimeout(() => openOnboarding({ region }), 0);
+  } else if (returnToSettingsAfterRequest) {
+    returnToSettingsAfterRequest = false;
+    const region = requestReturnRegion;
+    requestReturnRegion = "";
+    setTimeout(() => openSettings({ region }), 0);
   }
 }
 
@@ -1867,7 +1895,14 @@ document.addEventListener("visibilitychange", () => {
 
 // Initialize
 initQueueOptions();
-initCustomSelect(els.settingsRegionSelect);
+initCustomSelect(els.settingsRegionSelect, {
+  getOptionMeta: (region) => {
+    if (!region) return null;
+    const count = getRegionChannels(region).length;
+    const suffix = count === 1 ? "канал" : count >= 2 && count <= 4 ? "канали" : "каналів";
+    return count ? { label: `${count} ${suffix}`, empty: false } : { label: "Немає каналів", empty: true };
+  },
+});
 initCustomSelect(els.onboardRegionSelect, {
   getOptionMeta: (region) => {
     if (!region) return null;
