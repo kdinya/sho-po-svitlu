@@ -176,7 +176,7 @@ test("діалоги назв черг відкриваються по цент�
   assert.match(html, /id="queueNameExitCopy"/);
   assert.match(readme, /\[\*\*Перейти до ШоПоСвітлу →\*\*\]\(https:\/\/sho-po-svitlu-ib61\.vercel\.app\/\)/);
   assert.match(readme, /## Власні назви черг[\s\S]*?під номером вибраної черги[\s\S]*?підтвердження/);
-  assert.match(sw, /sho-po-svitlu-shell-v52/);
+  assert.match(sw, /sho-po-svitlu-shell-v53/);
 });
 
 test("стилі містять правила для кастомних списків у неоновому стилі додатку", () => {
@@ -228,7 +228,7 @@ test("прапор у шапці використовує оригінальни
   assert.match(css, /\.brand-flag \{[^}]*position:\s*absolute;[^}]*top:\s*50%;[^}]*left:\s*-8px;[^}]*transform:\s*translateY\(-50%\);[^}]*z-index:\s*1;[^}]*width:\s*75px;[^}]*height:\s*54px;/);
   assert.match(css, /\.brand-title \{[^}]*position:\s*relative;[^}]*z-index:\s*2;[^}]*white-space:\s*nowrap;/);
   assert.match(css, /\.brand-flag-image \{[^}]*width:\s*100%;[^}]*height:\s*100%;[^}]*object-fit:\s*contain/);
-  assert.match(sw, /CACHE_NAME = "sho-po-svitlu-shell-v52"/);
+  assert.match(sw, /CACHE_NAME = "sho-po-svitlu-shell-v53"/);
   assert.match(sw, /"\/images\/ukraine-flag-header\.gif"/);
   assert.match(sw, /"\/images\/ukraine-flag-header-still\.png"/);
 });
@@ -281,6 +281,14 @@ test("список областей у першому запуску підла�
   assert.match(css, /\.custom-select-menu \{[^}]*overscroll-behavior:\s*contain/);
 });
 
+test("заявка на канал у першому запуску має зрозумілий текст і вигляд кнопки", () => {
+  const requestButton = html.match(/<button type="button" class="link-btn center" id="onboardRequestRegionBtn">([\s\S]*?)<\/button>/)?.[0] ?? "";
+  assert.match(requestButton, /Подати заявку на свій канал у Telegram/);
+  assert.match(appJs, /els\.onboardRequestRegionBtn\.addEventListener\("click"/);
+  assert.match(css, /\.onboard-sources \.link-btn\.center \{[^}]*display:\s*flex;[^}]*min-height:\s*48px/);
+  assert.match(css, /\.onboard-sources \.link-btn\.center:focus-visible \{[^}]*outline:\s*2px solid var\(--sun\)/);
+});
+
 test("перший запуск спочатку обирає область і показує тільки її джерела", () => {
   const onboarding = html.slice(html.indexOf('id="onboardDialog"'), html.indexOf('id="toast"'));
   assert.match(onboarding, /id="onboardRegionSelect"/);
@@ -293,7 +301,7 @@ test("перший запуск спочатку обирає область і 
   assert.match(appJs, /getRegionChannels\(region\)/);
   assert.match(appJs, /getOptionMeta: \(region\) => \{/);
   assert.match(appJs, /label: "Немає каналів", empty: true/);
-  assert.match(appJs, /Надіслати заявку на додавання каналу в Telegram/);
+  assert.match(appJs, /Подати заявку на свій канал у Telegram/);
   assert.match(appJs, /openRequestDialog\("new", els\.onboardChannelInput\.value\.trim\(\), requestReturnRegion\)/);
   assert.match(appJs, /sendChannelRequest\(\{/);
   assert.match(css, /\.custom-select-option\.is-unavailable/);

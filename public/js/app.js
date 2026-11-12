@@ -1407,9 +1407,7 @@ function renderOnboardSources() {
   const hasChannels = regionChannels.length > 0;
   els.onboardSourcesHeading.textContent = hasChannels ? `Доступні канали · ${region}` : `Для ${region.toLowerCase()} поки немає готових каналів`;
   els.onboardRequestRegionBtn.classList.toggle("onboard-request-btn", !hasChannels);
-  els.onboardRequestRegionBtn.textContent = hasChannels
-    ? "Не знайшли свій канал? Запропонуйте його"
-    : "Надіслати заявку на додавання каналу в Telegram";
+  els.onboardRequestRegionBtn.textContent = "Подати заявку на свій канал у Telegram";
   if (!hasChannels) {
     const empty = document.createElement("p");
     empty.className = "welcome-lead onboard-empty-copy";
