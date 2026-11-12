@@ -187,7 +187,7 @@ test("діалоги назв черг відкриваються по цент�
   assert.match(html, /id="queueNameExitCopy"/);
   assert.match(readme, /\[\*\*Перейти до ШоПоСвітлу →\*\*\]\(https:\/\/sho-po-svitlu-ib61\.vercel\.app\/\)/);
   assert.match(readme, /## Власні назви черг[\s\S]*?під номером вибраної черги[\s\S]*?підтвердження/);
-  assert.match(sw, /sho-po-svitlu-shell-v59/);
+  assert.match(sw, /sho-po-svitlu-shell-v60/);
 });
 
 test("стилі містять правила для кастомних списків у неоновому стилі додатку", () => {
@@ -205,7 +205,9 @@ test("поля вибору областей і типу запиту не мі�
 test("поверненому користувачу показує лише відкладений крок ніку, а новому лишає звичайне налаштування", () => {
   assert.match(appJs, /if \(requiresFirstSetup\) \{[\s\S]*?openOnboarding\(\);[\s\S]*?nicknameOnly: true/);
   assert.match(appJs, /requestAnimationFrame\(\(\) => \{[\s\S]*?openOnboarding\(\{ nicknameOnly: true \}\)/);
-  assert.match(appJs, /profile\.nicknameListed !== true/);
+  assert.match(appJs, /profile\.nicknamePromptCompleted !== true/);
+  assert.match(appJs, /nicknamePromptCompleted: true/);
+  assert.doesNotMatch(appJs, /nicknameListed/);
 });
 
 test("лічильник має діалог тестових ніків, а поле чесно пояснює їх використання та видимість", () => {
@@ -254,7 +256,7 @@ test("прапор у шапці використовує оригінальни
   assert.match(css, /\.brand-flag \{[^}]*position:\s*absolute;[^}]*top:\s*50%;[^}]*left:\s*-8px;[^}]*transform:\s*translateY\(-50%\);[^}]*z-index:\s*1;[^}]*width:\s*75px;[^}]*height:\s*54px;/);
   assert.match(css, /\.brand-title \{[^}]*position:\s*relative;[^}]*z-index:\s*2;[^}]*white-space:\s*nowrap;/);
   assert.match(css, /\.brand-flag-image \{[^}]*width:\s*100%;[^}]*height:\s*100%;[^}]*object-fit:\s*contain/);
-  assert.match(sw, /CACHE_NAME = "sho-po-svitlu-shell-v59"/);
+  assert.match(sw, /CACHE_NAME = "sho-po-svitlu-shell-v60"/);
   assert.match(sw, /"\/images\/ukraine-flag-header\.gif"/);
   assert.match(sw, /"\/images\/ukraine-flag-header-still\.png"/);
 });

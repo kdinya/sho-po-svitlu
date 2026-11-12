@@ -1524,7 +1524,7 @@ function readStoredProfile() {
   try {
     const profile = JSON.parse(localStorage.getItem(PROFILE_KEY) || "null");
     if (!profile || typeof profile.nickname !== "string") return null;
-    return { nickname: profile.nickname, registered: profile.registered === true, nicknameListed: profile.nicknameListed === true };
+    return { nickname: profile.nickname, registered: profile.registered === true, nicknamePromptCompleted: profile.nicknamePromptCompleted === true };
   } catch {
     return null;
   }
@@ -1565,7 +1565,7 @@ async function finishOnboarding() {
       saveSettings();
       if (changed) data = null;
     }
-    saveProfile({ nickname, registered: false, nicknameListed: true });
+    saveProfile({ nickname, registered: false, nicknamePromptCompleted: true });
     markOnboarded();
     els.onboardDialog.close();
     initQueueOptions();
@@ -1857,7 +1857,7 @@ async function syncUsersCount({ force = false } = {}) {
           nickname: profile.nickname,
         });
         if (!result) return { ok: false, excluded: false };
-        saveProfile({ ...profile, registered: true, nicknameListed: profile.nicknameListed === true });
+        saveProfile({ ...profile, registered: true });
         count = result.users;
         if (result.excluded) {
           usersSyncedAt = Date.now();
@@ -2016,11 +2016,11 @@ if (requiresFirstSetup) {
   openOnboarding();
 } else {
   const profile = readStoredProfile();
-  if (!profile?.nickname || profile.nicknameListed !== true) {
+  if (!profile?.nickname || profile.nicknamePromptCompleted !== true) {
     // Defer until the app's first paint so a returning user's nickname-only dialog is not lost during startup.
     requestAnimationFrame(() => {
       const currentProfile = readStoredProfile();
-      if (!needsOnboarding() && (!currentProfile?.nickname || currentProfile.nicknameListed !== true) && !els.onboardDialog.open) {
+      if (!needsOnboarding() && (!currentProfile?.nickname || currentProfile.nicknamePromptCompleted !== true) && !els.onboardDialog.open) {
         openOnboarding({ nicknameOnly: true });
       }
     });
