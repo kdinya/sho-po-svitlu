@@ -726,12 +726,18 @@ body[data-power="off"] .zzz { display: block; }
 .share-secondary-row .ghost-btn { justify-content: center; font-size: 13.5px; padding: 11px 10px; text-decoration: none; color: inherit; }
 .share-secondary-row .ghost-btn:hover { color: var(--text); border-color: var(--sun); }
 .share-counter {
-  display: flex; align-items: center; justify-content: center; gap: 8px;
-  margin: 14px 0 0; padding-top: 13px; border-top: 1px solid var(--line);
-  font-size: 14px; font-weight: 600; color: var(--muted);
-}
+  width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;
+  margin: 14px 0 0; padding: 13px 0 0; border: 0; border-top: 1px solid var(--line);
+  background: transparent; font: inherit; font-size: 14px; font-weight: 600; color: var(--muted); cursor: pointer;
+} .share-counter:hover { color: var(--text); } .share-counter:focus-visible { outline: 2px solid var(--sun); outline-offset: 4px; border-radius: 8px; }
 .share-counter .icon { width: 19px; height: 19px; color: var(--sun); }
 .share-counter b { margin-left: 2px; font-size: 18px; font-weight: 900; color: var(--sun); font-variant-numeric: tabular-nums; }
+.completed-nicknames-box { max-height: min(82vh, 760px); overflow-y: auto; }
+.completed-nicknames-copy, .completed-nicknames-missing { margin: 8px 0 14px; color: var(--muted); font-size: 14px; line-height: 1.5; }
+.completed-nicknames-list { display: grid; gap: 7px; max-height: 42vh; overflow: auto; margin: 0 0 12px; padding: 0; list-style: none; }
+.completed-nicknames-list li { padding: 9px 12px; border: 1px solid var(--line); border-radius: 12px; background: rgba(8, 16, 42, .55); overflow-wrap: anywhere; }
+.completed-nicknames-box > .primary-btn { width: 100%; justify-content: center; }
+.nickname-privacy-note { margin: 8px 2px 14px; color: var(--muted); font-size: 12.5px; line-height: 1.5; }
 .pwa-buttons .primary-btn.wide { width: 100%; justify-content: center; }
 
 .pwa-head { display: flex; align-items: center; gap: 14px; }

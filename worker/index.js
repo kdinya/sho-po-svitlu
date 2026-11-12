@@ -834,6 +834,23 @@ export class CompletedSetupCounter {
       const count = Number(await this.ctx.storage.get(COMPLETED_COUNTER_COUNT_KEY) ?? 0);
       return Response.json({ ok: true, users: Number.isFinite(count) && count >= 0 ? count : 0 });
     }
+    if (url.pathname === "/nicknames" && request.method === "GET") {
+      const count = Math.max(0, Number(await this.ctx.storage.get(COMPLETED_COUNTER_COUNT_KEY) ?? 0));
+      const nicknames = [];
+      const prefix = `${COMPLETED_COUNTER_GENERATION}:user:`;
+      let startAfter;
+      while (true) {
+        const records = await this.ctx.storage.list({ prefix, limit: 1000, ...(startAfter ? { startAfter } : {}) });
+        for (const value of records.values()) {
+          const nickname = value && typeof value === "object" && typeof value.nickname === "string" ? value.nickname : "";
+          if (nickname) nicknames.push(nickname);
+        }
+        if (records.size < 1000) break;
+        startAfter = [...records.keys()].at(-1);
+        if (!startAfter) break;
+      }
+      return Response.json({ ok: true, users: Number.isFinite(count) ? count : 0, nicknames, missingNicknames: Math.max(0, count - nicknames.length) });
+    }
     if (url.pathname !== "/register" || request.method !== "POST") {
       return Response.json({ error: "not_found", message: "Маршрут не знайдено." }, { status: 404 });
     }
@@ -864,9 +881,12 @@ export class CompletedSetupCounter {
         }
         return { users: count, isNew: false, excluded: true };
       }
-      if (exists) return { users: count, isNew: false, excluded: false };
+      if (exists) {
+        await transaction.put(key, { nickname });
+        return { users: count, isNew: false, excluded: false };
+      }
       const nextCount = count + 1;
-      await transaction.put(key, new Date().toISOString());
+      await transaction.put(key, { nickname });
       await transaction.put(COMPLETED_COUNTER_COUNT_KEY, nextCount);
       return { users: nextCount, isNew: true, excluded: false };
     });
@@ -1009,6 +1029,17 @@ export async function handleRequest(request, env = {}) {
   if (url.pathname === "/api/completed-settings") {
     if (request.method !== "GET") return json({ error: "method_not_allowed", message: "Дозволені лише GET-запити." }, request, 405);
     return json({ ok: true, users: await readCompletedSetupsCount(env) }, request);
+  }
+
+  if (url.pathname === "/api/completed-settings/nicknames") {
+    if (request.method !== "GET") return json({ error: "method_not_allowed", message: "Дозволені лише GET-запити." }, request, 405);
+    try {
+      const data = await callCompletedSetupCounter(env, "/nicknames");
+      if (!Array.isArray(data?.nicknames) || !Number.isFinite(data?.users)) return json({ ok: false, users: null, nicknames: [], missingNicknames: null }, request, 503);
+      return json({ ok: true, users: data.users, nicknames: data.nicknames, missingNicknames: data.missingNicknames }, request);
+    } catch {
+      return json({ ok: false, users: null, nicknames: [], missingNicknames: null, message: "Не вдалося прочитати тестовий список." }, request, 503);
+    }
   }
 
   if (url.pathname === "/api/complete-setup") {

@@ -186,7 +186,7 @@ export function fetchUsersCount({ workerUrl } = {}) {
   return requestUsersCount(`${base}/api/stats`, { method: "GET", headers: { Accept: "application/json" } });
 }
 
-// Реєструє завершення налаштувань за анонімним ID; нік використовується лише для перевірки службового імені.
+// Реєструє тестове завершення налаштувань за випадковим ID і збереженим ніком.
 export async function registerCompletedSetup({ workerUrl, clientId, nickname } = {}) {
   const base = normalizeWorkerUrl(workerUrl);
   if (!base) return null;
@@ -206,4 +206,13 @@ export function fetchCompletedSetupsCount({ workerUrl } = {}) {
   const base = normalizeWorkerUrl(workerUrl);
   if (!base) return Promise.resolve(null);
   return requestUsersCount(`${base}/api/completed-settings`, { method: "GET", headers: { Accept: "application/json" } });
+}
+
+// Читає тестовий список ніків без технічних ідентифікаторів браузерів.
+export async function fetchCompletedSetupNicknames({ workerUrl } = {}) {
+  const base = normalizeWorkerUrl(workerUrl);
+  if (!base) return null;
+  const data = await requestUsersData(`${base}/api/completed-settings/nicknames`, { method: "GET", headers: { Accept: "application/json" } });
+  if (!Array.isArray(data?.nicknames) || !Number.isFinite(data?.users) || !Number.isFinite(data?.missingNicknames)) return null;
+  return { users: data.users, nicknames: data.nicknames.filter((nickname) => typeof nickname === "string"), missingNicknames: data.missingNicknames };
 }

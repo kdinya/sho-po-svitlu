@@ -385,6 +385,10 @@ function memoryCompletedCounter() {
     async get(key) { return entries.get(key); },
     async put(key, value) { entries.set(key, value); },
     async delete(key) { return entries.delete(key); },
+    async list(options = {}) {
+      const prefix = options.prefix || "";
+      return new Map([...entries].filter(([key]) => key.startsWith(prefix)).slice(0, options.limit || Infinity));
+    },
     async transaction(callback) {
       let release;
       const previous = queue;
@@ -500,6 +504,27 @@ test("/api/complete-setup: виключає службовий нік без у�
   assert.equal(env.COMPLETED_SETUP_COUNTER.entries.get("v2:count"), 0);
   const laterCounted = await (await handleRequest(request("Олена"), env)).json();
   assert.equal(laterCounted.users, 1);
+});
+
+test("/api/completed-settings/nicknames: exposes nicknames only, migrates old records, and reports missing nicknames", async () => {
+  const counter = memoryCompletedCounter();
+  counter.entries.set("v2:count", 2);
+  const oldId = "old-browser-id-1234567890";
+  counter.entries.set(`v2:user:${oldId}`, "2026-11-10T00:00:00.000Z");
+  counter.entries.set("v2:user:new-browser-id", { createdAt: "2026-11-11T00:00:00.000Z", nickname: "Світлячок" });
+  const env = { COMPLETED_SETUP_COUNTER: counter };
+  const response = await handleRequest(new Request("https://worker.example/api/completed-settings/nicknames"), env);
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), { ok: true, users: 2, nicknames: ["Світлячок"], missingNicknames: 1 });
+
+  const migrate = await handleRequest(new Request("https://worker.example/api/complete-setup", {
+    method: "POST", body: JSON.stringify({ id: oldId, nickname: "Сонячний_Кіт" }),
+  }), env);
+  assert.equal((await migrate.json()).users, 2);
+  const listed = await (await handleRequest(new Request("https://worker.example/api/completed-settings/nicknames"), env)).json();
+  assert.equal(listed.missingNicknames, 0);
+  assert.deepEqual(new Set(listed.nicknames), new Set(["Світлячок", "Сонячний_Кіт"]));
+  assert.equal(JSON.stringify(listed).includes("old-browser-id"), false, "API list does not expose browser IDs");
 });
 
 test("/api/complete-setup: відхиляє незавершені або некоректні дані та працює без Durable Object", async () => {

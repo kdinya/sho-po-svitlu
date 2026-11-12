@@ -1,4 +1,4 @@
-import { DEFAULT_CHANNEL, DEFAULT_WORKER_URL, UKRAINE_REGIONS, fetchCompletedSetupsCount, fetchSchedule, normalizeChannelInput, normalizeSetupNickname, registerCompletedSetup, sendChannelRequest } from "./api.js";
+import { DEFAULT_CHANNEL, DEFAULT_WORKER_URL, UKRAINE_REGIONS, fetchCompletedSetupNicknames, fetchCompletedSetupsCount, fetchSchedule, normalizeChannelInput, normalizeSetupNickname, registerCompletedSetup, sendChannelRequest } from "./api.js";
 import { formatDate, formatHours, formatMissingScheduleMessage, getLocalClock, getScheduleState, renderOutages, renderTimeline, totalMinutes } from "./timeline.js";
 import { areQueueNamesEqual, normalizeQueueNames, QUEUE_NAME_MAX_LENGTH } from "./queue-names.js";
 
@@ -93,6 +93,12 @@ const els = {
   onboardContinueNickname: $("onboardContinueNickname"),
   onboardNickname: $("onboardNickname"),
   onboardNicknameError: $("onboardNicknameError"),
+  onboardNicknameHelp: $("onboardNicknameHelp"),
+  completedNicknamesDialog: $("completedNicknamesDialog"),
+  completedNicknamesSummary: $("completedNicknamesSummary"),
+  completedNicknamesList: $("completedNicknamesList"),
+  completedNicknamesMissing: $("completedNicknamesMissing"),
+  closeCompletedNicknames: $("closeCompletedNicknames"),
   onboardBack: $("onboardBack"),
   onboardBackQueue: $("onboardBackQueue"),
   countdown: $("countdown"),
@@ -1490,7 +1496,15 @@ function openOnboarding({ nicknameOnly = false, region = "" } = {}) {
   els.onboardRegionSelect.value = region;
   syncCustomSelect(els.onboardRegionSelect);
   renderOnboardSources();
-  els.onboardNickname.value = "";
+  const existingProfile = readStoredProfile();
+  els.onboardNickname.value = nicknameOnly ? existingProfile?.nickname || "" : "";
+  if (nicknameOnly) {
+    els.onboardNicknameTitle.textContent = "Ще один короткий крок ✨";
+    els.onboardNicknameHelp.textContent = "Додай прикольний нік — такий, щоб тебе впізнали, або загадковий, щоб ніхто не здогадався 😄";
+  } else {
+    els.onboardNicknameTitle.textContent = "Знайомимось? Як до вас звертатися?";
+    els.onboardNicknameHelp.textContent = "Введіть ім’я або нік, щоб ми знали, як до вас звертатися. Так спілкуватися приємніше 😊";
+  }
   els.onboardBackQueue.hidden = nicknameOnly;
   showOnboardStep(nicknameOnly ? "nickname" : "channel");
   els.onboardDialog.showModal();
@@ -1510,7 +1524,7 @@ function readStoredProfile() {
   try {
     const profile = JSON.parse(localStorage.getItem(PROFILE_KEY) || "null");
     if (!profile || typeof profile.nickname !== "string") return null;
-    return { nickname: profile.nickname, registered: profile.registered === true };
+    return { nickname: profile.nickname, registered: profile.registered === true, nicknameListed: profile.nicknameListed === true };
   } catch {
     return null;
   }
@@ -1551,7 +1565,7 @@ async function finishOnboarding() {
       saveSettings();
       if (changed) data = null;
     }
-    saveProfile({ nickname, registered: false });
+    saveProfile({ nickname, registered: false, nicknameListed: true });
     markOnboarded();
     els.onboardDialog.close();
     initQueueOptions();
@@ -1773,6 +1787,55 @@ function renderUsersCount(count) {
   els.shareCounter.hidden = false;
 }
 
+async function openCompletedNicknames() {
+  if (!els.completedNicknamesDialog || !settings.workerUrl) return;
+  els.completedNicknamesSummary.textContent = "Збираємо компанію…";
+  els.completedNicknamesList.replaceChildren();
+  els.completedNicknamesMissing.hidden = true;
+  els.completedNicknamesDialog.showModal();
+  try {
+    const result = await fetchCompletedSetupNicknames({ workerUrl: settings.workerUrl });
+    if (!result) throw new Error("Не вдалося прочитати список.");
+    els.completedNicknamesSummary.textContent = `У лічильнику: ${result.users.toLocaleString("uk-UA")}. Ніків у списку: ${result.nicknames.length.toLocaleString("uk-UA")}.`;
+    if (!result.nicknames.length) {
+      const item = document.createElement("li");
+      item.textContent = "Поки що тут тихенько — ніки ще збираються 🙂";
+      els.completedNicknamesList.append(item);
+    } else {
+      [...result.nicknames].sort((a, b) => a.localeCompare(b, "uk")).forEach((nickname) => {
+        const item = document.createElement("li");
+        item.textContent = nickname;
+        els.completedNicknamesList.append(item);
+      });
+    }
+    if (result.missingNicknames > 0) {
+      els.completedNicknamesMissing.textContent = `Ще ${result.missingNicknames.toLocaleString("uk-UA")} записів поки без ніку. Їх додадуть під час наступного входу.`;
+      els.completedNicknamesMissing.hidden = false;
+    }
+  } catch {
+    els.completedNicknamesSummary.textContent = "Список зараз недоступний. Перевір з’єднання й спробуй ще раз.";
+  }
+}
+
+let counterTapCount = 0;
+let counterTapTimer = 0;
+if (els.shareCounter) {
+  els.shareCounter.addEventListener("click", () => {
+    counterTapCount += 1;
+    clearTimeout(counterTapTimer);
+    if (counterTapCount >= 5) {
+      counterTapCount = 0;
+      openCompletedNicknames();
+      return;
+    }
+    counterTapTimer = setTimeout(() => { counterTapCount = 0; }, 2200);
+  });
+}
+if (els.closeCompletedNicknames) els.closeCompletedNicknames.addEventListener("click", () => els.completedNicknamesDialog.close());
+if (els.completedNicknamesDialog) els.completedNicknamesDialog.addEventListener("click", (event) => {
+  if (event.target === els.completedNicknamesDialog) els.completedNicknamesDialog.close();
+});
+
 let usersSyncedAt = 0;
 let usersSyncPromise = null;
 
@@ -1794,7 +1857,7 @@ async function syncUsersCount({ force = false } = {}) {
           nickname: profile.nickname,
         });
         if (!result) return { ok: false, excluded: false };
-        saveProfile({ ...profile, registered: true });
+        saveProfile({ ...profile, registered: true, nicknameListed: profile.nicknameListed === true });
         count = result.users;
         if (result.excluded) {
           usersSyncedAt = Date.now();
@@ -1949,4 +2012,4 @@ if (els.homeRegionName?.parentElement && "ResizeObserver" in window) {
 }
 document.fonts?.ready.then(fitRegionName);
 if (needsOnboarding()) openOnboarding();
-else if (!readStoredProfile()?.nickname) openOnboarding({ nicknameOnly: true });
+else if (!readStoredProfile()?.nickname || !readStoredProfile()?.nicknameListed) openOnboarding({ nicknameOnly: true });

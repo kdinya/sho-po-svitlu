@@ -187,7 +187,7 @@ test("діалоги назв черг відкриваються по цент�
   assert.match(html, /id="queueNameExitCopy"/);
   assert.match(readme, /\[\*\*Перейти до ШоПоСвітлу →\*\*\]\(https:\/\/sho-po-svitlu-ib61\.vercel\.app\/\)/);
   assert.match(readme, /## Власні назви черг[\s\S]*?під номером вибраної черги[\s\S]*?підтвердження/);
-  assert.match(sw, /sho-po-svitlu-shell-v57/);
+  assert.match(sw, /sho-po-svitlu-shell-v58/);
 });
 
 test("стилі містять правила для кастомних списків у неоновому стилі додатку", () => {
@@ -200,6 +200,15 @@ test("поля вибору областей і типу запиту не мі�
   assert.doesNotMatch(html, /input-wrap\s+select-wrap[\s\S]{0,80}id=["']settingsRegionSelect["']/);
   assert.doesNotMatch(html, /input-wrap\s+select-wrap[\s\S]{0,80}id=["']requestType["']/);
   assert.doesNotMatch(html, /input-wrap\s+select-wrap[\s\S]{0,80}id=["']requestRegion["']/);
+});
+
+test("лічильник має діалог тестових ніків, а поле чесно пояснює їх використання та видимість", () => {
+  assert.match(html, /id="completedNicknamesDialog"/);
+  assert.match(html, /id="completedNicknamesList"/);
+  assert.match(html, /буде видимий іншим користувачам/);
+  assert.match(html, /випадковий ID браузера/);
+  assert.match(appJs, /counterTapCount >= 5/);
+  assert.match(appJs, /completedNicknamesDialog\.showModal\(\)/);
 });
 
 test("public/index.html: лічильник користувачів стоїть у картці поділу під кнопками", () => {
@@ -239,7 +248,7 @@ test("прапор у шапці використовує оригінальни
   assert.match(css, /\.brand-flag \{[^}]*position:\s*absolute;[^}]*top:\s*50%;[^}]*left:\s*-8px;[^}]*transform:\s*translateY\(-50%\);[^}]*z-index:\s*1;[^}]*width:\s*75px;[^}]*height:\s*54px;/);
   assert.match(css, /\.brand-title \{[^}]*position:\s*relative;[^}]*z-index:\s*2;[^}]*white-space:\s*nowrap;/);
   assert.match(css, /\.brand-flag-image \{[^}]*width:\s*100%;[^}]*height:\s*100%;[^}]*object-fit:\s*contain/);
-  assert.match(sw, /CACHE_NAME = "sho-po-svitlu-shell-v57"/);
+  assert.match(sw, /CACHE_NAME = "sho-po-svitlu-shell-v58"/);
   assert.match(sw, /"\/images\/ukraine-flag-header\.gif"/);
   assert.match(sw, /"\/images\/ukraine-flag-header-still\.png"/);
 });

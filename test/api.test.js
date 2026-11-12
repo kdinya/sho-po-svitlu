@@ -8,9 +8,25 @@ import {
   normalizeSetupNickname,
   registerCompletedSetup,
   fetchCompletedSetupsCount,
+  fetchCompletedSetupNicknames,
   normalizeChannelInput,
   normalizeWorkerUrl,
 } from "../public/js/api.js";
+
+test("fetchCompletedSetupNicknames: returns the public test nickname list without IDs", async () => {
+  const originalFetch = globalThis.fetch;
+  let url;
+  globalThis.fetch = async (value) => {
+    url = value.toString();
+    return new Response(JSON.stringify({ ok: true, users: 2, nicknames: ["Світлячок", "Mila"], missingNicknames: 1 }), { status: 200 });
+  };
+  try {
+    assert.deepEqual(await fetchCompletedSetupNicknames({ workerUrl: "https://worker.test.dev" }), { users: 2, nicknames: ["Світлячок", "Mila"], missingNicknames: 1 });
+    assert.equal(url, "https://worker.test.dev/api/completed-settings/nicknames");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
 
 test("normalizeWorkerUrl: коректно нормалізує URL-адресу Cloudflare Worker", () => {
   assert.equal(normalizeWorkerUrl(""), "");
