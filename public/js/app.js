@@ -715,6 +715,19 @@ function fillRegionSelect(select, selectedRegion = "Кіровоградська
   syncCustomSelect(select);
 }
 
+function createEmptyChannelsState() {
+  const state = document.createElement("div");
+  state.className = "onboard-empty-state";
+  const title = document.createElement("strong");
+  title.className = "onboard-empty-title";
+  title.textContent = "Поки що без джерела";
+  const copy = document.createElement("p");
+  copy.className = "onboard-empty-copy";
+  copy.textContent = "Знаєте Telegram-канал із графіками для цієї області? Надішліть його нам — перевіримо й додамо.";
+  state.append(title, copy);
+  return state;
+}
+
 function renderChannelsList() {
   if (!els.channelsList || !els.settingsRegionSelect) return;
   els.channelsList.replaceChildren();
@@ -726,13 +739,10 @@ function renderChannelsList() {
   const regionChannels = getRegionChannels(region);
   els.regionChannelsHeading.textContent = regionChannels.length
     ? `Доступні канали · ${region}`
-    : `Для ${region.toLowerCase()} поки немає готових каналів`;
+    : "Запропонуйте канал для цієї області";
 
   if (regionChannels.length === 0) {
-    const empty = document.createElement("p");
-    empty.className = "welcome-lead onboard-empty-copy";
-    empty.textContent = "Надішліть заявку, і я отримаю її в Telegram. Область уже буде вказана.";
-    els.channelsList.append(empty);
+    els.channelsList.append(createEmptyChannelsState());
     return;
   }
 
@@ -1433,14 +1443,11 @@ function renderOnboardSources() {
 
   const regionChannels = getRegionChannels(region);
   const hasChannels = regionChannels.length > 0;
-  els.onboardSourcesHeading.textContent = hasChannels ? `Доступні канали · ${region}` : `Для ${region.toLowerCase()} поки немає готових каналів`;
+  els.onboardSourcesHeading.textContent = hasChannels ? `Доступні канали · ${region}` : "Запропонуйте канал для цієї області";
   els.onboardRequestRegionBtn.classList.toggle("onboard-request-btn", !hasChannels);
   els.onboardRequestRegionBtn.textContent = "Подати заявку на свій канал у Telegram";
   if (!hasChannels) {
-    const empty = document.createElement("p");
-    empty.className = "welcome-lead onboard-empty-copy";
-    empty.textContent = "Надішліть заявку, і я отримаю її в Telegram. Область уже буде вказана.";
-    els.onboardSourcesList.append(empty);
+    els.onboardSourcesList.append(createEmptyChannelsState());
     return;
   }
 

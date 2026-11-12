@@ -187,7 +187,7 @@ test("діалоги назв черг відкриваються по цент�
   assert.match(html, /id="queueNameExitCopy"/);
   assert.match(readme, /\[\*\*Перейти до ШоПоСвітлу →\*\*\]\(https:\/\/sho-po-svitlu-ib61\.vercel\.app\/\)/);
   assert.match(readme, /## Власні назви черг[\s\S]*?під номером вибраної черги[\s\S]*?підтвердження/);
-  assert.match(sw, /sho-po-svitlu-shell-v56/);
+  assert.match(sw, /sho-po-svitlu-shell-v57/);
 });
 
 test("стилі містять правила для кастомних списків у неоновому стилі додатку", () => {
@@ -239,7 +239,7 @@ test("прапор у шапці використовує оригінальни
   assert.match(css, /\.brand-flag \{[^}]*position:\s*absolute;[^}]*top:\s*50%;[^}]*left:\s*-8px;[^}]*transform:\s*translateY\(-50%\);[^}]*z-index:\s*1;[^}]*width:\s*75px;[^}]*height:\s*54px;/);
   assert.match(css, /\.brand-title \{[^}]*position:\s*relative;[^}]*z-index:\s*2;[^}]*white-space:\s*nowrap;/);
   assert.match(css, /\.brand-flag-image \{[^}]*width:\s*100%;[^}]*height:\s*100%;[^}]*object-fit:\s*contain/);
-  assert.match(sw, /CACHE_NAME = "sho-po-svitlu-shell-v56"/);
+  assert.match(sw, /CACHE_NAME = "sho-po-svitlu-shell-v57"/);
   assert.match(sw, /"\/images\/ukraine-flag-header\.gif"/);
   assert.match(sw, /"\/images\/ukraine-flag-header-still\.png"/);
 });
@@ -342,6 +342,18 @@ test("кавова кнопка підтримки відкриває досту
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
 });
 
+
+test("області без каналів мають теплий, зрозумілий стан і дію для пропозиції джерела", () => {
+  assert.match(appJs, /function createEmptyChannelsState\(\)/);
+  assert.match(appJs, /title\.textContent = "Поки що без джерела"/);
+  assert.match(appJs, /copy\.textContent = "Знаєте Telegram-канал із графіками для цієї області\? Надішліть його нам — перевіримо й додамо\."/);
+  assert.match(appJs, /els\.channelsList\.append\(createEmptyChannelsState\(\)\)/);
+  assert.match(appJs, /els\.onboardSourcesList\.append\(createEmptyChannelsState\(\)\)/);
+  assert.match(appJs, /Запропонуйте канал для цієї області/);
+  assert.doesNotMatch(appJs, /поки немає готових каналів/);
+  assert.match(css, /\.onboard-empty-state \{[^}]*border-radius:\s*16px/);
+  assert.match(css, /\.onboard-empty-title \{[^}]*color:\s*#ffe28b/);
+});
 
 test("вибір каналу в налаштуваннях повторює центрований екран першого запуску", () => {
   const dialogStart = html.lastIndexOf("<dialog", html.indexOf('id="settingsDialog"'));

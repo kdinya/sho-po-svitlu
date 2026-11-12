@@ -944,7 +944,17 @@ dialog.sheet.welcome .sheet-box {
 }
 .onboard-sources .link-btn.center:active { transform: scale(0.985); }
 .onboard-sources .link-btn.center:focus-visible { outline: 2px solid var(--sun); outline-offset: 3px; }
-.onboard-empty-copy { margin: 0; text-align: center; }
+.onboard-empty-state {
+  display: grid;
+  gap: 6px;
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 210, 58, 0.22);
+  border-radius: 16px;
+  background: linear-gradient(150deg, rgba(255, 210, 58, 0.08), rgba(8, 16, 42, 0.48));
+  text-align: center;
+}
+.onboard-empty-title { color: #ffe28b; font-size: 14px; font-weight: 850; }
+.onboard-empty-copy { margin: 0; text-align: center; font-size: 13px; line-height: 1.45; color: var(--muted); }
 
 .welcome-mascot { width: 104px; height: auto; margin: 0 auto -2px; filter: drop-shadow(0 0 16px rgba(255, 205, 50, 0.6)); animation: bob 3.6s ease-in-out infinite; }
 .welcome h2 { font-size: 24px; font-weight: 900; letter-spacing: -0.02em; line-height: 1.15; }
