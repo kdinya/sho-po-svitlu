@@ -817,7 +817,7 @@ function deleteChannel(index) {
   }
 }
 
-function openSettings({ region = "" } = {}) {
+function openSettings({ region = currentRegion() } = {}) {
   const placeholder = document.createElement("option");
   placeholder.value = "";
   placeholder.textContent = "Спочатку оберіть область";
