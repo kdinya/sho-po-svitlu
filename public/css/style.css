@@ -875,6 +875,12 @@ dialog.sheet.queue-dialog:focus { outline: none; }
 .welcome .sheet-box { text-align: center; }
 .welcome-step { display: flex; flex-direction: column; gap: 12px; }
 .welcome h2:focus { outline: 0; }
+.onboard-region-wrap { margin-top: -4px; }
+.onboard-sources { display: grid; gap: 10px; text-align: left; }
+.onboard-sources-list { display: grid; gap: 8px; max-height: min(28vh, 220px); overflow-y: auto; padding: 2px; }
+.onboard-sources-list .choice-card { width: 100%; }
+.onboard-empty-copy { margin: 0; text-align: center; }
+
 .welcome-mascot { width: 104px; height: auto; margin: 0 auto -2px; filter: drop-shadow(0 0 16px rgba(255, 205, 50, 0.6)); animation: bob 3.6s ease-in-out infinite; }
 .welcome h2 { font-size: 24px; font-weight: 900; letter-spacing: -0.02em; line-height: 1.15; }
 .welcome-lead { font-size: 14.5px; color: var(--muted); margin-top: -4px; }

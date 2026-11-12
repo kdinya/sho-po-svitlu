@@ -80,9 +80,11 @@ const els = {
   onboardStepChannel: $("onboardStepChannel"),
   onboardStepQueue: $("onboardStepQueue"),
   onboardStepNickname: $("onboardStepNickname"),
-  onboardUseDefault: $("onboardUseDefault"),
-  onboardOfficialSource: $("onboardOfficialSource"),
-  onboardUseOfficial: $("onboardUseOfficial"),
+  onboardRegionSelect: $("onboardRegionSelect"),
+  onboardSourcesArea: $("onboardSourcesArea"),
+  onboardSourcesHeading: $("onboardSourcesHeading"),
+  onboardSourcesList: $("onboardSourcesList"),
+  onboardRequestRegionBtn: $("onboardRequestRegionBtn"),
   onboardUseCustom: $("onboardUseCustom"),
   onboardChannelInput: $("onboardChannelInput"),
   onboardError: $("onboardError"),
@@ -1256,8 +1258,8 @@ els.saveIntervalBtn.addEventListener("click", () => {
   showToast("Налаштування збережено.");
 });
 
-function openRequestDialog(type = "new", channelUrl = "") {
-  fillRegionSelect(els.requestRegion, els.settingsRegionSelect?.value || currentRegion(), false);
+function openRequestDialog(type = "new", channelUrl = "", selectedRegion = "") {
+  fillRegionSelect(els.requestRegion, selectedRegion || els.settingsRegionSelect?.value || currentRegion(), false);
   els.requestType.value = type;
   syncCustomSelect(els.requestType);
   els.requestChannelUrl.value = channelUrl;
@@ -1269,8 +1271,17 @@ function openRequestDialog(type = "new", channelUrl = "") {
   els.requestChannelDialog.showModal();
 }
 
+let returnToOnboardingAfterRequest = false;
+let requestReturnRegion = "";
+
 function closeRequestDialog() {
   els.requestChannelDialog.close();
+  if (returnToOnboardingAfterRequest) {
+    returnToOnboardingAfterRequest = false;
+    const region = requestReturnRegion;
+    requestReturnRegion = "";
+    setTimeout(() => openOnboarding({ region }), 0);
+  }
 }
 
 async function submitChannelRequest() {
@@ -1358,20 +1369,67 @@ function renderOnboardQueues() {
   );
 }
 
-function populateOnboardOfficialSources() {
-  if (!els.onboardOfficialSource) return;
-  const options = BUILTIN_SOURCES.map((source) => {
+function populateOnboardRegions() {
+  if (!els.onboardRegionSelect) return;
+  const placeholder = document.createElement("option");
+  placeholder.value = "";
+  placeholder.textContent = "Спочатку оберіть область";
+  placeholder.disabled = true;
+  placeholder.selected = true;
+  const options = UKRAINE_REGIONS.map((region) => {
     const option = document.createElement("option");
-    option.value = source.username;
-    option.textContent = `${source.region} · ${source.name}`;
+    option.value = region;
+    const count = getRegionChannels(region).length;
+    option.textContent = count ? `${region} · ${count} ${count === 1 ? "канал" : "канали"}` : `${region} · джерел поки немає`;
     return option;
   });
-  els.onboardOfficialSource.replaceChildren(...options);
-  syncCustomSelect(els.onboardOfficialSource);
+  els.onboardRegionSelect.replaceChildren(placeholder, ...options);
+  syncCustomSelect(els.onboardRegionSelect);
+  renderOnboardSources();
 }
 
-function openOnboarding({ nicknameOnly = false } = {}) {
-  populateOnboardOfficialSources();
+function renderOnboardSources() {
+  if (!els.onboardSourcesArea || !els.onboardSourcesList || !els.onboardRegionSelect) return;
+  const region = els.onboardRegionSelect.value;
+  els.onboardSourcesArea.hidden = !region;
+  els.onboardSourcesList.replaceChildren();
+  if (!region) return;
+
+  const regionChannels = getRegionChannels(region);
+  els.onboardSourcesHeading.textContent = regionChannels.length ? `Доступні канали · ${region}` : `Для ${region.toLowerCase()} поки немає готових каналів`;
+  if (!regionChannels.length) {
+    const empty = document.createElement("p");
+    empty.className = "welcome-lead onboard-empty-copy";
+    empty.textContent = "Можете одразу запропонувати свій канал, щоб додати графік для цієї області.";
+    els.onboardSourcesList.append(empty);
+    return;
+  }
+
+  regionChannels.forEach((channel) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "choice-card";
+    const mark = document.createElement("span");
+    mark.className = "source-mark";
+    mark.innerHTML = '<svg class="icon" aria-hidden="true"><use href="#i-send" /></svg>';
+    const copy = document.createElement("span");
+    copy.className = "source-copy";
+    const regionLabel = document.createElement("small");
+    regionLabel.textContent = region;
+    const name = document.createElement("strong");
+    name.textContent = channel.name;
+    copy.append(regionLabel, name);
+    const action = document.createElement("span");
+    action.className = "choice-go";
+    action.textContent = "Обрати";
+    button.append(mark, copy, action);
+    button.addEventListener("click", () => pickOnboardChannel(channel));
+    els.onboardSourcesList.append(button);
+  });
+}
+
+function openOnboarding({ nicknameOnly = false, region = "" } = {}) {
+  populateOnboardRegions();
   onboardMode = nicknameOnly ? "nickname" : "setup";
   onboardChannel = nicknameOnly ? channels.find((channel) => normalizeChannelInput(channel.url).url === normalizeChannelInput(settings.channel).url) || {
     name: normalizeChannelInput(settings.channel).username,
@@ -1383,6 +1441,9 @@ function openOnboarding({ nicknameOnly = false } = {}) {
   els.onboardError.hidden = true;
   els.onboardNicknameError.hidden = true;
   els.onboardChannelInput.value = "";
+  els.onboardRegionSelect.value = region;
+  syncCustomSelect(els.onboardRegionSelect);
+  renderOnboardSources();
   els.onboardNickname.value = "";
   els.onboardBackQueue.hidden = nicknameOnly;
   showOnboardStep(nicknameOnly ? "nickname" : "channel");
@@ -1463,17 +1524,24 @@ async function finishOnboarding() {
   }
 }
 
-els.onboardUseDefault.addEventListener("click", () => pickOnboardChannel(DEFAULT_CHANNELS[0]));
-els.onboardUseOfficial?.addEventListener("click", () => {
-  const source = BUILTIN_SOURCES.find((item) => item.username === els.onboardOfficialSource?.value);
-  if (source) pickOnboardChannel(source);
+els.onboardRegionSelect.addEventListener("change", renderOnboardSources);
+els.onboardRequestRegionBtn.addEventListener("click", () => {
+  requestReturnRegion = els.onboardRegionSelect.value;
+  returnToOnboardingAfterRequest = true;
+  els.onboardDialog.close();
+  openRequestDialog("new", "", requestReturnRegion);
 });
 els.onboardUseCustom.addEventListener("click", () => {
   try {
     const normalized = normalizeChannelInput(els.onboardChannelInput.value);
+    const region = els.onboardRegionSelect.value;
+    if (!region) throw new Error("Спочатку оберіть область для цього каналу.");
     const existing = channels.find((ch) => ch.username.toLowerCase() === normalized.username.toLowerCase());
+    const known = BUILTIN_SOURCES.find((ch) => ch.username.toLowerCase() === normalized.username.toLowerCase());
+    const knownRegion = known?.region || existing?.region || "Кіровоградська область";
+    if ((known || existing) && knownRegion !== region) throw new Error(`Це джерело належить до ${knownRegion}. Оберіть цю область у списку.`);
     els.onboardError.hidden = true;
-    pickOnboardChannel(existing || { name: normalized.username, url: normalized.url, username: normalized.username, isDefault: false });
+    pickOnboardChannel(existing || known || { name: normalized.username, url: normalized.url, username: normalized.username, region, isDefault: false });
   } catch (err) {
     els.onboardError.textContent = err.message;
     els.onboardError.hidden = false;

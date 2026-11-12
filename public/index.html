@@ -590,16 +590,15 @@
       <div class="sheet-box">
         <div class="welcome-step" id="onboardStepChannel">
           <img class="welcome-mascot" src="/images/mascot-lightbulb.webp" alt="" width="616" height="708" />
-          <h2 id="onboardTitle" tabindex="-1" autofocus>Привіт! Звідки брати графік?</h2>
-          <p class="welcome-lead">Оберіть готове джерело графіка або додайте свій публічний Telegram-канал.</p>
-          <button type="button" class="choice-card" id="onboardUseDefault">
-            <span class="source-mark"><svg class="icon"><use href="#i-send" /></svg></span>
-            <span class="source-copy"><small>Кіровоградська область</small><strong>Світло Маловисківського району</strong></span>
-            <span class="choice-go">Обрати</span>
-          </button>
-          <label class="field-hint" for="onboardOfficialSource" style="display:block;margin-top:14px;">Інше готове офіційне джерело</label>
-          <div class="input-wrap" style="margin-top:6px;"><select id="onboardOfficialSource" class="native-select" aria-label="Оберіть готове офіційне джерело"></select></div>
-          <button type="button" class="primary-btn" id="onboardUseOfficial" style="margin-top:8px;">Далі з цим джерелом</button>
+          <h2 id="onboardTitle" tabindex="-1" autofocus>Оберіть свою область</h2>
+          <p class="welcome-lead">Спершу оберіть область — я покажу канали з графіками, доступні саме для неї.</p>
+          <label class="field-label" for="onboardRegionSelect">Область України</label>
+          <div class="input-wrap onboard-region-wrap"><select id="onboardRegionSelect" class="native-select" aria-label="Оберіть область України"></select></div>
+          <div class="onboard-sources" id="onboardSourcesArea" hidden>
+            <p class="field-label" id="onboardSourcesHeading">Доступні канали</p>
+            <div class="onboard-sources-list" id="onboardSourcesList"></div>
+            <button type="button" class="link-btn center" id="onboardRequestRegionBtn">Не знайшли свій канал? Запропонуйте його</button>
+          </div>
           <div class="or-line"><span>або свій канал</span></div>
           <div class="input-wrap"><svg class="icon"><use href="#i-send" /></svg><input id="onboardChannelInput" type="text" inputmode="url" autocapitalize="none" autocomplete="off" aria-label="Посилання на свій Telegram-канал" placeholder="https://t.me/s/назва або @канал" /></div>
           <p class="form-error" id="onboardError" role="alert" hidden></p>
