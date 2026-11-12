@@ -93,6 +93,7 @@ const els = {
   onboardDone: $("onboardDone"),
   onboardContinueNickname: $("onboardContinueNickname"),
   onboardNickname: $("onboardNickname"),
+  onboardNicknameTitle: $("onboardNicknameTitle"),
   onboardNicknameError: $("onboardNicknameError"),
   onboardNicknameHelp: $("onboardNicknameHelp"),
   completedNicknamesDialog: $("completedNicknamesDialog"),
