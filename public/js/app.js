@@ -1151,7 +1151,6 @@ function scheduleQueuePickerPosition() {
 }
 
 window.addEventListener("resize", scheduleQueuePickerPosition);
-window.addEventListener("scroll", scheduleQueuePickerPosition, { passive: true });
 if ("ResizeObserver" in window) {
   const queuePickerResizeObserver = new ResizeObserver(scheduleQueuePickerPosition);
   [els.queueSelect, els.queuePicker, els.homeInstallBanner, els.mascot].forEach((element) => {

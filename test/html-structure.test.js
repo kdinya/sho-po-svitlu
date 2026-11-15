@@ -187,7 +187,7 @@ test("діалоги назв черг відкриваються по цент�
   assert.match(html, /id="queueNameExitCopy"/);
   assert.match(readme, /\[\*\*Перейти до ШоПоСвітлу →\*\*\]\(https:\/\/sho-po-svitlu-ib61\.vercel\.app\/\)/);
   assert.match(readme, /## Власні назви черг[\s\S]*?під номером вибраної черги[\s\S]*?підтвердження/);
-  assert.match(sw, /sho-po-svitlu-shell-v63/);
+  assert.match(sw, /sho-po-svitlu-shell-v64/);
 });
 
 test("стилі містять правила для кастомних списків у неоновому стилі додатку", () => {
@@ -267,7 +267,7 @@ test("прапор у шапці використовує оригінальни
   assert.match(css, /\.brand-flag \{[^}]*position:\s*absolute;[^}]*top:\s*50%;[^}]*left:\s*-8px;[^}]*transform:\s*translateY\(-50%\);[^}]*z-index:\s*1;[^}]*width:\s*75px;[^}]*height:\s*54px;/);
   assert.match(css, /\.brand-title \{[^}]*position:\s*relative;[^}]*z-index:\s*2;[^}]*white-space:\s*nowrap;/);
   assert.match(css, /\.brand-flag-image \{[^}]*width:\s*100%;[^}]*height:\s*100%;[^}]*object-fit:\s*contain/);
-  assert.match(sw, /CACHE_NAME = "sho-po-svitlu-shell-v63"/);
+  assert.match(sw, /CACHE_NAME = "sho-po-svitlu-shell-v64"/);
   assert.match(sw, /"\/images\/ukraine-flag-header\.gif"/);
   assert.match(sw, /"\/images\/ukraine-flag-header-still\.png"/);
 });
@@ -443,4 +443,16 @@ test("редагування назв має початкове поясненн
 
 test("новий модуль назв черг входить до PWA кешу", () => {
   assert.match(sw, /"\/js\/queue-names\.js"/);
+});
+
+
+test("плавний вертикальний скрол на мобільних пристроях і відсутність блокування відтворення карток", () => {
+  assert.match(css, /html\s*\{[^}]*overflow-x:\s*clip/);
+  assert.match(css, /body\s*\{[^}]*overflow-x:\s*clip/);
+  assert.match(css, /body\s*\{[^}]*-webkit-overflow-scrolling:\s*touch/);
+  assert.match(css, /body\s*\{[^}]*touch-action:\s*pan-y/);
+  // .card не повинен мати backdrop-filter у загальному потоці, щоб не спричиняти зникнення вмісту при скролі
+  assert.doesNotMatch(css, /\.card\s*\{[^}]*backdrop-filter:\s*blur/);
+  // app.js не повинен навантажувати layout-рефлоу на кожен scroll події scheduleQueuePickerPosition
+  assert.doesNotMatch(appJs, /window\.addEventListener\("scroll",\s*scheduleQueuePickerPosition\)/);
 });
