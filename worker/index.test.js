@@ -8,6 +8,9 @@ import {
   parseQueues,
   parseTelegramHtml,
   mergeTelegramScheduleData,
+  isScheduleCancellation,
+  extractEffectiveMinutes,
+  preserveElapsedOutages,
   normalizeYasno,
   parseCherkasyContent,
   parseSumyOcr,
@@ -624,4 +627,78 @@ test("OCR чергує багато ключів і зупиняється на 
   } finally {
     globalThis.fetch = originalFetch;
   }
+});
+
+test("parseQueues: розпізнає тире, відсутні та немає як явну відсутність відключень", () => {
+  const sample = `
+Черга 1.1: —
+Черга 1.2: -
+Черга 2.1: відсутні
+Черга 2.2: немає
+Черга 3.1: без відключень
+Черга 3.2: 08:00 - 10:00
+`;
+  const parsed = parseQueues(sample);
+  assert.deepEqual(parsed["1.1"], []);
+  assert.deepEqual(parsed["1.2"], []);
+  assert.deepEqual(parsed["2.1"], []);
+  assert.deepEqual(parsed["2.2"], []);
+  assert.deepEqual(parsed["3.1"], []);
+  assert.deepEqual(parsed["3.2"], [{ start: 480, end: 600 }]);
+});
+
+test("isScheduleCancellation: розпізнає повідомлення про повне скасування графіка", () => {
+  assert.equal(isScheduleCancellation("За розпорядженням НЕК Укренерго графіки погодинних відключень на сьогодні скасовано"), true);
+  assert.equal(isScheduleCancellation("О 12:50 ГПВ скасовано до окремого розпорядження"), true);
+  assert.equal(isScheduleCancellation("Сьогодні відключень не буде"), true);
+  assert.equal(isScheduleCancellation("Графік відключень на 18.11: Черга 1.1: 08-10"), false);
+});
+
+test("extractEffectiveMinutes: витягує час станом на, з або о з тексту повідомлення або дати допису", () => {
+  assert.equal(extractEffectiveMinutes("зміни до графіка станом на 12:50 18.11.2026", null, 0), 12 * 60 + 50);
+  assert.equal(extractEffectiveMinutes("з 12:50 без відключень", null, 0), 12 * 60 + 50);
+  assert.equal(extractEffectiveMinutes("о 13:15 відновлено живлення", null, 0), 13 * 60 + 15);
+  // Fallback to postedAt (10:50 UTC = 12:50 Kyiv time in winter UTC+2)
+  assert.equal(extractEffectiveMinutes("просто графік", "2026-11-18T10:50:00.000Z", 0), 12 * 60 + 50);
+});
+
+test("parseTelegramHtml: зберігає минулі відключення та обрізає активне о 12:50 при скасуванні графіка", () => {
+  const html = `
+<div class="tgme_widget_message_wrap">
+  <div class="tgme_widget_message_text">На 18.11.2026 графік відключень:<br>Черга 1.1: 08-10, 12-14, 16-18, 20-22</div>
+  <time datetime="2026-11-18T04:00:00+00:00"></time>
+</div>
+<div class="tgme_widget_message_wrap">
+  <div class="tgme_widget_message_text">На 18.11.2026 зміни станом на 12:50:<br>Черга 1.1: без відключень</div>
+  <time datetime="2026-11-18T10:50:00+00:00"></time>
+</div>
+`;
+  const result = parseTelegramHtml(html, { channel: "test_channel", now: new Date("2026-11-18T11:00:00.000Z") });
+  const today = result.today;
+  // 08-10 (480-600) завершилося в минулому -> збережено повністю.
+  // 12-14 (720-840) було активним на момент 12:50 (770) -> обрізано до 12:50 (720-770, 50 хвилин).
+  // Майбутні (16-18, 20-22) скасовано.
+  assert.deepEqual(result.schedules[today].queues["1.1"], [
+    { start: 480, end: 600 },
+    { start: 720, end: 770 },
+  ]);
+});
+
+test("parseTelegramHtml: загальне повідомлення про скасування графіка зберігає ранкові відключення та обрізає активне", () => {
+  const html = `
+<div class="tgme_widget_message_wrap">
+  <div class="tgme_widget_message_text">На 18.11.2026 графік:<br>Черга 1.1: 08-10, 12-14, 18-20</div>
+  <time datetime="2026-11-18T04:00:00+00:00"></time>
+</div>
+<div class="tgme_widget_message_wrap">
+  <div class="tgme_widget_message_text">Шановні споживачі! О 12:50 за розпорядженням НЕК Укренерго графіки погодинних відключень на 18.11.2026 скасовано!</div>
+  <time datetime="2026-11-18T10:50:00+00:00"></time>
+</div>
+`;
+  const result = parseTelegramHtml(html, { channel: "test_channel", now: new Date("2026-11-18T11:00:00.000Z") });
+  const today = result.today;
+  assert.deepEqual(result.schedules[today].queues["1.1"], [
+    { start: 480, end: 600 },
+    { start: 720, end: 770 },
+  ]);
 });

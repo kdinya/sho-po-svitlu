@@ -8,7 +8,10 @@ import {
   formatMissingScheduleMessage,
   getLocalClock,
   getScheduleState,
+  mergeClientScheduleData,
+  mergeIntervals,
   minutesToTime,
+  preserveElapsedOutages,
   renderOutages,
   renderTimeline,
   totalMinutes,
@@ -230,4 +233,74 @@ test("renderOutages: позначає активним саме проміжок
   assert.equal(divider.classList.has("is-current"), true);
   assert.equal(divider.classList.has("is-past"), false);
   assert.equal(divider.children[0].textContent, "зі світлом — 8 год");
+});
+
+test("preserveElapsedOutages: зберігає завершені відключення, обрізає активне о 12:50 (50 хв) та оновлює майбутні", () => {
+  const previous = [
+    { start: 480, end: 600 },   // 08:00 - 10:00 (завершене)
+    { start: 720, end: 840 },   // 12:00 - 14:00 (активне на момент 12:50)
+    { start: 960, end: 1080 },  // 16:00 - 18:00 (майбутнє)
+  ];
+  // 1. О 12:50 (770 хв) графік скасували до кінця дня:
+  const cancelled = preserveElapsedOutages(previous, [], 770);
+  assert.deepEqual(cancelled, [
+    { start: 480, end: 600 }, // 08:00 - 10:00 збережено
+    { start: 720, end: 770 }, // 12:00 - 12:50 збережено (50 хвилин)
+  ]);
+
+  // 2. О 12:50 графік змінили на відключення о 16:00 - 18:00:
+  const changed = preserveElapsedOutages(previous, [{ start: 960, end: 1080 }], 770);
+  assert.deepEqual(changed, [
+    { start: 480, end: 600 },
+    { start: 720, end: 770 },
+    { start: 960, end: 1080 },
+  ]);
+
+  // 3. Наступне оновлення пізніше (наприклад о 14:00 = 840 хв) не втрачає вже збережені 50 хвилин:
+  const later = preserveElapsedOutages(cancelled, [], 840);
+  assert.deepEqual(later, [
+    { start: 480, end: 600 },
+    { start: 720, end: 770 },
+  ]);
+});
+
+test("mergeClientScheduleData: зберігає в клієнті минулі відключення сьогодні та скорочує активне о 12:50", () => {
+  const existing = {
+    today: "2026-11-18",
+    tomorrow: "2026-11-19",
+    schedules: {
+      "2026-11-18": {
+        queues: {
+          "1.1": [{ start: 480, end: 600 }, { start: 720, end: 840 }],
+          "2.1": [{ start: 0, end: 120 }, { start: 720, end: 840 }],
+        },
+      },
+    },
+  };
+
+  const incoming = {
+    today: "2026-11-18",
+    tomorrow: "2026-11-19",
+    schedules: {
+      "2026-11-18": {
+        queues: {
+          "1.1": [], // Новий графік каже без відключень
+          "2.1": [],
+        },
+      },
+    },
+  };
+
+  const clockTimeAt1250 = new Date(2026, 10, 18, 12, 50);
+  const merged = mergeClientScheduleData(existing, incoming, clockTimeAt1250);
+
+  // 08-10 збережено, 12-14 обрізано до 12:50 (50 хвилин)
+  assert.deepEqual(merged.schedules["2026-11-18"].queues["1.1"], [
+    { start: 480, end: 600 },
+    { start: 720, end: 770 },
+  ]);
+  assert.deepEqual(merged.schedules["2026-11-18"].queues["2.1"], [
+    { start: 0, end: 120 },
+    { start: 720, end: 770 },
+  ]);
 });

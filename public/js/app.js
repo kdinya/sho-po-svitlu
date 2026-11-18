@@ -1,5 +1,5 @@
 import { DEFAULT_CHANNEL, DEFAULT_WORKER_URL, UKRAINE_REGIONS, fetchCompletedSetupNicknames, fetchCompletedSetupsCount, fetchSchedule, normalizeChannelInput, normalizeSetupNickname, registerCompletedSetup, sendChannelRequest } from "./api.js";
-import { formatDate, formatHours, formatMissingScheduleMessage, getLocalClock, getScheduleState, renderOutages, renderTimeline, totalMinutes } from "./timeline.js";
+import { formatDate, formatHours, formatMissingScheduleMessage, getLocalClock, getScheduleState, mergeClientScheduleData, preserveElapsedOutages, renderOutages, renderTimeline, totalMinutes } from "./timeline.js";
 import { areQueueNamesEqual, normalizeQueueNames, QUEUE_NAME_MAX_LENGTH } from "./queue-names.js";
 
 const STORAGE_KEY = "sho-po-svitlu.settings.v1";
@@ -1025,7 +1025,7 @@ async function refresh({ manual = false, force = false } = {}) {
     });
     const minimumSpinner = manual ? 800 : 300;
     await new Promise((resolve) => setTimeout(resolve, Math.max(0, minimumSpinner - (Date.now() - started))));
-    data = result;
+    data = mergeClientScheduleData(data, result);
     const available = availableQueues(data);
     QUEUES = available;
     if (available.length && !available.includes(settings.queue)) {
