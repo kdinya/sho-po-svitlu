@@ -34,6 +34,57 @@ export function formatCountdown(targetMinutes, nowMinutes) {
   return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
 }
 
+export function mergeIntervals(periods = []) {
+  const merged = [];
+  for (const period of [...periods].sort((left, right) => left.start - right.start || left.end - right.end)) {
+    const last = merged.at(-1);
+    if (last && period.start <= last.end) last.end = Math.max(last.end, period.end);
+    else merged.push({ ...period });
+  }
+  return merged;
+}
+
+export function preserveElapsedOutages(previousPeriods = [], currentPeriods = [], nowMinutes = 0) {
+  if (!Array.isArray(previousPeriods) || !previousPeriods.length) return currentPeriods || [];
+  if (!Array.isArray(currentPeriods)) currentPeriods = [];
+  const preserved = previousPeriods.flatMap((period) => {
+    if (period.end <= nowMinutes) return [period];
+    if (period.start < nowMinutes && period.end > nowMinutes
+      && !currentPeriods.some((current) => current.start <= nowMinutes && current.end > nowMinutes)) {
+      return [{ start: period.start, end: nowMinutes }];
+    }
+    return [];
+  });
+  const currentAndFuture = currentPeriods.filter((period) => period.end > nowMinutes);
+  return mergeIntervals([...preserved, ...currentAndFuture]);
+}
+
+export function mergeClientScheduleData(existingData, incomingData, now = new Date()) {
+  if (!existingData || !incomingData) return incomingData;
+  if (!incomingData.today || existingData.today !== incomingData.today) return incomingData;
+  const existingSchedule = existingData.schedules?.[existingData.today];
+  const incomingSchedule = incomingData.schedules?.[incomingData.today];
+  if (!existingSchedule?.queues || !incomingSchedule?.queues) return incomingData;
+
+  const { minutes: nowMinutes } = getLocalClock(now);
+  const mergedQueues = { ...incomingSchedule.queues };
+  for (const [queue, prevPeriods] of Object.entries(existingSchedule.queues)) {
+    const nextPeriods = mergedQueues[queue] ?? [];
+    mergedQueues[queue] = preserveElapsedOutages(prevPeriods, nextPeriods, nowMinutes);
+  }
+
+  return {
+    ...incomingData,
+    schedules: {
+      ...incomingData.schedules,
+      [incomingData.today]: {
+        ...incomingSchedule,
+        queues: mergedQueues,
+      },
+    },
+  };
+}
+
 export function renderTimeline(track, marker, currentTimeNode, periods = [], now = new Date(), { showNow = true } = {}) {
   track.replaceChildren();
   track.classList.toggle("is-empty", !periods.length);
