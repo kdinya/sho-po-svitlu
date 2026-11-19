@@ -295,6 +295,24 @@ body[data-screen="home"] .queue-picker { position: absolute; top: var(--queue-pi
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.07);
 }
 .card-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 12px; }
+.card-head-title-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-width: 0;
+}
+.schedule-changes-notice {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  padding-left: 36px;
+  line-height: 1.25;
+}
+.schedule-changes-notice:empty {
+  display: none;
+}
 .card-head h2, .card-title {
   display: flex; align-items: center; gap: 10px;
   font-size: clamp(17px, 4.7vw, 20px); font-weight: 800; letter-spacing: -0.01em; white-space: nowrap;

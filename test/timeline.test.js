@@ -6,6 +6,7 @@ import {
   formatDuration,
   formatHours,
   formatMissingScheduleMessage,
+  formatScheduleChangesLabel,
   getLocalClock,
   getScheduleState,
   mergeClientScheduleData,
@@ -347,4 +348,17 @@ test("mergeClientScheduleData: при відкритті додатку о 15:00
   assert.deepEqual(merged.schedules["2026-11-19"].queues["1.1"], [
     { start: 360, end: 450 },
   ]);
+});
+
+test("formatScheduleChangesLabel: коректно формує підпис часу повідомлення з каналу", () => {
+  // 05:58 UTC взимку (Europe/Kyiv UTC+2) -> 7:58
+  assert.equal(formatScheduleChangesLabel("2026-11-19T05:58:00.000Z"), "(зміни на 7:58)");
+  assert.equal(formatScheduleChangesLabel("2026-11-19T16:04:00.000Z"), "(зміни на 18:04)");
+  // Текстовий fallback
+  assert.equal(formatScheduleChangesLabel(null, "Станом на 07:58 графік оновлено"), "(зміни на 7:58)");
+  assert.equal(formatScheduleChangesLabel(null, "з 14:30 діють зміни"), "(зміни на 14:30)");
+  // Немає даних або порожні рядки
+  assert.equal(formatScheduleChangesLabel(null, null), "");
+  assert.equal(formatScheduleChangesLabel("", ""), "");
+  assert.equal(formatScheduleChangesLabel("invalid-date", "звичайне повідомлення без часу"), "");
 });
