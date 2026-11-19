@@ -14,6 +14,29 @@ export function formatDate(isoDate, options = {}) {
   return `${day}.${month}.${year}`;
 }
 
+export function formatScheduleChangesLabel(postedAt, messageText = "") {
+  if (postedAt) {
+    const date = new Date(postedAt);
+    if (!Number.isNaN(date.getTime())) {
+      const time = new Intl.DateTimeFormat("uk-UA", {
+        timeZone: "Europe/Kyiv",
+        hour: "numeric",
+        minute: "2-digit",
+      }).format(date);
+      return `(зміни на ${time})`;
+    }
+  }
+  if (typeof messageText === "string" && messageText.trim()) {
+    const match = messageText.match(/(?:станом\s+на|з|від|о|об)\s+(\d{1,2})[:.](\d{2})/iu);
+    if (match) {
+      const hours = Number(match[1]);
+      const minutes = match[2];
+      return `(зміни на ${hours}:${minutes})`;
+    }
+  }
+  return "";
+}
+
 export function getLocalClock(now = new Date()) {
   return { minutes: now.getHours() * 60 + now.getMinutes(), time: `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}` };
 }

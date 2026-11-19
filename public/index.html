@@ -207,7 +207,10 @@
 
           <section class="card timeline-card" aria-labelledby="homeOverviewHeading">
             <div class="card-head">
-              <h2 id="homeOverviewHeading"><svg class="icon"><use href="#i-chart" /></svg><span>Графік на сьогодні</span></h2>
+              <div class="card-head-title-wrap">
+                <h2 id="homeOverviewHeading"><svg class="icon"><use href="#i-chart" /></svg><span>Графік на сьогодні</span></h2>
+                <span class="schedule-changes-notice" id="homeScheduleChangesNotice"></span>
+              </div>
               <div class="seg-switch" role="tablist" aria-label="Оберіть день графіка">
                 <button class="seg-btn is-active" id="homeTodayTab" type="button" role="tab" aria-selected="true" data-day="today">Сьогодні</button>
                 <button class="seg-btn" id="homeTomorrowTab" type="button" role="tab" aria-selected="false" data-day="tomorrow">Завтра</button>
@@ -260,7 +263,10 @@
 
           <section class="card timeline-card" aria-labelledby="timelineHeading">
             <div class="card-head">
-              <h2 id="timelineHeading"><svg class="icon"><use href="#i-chart" /></svg><span>Світло протягом доби</span></h2>
+              <div class="card-head-title-wrap">
+                <h2 id="timelineHeading"><svg class="icon"><use href="#i-chart" /></svg><span>Графік на сьогодні</span></h2>
+                <span class="schedule-changes-notice" id="timelineScheduleChangesNotice"></span>
+              </div>
             </div>
             <div class="timeline-wrap" id="timelineWrap">
               <div class="now-marker" id="nowMarker"><span>Зараз<b id="currentTime">--:--</b></span><i></i></div>

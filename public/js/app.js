@@ -1,5 +1,5 @@
 import { DEFAULT_CHANNEL, DEFAULT_WORKER_URL, UKRAINE_REGIONS, fetchCompletedSetupNicknames, fetchCompletedSetupsCount, fetchSchedule, normalizeChannelInput, normalizeSetupNickname, registerCompletedSetup, sendChannelRequest } from "./api.js";
-import { formatDate, formatHours, formatMissingScheduleMessage, getLocalClock, getScheduleState, mergeClientScheduleData, preserveElapsedOutages, renderOutages, renderTimeline, totalMinutes } from "./timeline.js";
+import { formatDate, formatHours, formatMissingScheduleMessage, formatScheduleChangesLabel, getLocalClock, getScheduleState, mergeClientScheduleData, preserveElapsedOutages, renderOutages, renderTimeline, totalMinutes } from "./timeline.js";
 import { areQueueNamesEqual, normalizeQueueNames, QUEUE_NAME_MAX_LENGTH } from "./queue-names.js";
 
 const STORAGE_KEY = "sho-po-svitlu.settings.v1";
@@ -64,6 +64,7 @@ const els = {
   homeTodayTab: $("homeTodayTab"),
   homeTomorrowTab: $("homeTomorrowTab"),
   homeOverviewHeading: $("homeOverviewHeading"),
+  homeScheduleChangesNotice: $("homeScheduleChangesNotice"),
   homeSourceName: $("homeSourceName"),
   homeRegionName: $("homeRegionName"),
   heroDate: $("heroDate"),
@@ -109,6 +110,8 @@ const els = {
   todayTab: $("todayTab"),
   tomorrowTab: $("tomorrowTab"),
   scheduleDate: $("scheduleDate"),
+  timelineHeading: $("timelineHeading"),
+  timelineScheduleChangesNotice: $("timelineScheduleChangesNotice"),
   timelineTrack: $("timelineTrack"),
   nowMarker: $("nowMarker"),
   currentTime: $("currentTime"),
@@ -939,7 +942,16 @@ function renderView() {
 
   els.heroDate.textContent = formatHeroDate(data?.today, true);
   els.scheduleDate.textContent = selectedDate ? formatDate(selectedDate) : isCurrentDay ? "сьогодні" : "завтра";
-  els.homeOverviewHeading.querySelector("span").textContent = isCurrentDay ? "Графік на сьогодні" : "Графік на завтра";
+  const headingTitle = isCurrentDay ? "Графік на сьогодні" : "Графік на завтра";
+  if (els.homeOverviewHeading?.querySelector("span")) {
+    els.homeOverviewHeading.querySelector("span").textContent = headingTitle;
+  }
+  if (els.timelineHeading?.querySelector("span")) {
+    els.timelineHeading.querySelector("span").textContent = headingTitle;
+  }
+  const changesNotice = date ? formatScheduleChangesLabel(date.postedAt, date.messageText) : "";
+  if (els.homeScheduleChangesNotice) els.homeScheduleChangesNotice.textContent = changesNotice;
+  if (els.timelineScheduleChangesNotice) els.timelineScheduleChangesNotice.textContent = changesNotice;
 
   for (const [tab, active] of [[els.todayTab, isCurrentDay], [els.tomorrowTab, !isCurrentDay], [els.homeTodayTab, isCurrentDay], [els.homeTomorrowTab, !isCurrentDay]]) {
     tab.classList.toggle("is-active", active);
