@@ -949,7 +949,7 @@ function renderView() {
   if (els.timelineHeading?.querySelector("span")) {
     els.timelineHeading.querySelector("span").textContent = headingTitle;
   }
-  const changesNotice = date ? formatScheduleChangesLabel(date.postedAt, date.messageText) : "";
+  const changesNotice = date ? formatScheduleChangesLabel(date.postedAt, date.messageText, { now }) : "";
   if (els.homeScheduleChangesNotice) els.homeScheduleChangesNotice.textContent = changesNotice;
   if (els.timelineScheduleChangesNotice) els.timelineScheduleChangesNotice.textContent = changesNotice;
 

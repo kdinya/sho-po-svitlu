@@ -462,5 +462,6 @@ test("блоки графіка на головній та в розкладі �
   assert.match(html, /id=["']timelineHeading["'][^>]*>[\s\S]*?<span>Графік на сьогодні<\/span>/);
   assert.match(html, /id=["']homeScheduleChangesNotice["']/);
   assert.match(html, /id=["']timelineScheduleChangesNotice["']/);
-  assert.match(css, /\.schedule-changes-notice/);
+  assert.match(css, /\.schedule-changes-notice\s*\{[^}]*white-space:\s*nowrap/);
+  assert.match(appJs, /formatScheduleChangesLabel\(date\.postedAt,\s*date\.messageText,\s*\{\s*now\s*\}\)/);
 });
