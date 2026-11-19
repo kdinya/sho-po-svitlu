@@ -587,12 +587,13 @@ function readSumySchedulePosts(html, referenceDate) {
     const postId = block.match(/data-post=["']SumyEnergo\/(\d+)["']/i)?.[1];
     const body = block.match(/<div\b[^>]*class=["'][^"']*tgme_widget_message_text[^"']*["'][^>]*>([\s\S]*?)<\/div>/i)?.[1] || "";
     const text = stripTags(body);
-    if (!postId || !/графік(?:и)?\s+погодинних\s+відключень/iu.test(text)) return null;
-    const numericDate = text.match(/(?:завтра[,\s]*)?(\d{1,2})[-.\/](\d{1,2})[-.\/](20\d{2})/i);
+    if (!postId || !/(?:графік[а-яіїєґ]*\s+(?:погодинн[а-яіїєґ]*\s+)?відключен[а-яіїєґ]*|(?:^|[^а-яіїєґ])гпв(?:[^а-яіїєґ]|$))/iu.test(text)) return null;
+    const numericDate = text.match(/(?:на|за|завтра[,\s]*)\s*(\d{1,2})[-.\/](\d{1,2})(?:[-.\/](20\d{2}))?/iu)
+      ?? text.match(/(?:завтра[,\s]*)?(\d{1,2})[-.\/](\d{1,2})[-.\/](20\d{2})/i);
     const namedDate = text.match(/(?:на|завтра[,\s]*)\s*(\d{1,2})\s+(січня|лютого|березня|квітня|травня|червня|липня|серпня|вересня|жовтня|листопада|грудня)/iu);
     const monthByName = namedDate ? UKRAINIAN_MONTHS.get(namedDate[2].toLowerCase()) : null;
     if (!numericDate && !namedDate) return null;
-    const year = numericDate ? Number(numericDate[3]) : Number(referenceDate.slice(0, 4));
+    const year = numericDate?.[3] ? Number(numericDate[3]) : Number(referenceDate.slice(0, 4));
     const month = numericDate ? Number(numericDate[2]) : monthByName;
     const day = numericDate ? Number(numericDate[1]) : Number(namedDate[1]);
     if (!isValidDate(year, month, day)) return null;
@@ -736,73 +737,95 @@ async function fetchSumy(env, { force = false } = {}) {
     const now = new Date();
     const today = dateInKyiv(now); const tomorrow = datePlusOne(today);
     const posts = readSumySchedulePosts(html, today);
-    const latestByDate = {};
-    for (const post of posts) if (!latestByDate[post.date]) latestByDate[post.date] = post;
     const schedules = {};
+    const selectedPostByDate = {};
     for (const date of [today, tomorrow]) {
-      const post = latestByDate[date];
-      if (!post?.photoUrl) continue;
-      const postCacheKey = `sumy:${SUMY_OCR_CACHE_VERSION}:post:${post.postId}`;
-      const postCached = await readCache(env, postCacheKey);
-      if (postCached?.photoUrl === post.photoUrl && postCached.schedule) {
-        schedules[date] = postCached.schedule;
-        continue;
-      }
-      if (!getOcrSpaceKeys(env).length) {
-        throw new Error("OCR не налаштований як Secret у Cloudflare. Перевірте OCR_SPACE_API_KEY_1 або OCR_SPACE_API_KEY.");
-      }
-      const imageResponse = await fetch(post.photoUrl, { headers: { "User-Agent": "ShoPoSvitlu/1.0 (+https://github.com/kdinya/sho-po-svitlu)" }, signal: AbortSignal.timeout(15_000) });
-      if (!imageResponse.ok) throw new Error("Зображення з офіційного каналу тимчасово недоступне.");
-      const mimeType = imageResponse.headers.get("content-type")?.split(";")[0] || "image/jpeg";
-      if (!/^image\/(?:jpeg|png|webp)$/i.test(mimeType)) throw new Error("Формат зображення графіка не підтримується.");
-      const declaredSize = Number(imageResponse.headers.get("content-length") || 0);
-      if (declaredSize > OCR_IMAGE_MAX_BYTES) throw new Error("Зображення завелике для безкоштовного OCR.space. Графік не розпізнано.");
-      const bytes = await readLimitedResponseBytes(imageResponse, OCR_IMAGE_MAX_BYTES);
-      const digestBytes = await crypto.subtle.digest("SHA-256", bytes);
-      const digest = [...new Uint8Array(digestBytes)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
-      const imageCacheKey = `sumy:${SUMY_OCR_CACHE_VERSION}:image:${digest}`;
-      const imageCached = await readCache(env, imageCacheKey);
-      if (imageCached?.schedule) {
-        const schedule = { ...imageCached.schedule, date, postedAt: post.postedAt, postId: post.postId };
-        schedules[date] = schedule;
-        await writeCache(env, postCacheKey, { photoUrl: post.photoUrl, schedule });
-        continue;
-      }
-      const failedCacheKey = `sumy:${SUMY_OCR_CACHE_VERSION}:failed:${digest}`;
-      if (await readCache(env, failedCacheKey)) throw new Error("Це зображення вже не пройшло перевірку OCR. Щоб уникнути зайвих розпізнавань, спробуйте пізніше або відкрийте офіційне джерело.");
-      const keys = getOcrSpaceKeys(env);
-      if (!keys.length) throw new Error("OCR не налаштований як Secret у Cloudflare. Перевірте OCR_SPACE_API_KEY_1 або OCR_SPACE_API_KEY.");
-      const lock = await claimOcr(env, digest, keys.length);
-      if (!lock?.claimed) {
-        if (lock?.configurationError) throw new Error("Захист від повторного OCR не налаштований. Щоб не витрачати квоту двічі, розпізнавання не запускали.");
-        let shared = null;
-        for (let attempt = 0; attempt < 30; attempt += 1) {
-          await new Promise((resolve) => setTimeout(resolve, 500));
-          shared = await readCache(env, imageCacheKey);
-          if (shared?.schedule) break;
+      const candidates = posts.filter((post) => post.date === date);
+      let lastCandidateError = null;
+      for (const post of candidates) {
+        if (!post?.photoUrl) continue;
+        const postCacheKey = `sumy:${SUMY_OCR_CACHE_VERSION}:post:${post.postId}`;
+        const postCached = await readCache(env, postCacheKey);
+        if (postCached?.photoUrl === post.photoUrl && postCached.schedule) {
+          schedules[date] = postCached.schedule;
+          selectedPostByDate[date] = post;
+          break;
         }
-        if (!shared?.schedule) throw new Error("Графік уже розпізнається. Зачекайте кілька секунд і оновіть ще раз.");
-        schedules[date] = shared.schedule;
-        continue;
-      }
-      try {
-        let queues;
+        if (!getOcrSpaceKeys(env).length) {
+          throw new Error("OCR не налаштований як Secret у Cloudflare. Перевірте OCR_SPACE_API_KEY_1 або OCR_SPACE_API_KEY.");
+        }
         try {
-          const ocrResult = await callOcrSpace(bytes, mimeType, keys, lock.keyIndex || 0, parseSumyOcr);
-          queues = ocrResult.value;
-        } catch (error) {
-          await writeCache(env, failedCacheKey, { failedAt: new Date().toISOString() }, OCR_FAILURE_CACHE_SECONDS);
-          throw error;
+          const imageResponse = await fetch(post.photoUrl, { headers: { "User-Agent": "ShoPoSvitlu/1.0 (+https://github.com/kdinya/sho-po-svitlu)" }, signal: AbortSignal.timeout(15_000) });
+          if (!imageResponse.ok) throw new Error("Зображення з офіційного каналу тимчасово недоступне.");
+          const mimeType = imageResponse.headers.get("content-type")?.split(";")[0] || "image/jpeg";
+          if (!/^image\/(?:jpeg|png|webp)$/i.test(mimeType)) throw new Error("Формат зображення графіка не підтримується.");
+          const declaredSize = Number(imageResponse.headers.get("content-length") || 0);
+          if (declaredSize > OCR_IMAGE_MAX_BYTES) throw new Error("Зображення завелике для безкоштовного OCR.space. Графік не розпізнано.");
+          const bytes = await readLimitedResponseBytes(imageResponse, OCR_IMAGE_MAX_BYTES);
+          const digestBytes = await crypto.subtle.digest("SHA-256", bytes);
+          const digest = [...new Uint8Array(digestBytes)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+          const imageCacheKey = `sumy:${SUMY_OCR_CACHE_VERSION}:image:${digest}`;
+          const imageCached = await readCache(env, imageCacheKey);
+          if (imageCached?.schedule) {
+            const schedule = { ...imageCached.schedule, date, postedAt: post.postedAt, postId: post.postId };
+            schedules[date] = schedule;
+            selectedPostByDate[date] = post;
+            await writeCache(env, postCacheKey, { photoUrl: post.photoUrl, schedule });
+            break;
+          }
+          const failedCacheKey = `sumy:${SUMY_OCR_CACHE_VERSION}:failed:${digest}`;
+          if (await readCache(env, failedCacheKey)) {
+            lastCandidateError = new Error("Це зображення вже не пройшло перевірку OCR. Щоб уникнути зайвих розпізнавань, спробуйте пізніше або відкрийте офіційне джерело.");
+            continue;
+          }
+          const keys = getOcrSpaceKeys(env);
+          if (!keys.length) throw new Error("OCR не налаштований як Secret у Cloudflare. Перевірте OCR_SPACE_API_KEY_1 або OCR_SPACE_API_KEY.");
+          const lock = await claimOcr(env, digest, keys.length);
+          if (!lock?.claimed) {
+            if (lock?.configurationError) throw new Error("Захист від повторного OCR не налаштований. Щоб не витрачати квоту двічі, розпізнавання не запускали.");
+            let shared = null;
+            for (let attempt = 0; attempt < 30; attempt += 1) {
+              await new Promise((resolve) => setTimeout(resolve, 500));
+              shared = await readCache(env, imageCacheKey);
+              if (shared?.schedule) break;
+            }
+            if (!shared?.schedule) {
+              lastCandidateError = new Error("Графік уже розпізнається. Зачекайте кілька секунд і оновіть ще раз.");
+              continue;
+            }
+            schedules[date] = shared.schedule;
+            selectedPostByDate[date] = post;
+            break;
+          }
+          try {
+            let queues;
+            try {
+              const ocrResult = await callOcrSpace(bytes, mimeType, keys, lock.keyIndex || 0, parseSumyOcr);
+              queues = ocrResult.value;
+            } catch (error) {
+              await writeCache(env, failedCacheKey, { failedAt: new Date().toISOString() }, OCR_FAILURE_CACHE_SECONDS);
+              lastCandidateError = error;
+              continue;
+            }
+            const schedule = { date, queues, postedAt: post.postedAt, postId: post.postId };
+            schedules[date] = schedule;
+            selectedPostByDate[date] = post;
+            await writeCache(env, imageCacheKey, { schedule });
+            await writeCache(env, postCacheKey, { photoUrl: post.photoUrl, schedule });
+            break;
+          } finally { await releaseOcr(env, digest); }
+        } catch (candidateErr) {
+          lastCandidateError = candidateErr;
+          continue;
         }
-        const schedule = { date, queues, postedAt: post.postedAt, postId: post.postId };
-        schedules[date] = schedule;
-        await writeCache(env, imageCacheKey, { schedule });
-        await writeCache(env, postCacheKey, { photoUrl: post.photoUrl, schedule });
-      } finally { await releaseOcr(env, digest); }
+      }
+      if (!schedules[date] && lastCandidateError && !Object.keys(schedules).length) {
+        throw lastCandidateError;
+      }
     }
     if (!Object.keys(schedules).length) throw new Error("Не знайдено підтверджений графік Сумиобленерго на сьогодні або завтра. Відкрийте офіційний канал.");
-    const latest = latestByDate[today] || latestByDate[tomorrow];
-    const result = { channel: sourceId, sourceUrl: latest ? `https://t.me/${SUMY_CHANNEL}/${latest.postId}` : `https://t.me/${SUMY_CHANNEL}`, title: "Сумиобленерго · офіційний графік", fetchedAt: now.toISOString(), today, tomorrow, schedules };
+    const latest = selectedPostByDate[today] || selectedPostByDate[tomorrow] || posts[0];
+    const result = { channel: sourceId, sourceUrl: latest?.postId ? `https://t.me/${SUMY_CHANNEL}/${latest.postId}` : `https://t.me/${SUMY_CHANNEL}`, title: "Сумиобленерго · офіційний графік", fetchedAt: now.toISOString(), today, tomorrow, schedules };
     return persistScheduleResult(cacheKey, result, env, cached);
   } catch (error) {
     if (cached) {

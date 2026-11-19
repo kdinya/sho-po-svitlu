@@ -107,6 +107,32 @@ test("Sumy Telegram parser binds an image to its post and explicit date", () => 
   assert.equal(posts[0].photoUrl, "https://cdn4.telesco.pe/file/schedule.jpg");
 });
 
+test("Sumy Telegram parser розпізнає оновлення 'зміни в обсяг застосування графіків погодинних відключень' та ГПВ", () => {
+  const html = `
+    <div class="tgme_widget_message_wrap"><div class="tgme_widget_message" data-post="SumyEnergo/3940"><a class="tgme_widget_message_photo_wrap" style="background-image:url('https://cdn4.telesco.pe/file/photo1.jpg')"></a><div class="tgme_widget_message_text">Завтра, 19-11-2026, діятимуть графіки погодинних відключень</div><time datetime="2026-11-18T18:44:27+00:00"></time></div></div>
+    <div class="tgme_widget_message_wrap"><div class="tgme_widget_message" data-post="SumyEnergo/3943"><a class="tgme_widget_message_photo_wrap" style="background-image:url('https://cdn4.telesco.pe/file/photo2.jpg')"></a><div class="tgme_widget_message_text">Шановні споживачі електроенергії! Командою НЕК "Укренерго" внесено зміни в обсяг застосування графіків погодинних відключень на 19-11-2026.</div><time datetime="2026-11-18T20:59:17+00:00"></time></div></div>
+    <div class="tgme_widget_message_wrap"><div class="tgme_widget_message" data-post="SumyEnergo/3944"><a class="tgme_widget_message_photo_wrap" style="background-image:url('https://cdn4.telesco.pe/file/photo3.jpg')"></a><div class="tgme_widget_message_text">Шановні споживачі! Командою НЕК "Укренерго" внесено зміни в обсяг застосування графіків погодинних відключень на 19-11-2026.</div><time datetime="2026-11-19T04:07:38+00:00"></time></div></div>
+    <div class="tgme_widget_message_wrap"><div class="tgme_widget_message" data-post="SumyEnergo/3945"><a class="tgme_widget_message_photo_wrap" style="background-image:url('https://cdn4.telesco.pe/file/photo4.jpg')"></a><div class="tgme_widget_message_text">Увага! Введені графіки аварійних відключень для 1-10 черг.</div><time datetime="2026-11-19T05:00:00+00:00"></time></div></div>
+  `;
+  const posts = readSumySchedulePosts(html, "2026-11-19");
+  assert.equal(posts.length, 3, "має знайти всі 3 погодинні графіки й проігнорувати аварійні відключення");
+  assert.equal(posts[0].postId, "3944", "найновіший допис за 06:07 повинен бути першим");
+  assert.equal(posts[1].postId, "3943");
+  assert.equal(posts[2].postId, "3940");
+  assert.equal(posts[0].photoUrl, "https://cdn4.telesco.pe/file/photo3.jpg");
+});
+
+test("Sumy Telegram parser розпізнає дату без року та скорочення ГПВ", () => {
+  const html = `
+    <div class="tgme_widget_message_wrap"><div class="tgme_widget_message" data-post="SumyEnergo/3950"><a class="tgme_widget_message_photo_wrap" style="background-image:url('https://cdn4.telesco.pe/file/gpv.jpg')"></a><div class="tgme_widget_message_text">Оновлені графіки погодинних відключень на 19.11</div><time datetime="2026-11-19T08:00:00+00:00"></time></div></div>
+    <div class="tgme_widget_message_wrap"><div class="tgme_widget_message" data-post="SumyEnergo/3951"><a class="tgme_widget_message_photo_wrap" style="background-image:url('https://cdn4.telesco.pe/file/gpv2.jpg')"></a><div class="tgme_widget_message_text">Зміни до ГПВ на 20 листопада</div><time datetime="2026-11-19T09:00:00+00:00"></time></div></div>
+  `;
+  const postsToday = readSumySchedulePosts(html, "2026-11-19");
+  assert.equal(postsToday.length, 2);
+  assert.equal(postsToday.find(p => p.postId === "3950")?.date, "2026-11-19");
+  assert.equal(postsToday.find(p => p.postId === "3951")?.date, "2026-11-20");
+});
+
 test("розбирає інтервали з двокрапками, хвилинами та переходом через північ", () => {
   assert.deepEqual(parseIntervals("00-02, 04:15–06:00, 12-12:30, 22-24, 22:00-00:00, 24:00-24:00, 25-26"), [
     { start: 0, end: 120 },
