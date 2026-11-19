@@ -1,5 +1,5 @@
 const TELEGRAM_HOST = "https://t.me";
-const MAX_MESSAGES = 5;
+const MAX_MESSAGES = 30;
 const CACHE_SECONDS = 180;
 const OCR_FAILURE_CACHE_SECONDS = 15 * 60;
 const OCR_IMAGE_MAX_BYTES = 1_000_000;
@@ -73,15 +73,34 @@ function isValidDate(year, month, day) {
   return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day;
 }
 
+export const UKRAINIAN_MONTHS = new Map([
+  ["січня", 1], ["січень", 1], ["січ", 1],
+  ["лютого", 2], ["лютий", 2], ["лют", 2],
+  ["березня", 3], ["березень", 3], ["берез", 3],
+  ["квітня", 4], ["квітень", 4], ["квіт", 4],
+  ["травня", 5], ["травень", 5], ["трав", 5],
+  ["червня", 6], ["червень", 6], ["черв", 6],
+  ["липня", 7], ["липень", 7], ["лип", 7],
+  ["серпня", 8], ["серпень", 8], ["серп", 8],
+  ["вересня", 9], ["вересень", 9], ["верес", 9], ["вер", 9],
+  ["жовтня", 10], ["жовтень", 10], ["жовт", 10],
+  ["листопада", 11], ["листопад", 11], ["листоп", 11], ["лист", 11],
+  ["грудня", 12], ["грудень", 12], ["груд", 12],
+]);
+
 export function extractScheduleDates(text, referenceDate = dateInKyiv()) {
   const found = [];
   const seen = new Set();
+  const today = referenceDate;
+  const tomorrow = datePlusOne(referenceDate);
+
   const add = (year, month, day) => {
     if (year < 100) year += 2000;
     if (!isValidDate(year, month, day)) return;
     const iso = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
     if (!seen.has(iso)) { seen.add(iso); found.push(iso); }
   };
+
   for (const match of text.matchAll(/\b(\d{1,2})[.\/]([0-1]?\d)(?:[.\/]((?:20)?\d{2}))?\b/g)) {
     const year = match[3] ? Number(match[3]) : Number(referenceDate.slice(0, 4));
     add(year, Number(match[2]), Number(match[1]));
@@ -89,8 +108,25 @@ export function extractScheduleDates(text, referenceDate = dateInKyiv()) {
   for (const match of text.matchAll(/\b(20\d{2})-(\d{1,2})-(\d{1,2})\b/g)) {
     add(Number(match[1]), Number(match[2]), Number(match[3]));
   }
-  const today = referenceDate;
-  const tomorrow = datePlusOne(referenceDate);
+
+  // Ukrainian month names: "20 листопада", "на 20 листопада 2026", "20 листоп."
+  for (const match of text.matchAll(/(?<!\d)(\d{1,2})\s+([а-яіїєґ]+)(?:\s+((?:20)?\d{2}))?/giu)) {
+    const word = match[2].toLowerCase();
+    const month = UKRAINIAN_MONTHS.get(word);
+    if (month) {
+      const year = match[3] ? Number(match[3]) : Number(referenceDate.slice(0, 4));
+      add(year, month, Number(match[1]));
+    }
+  }
+
+  // Explicit relative date phrases
+  if (/(?:^|[^\p{L}\p{N}])(?:на\s+)?завтра(?:[^\p{L}\p{N}]|$)|(?:на\s+)?наступн(?:у|ий)\s+(?:добу|день)/iu.test(text)) {
+    if (!seen.has(tomorrow)) { seen.add(tomorrow); found.push(tomorrow); }
+  }
+  if (/(?:^|[^\p{L}\p{N}])(?:на\s+)?сьогодні(?:[^\p{L}\p{N}]|$)|(?:на\s+)?поточн(?:у|ий)\s+(?:добу|день)/iu.test(text)) {
+    if (!seen.has(today)) { seen.add(today); found.push(today); }
+  }
+
   return found.filter((date) => date === today || date === tomorrow);
 }
 
@@ -174,7 +210,7 @@ export function isScheduleCancellation(text) {
   if (typeof text !== "string") return false;
   const lower = text.toLowerCase();
   const hasSchedule = /графік|гпв|відключен/i.test(lower);
-  const hasCancel = /скасован|відмінен|відміна|скасування|не застосову|не буде|діяти не буд|без відключень/i.test(lower);
+  const hasCancel = /скасован|відмінен|відміна|скасування|не застосову|не буде|діяти не буд|не діє|не діятиме|без відключень/i.test(lower);
   return hasSchedule && hasCancel;
 }
 
@@ -447,10 +483,7 @@ function normalizeYasno(payload, sourceId, now = new Date()) {
   return { channel: sourceId, sourceUrl: source.url, title: source.title, fetchedAt: now.toISOString(), today, tomorrow, schedules };
 }
 
-const UKRAINIAN_MONTHS = new Map([
-  ["січня", 1], ["лютого", 2], ["березня", 3], ["квітня", 4], ["травня", 5], ["червня", 6],
-  ["липня", 7], ["серпня", 8], ["вересня", 9], ["жовтня", 10], ["листопада", 11], ["грудня", 12],
-]);
+
 
 function dateFromCherkasyTitle(title, referenceDate) {
   const match = String(title).match(/на\s+(\d{1,2})\s+(січня|лютого|березня|квітня|травня|червня|липня|серпня|вересня|жовтня|листопада|грудня)/iu);

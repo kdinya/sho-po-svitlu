@@ -702,3 +702,47 @@ test("parseTelegramHtml: загальне повідомлення про ска
     { start: 720, end: 770 },
   ]);
 });
+
+test("extractScheduleDates: розпізнає дату на завтра словами та назвами місяців", () => {
+  const ref = "2026-11-19";
+  assert.deepEqual(extractScheduleDates("Графік відключень на завтра:\nЧерга 1.1: 10-12", ref), ["2026-11-20"]);
+  assert.deepEqual(extractScheduleDates("Графік відключень на наступну добу:\nЧерга 1.1: 10-12", ref), ["2026-11-20"]);
+  assert.deepEqual(extractScheduleDates("Графік відключень на 20 листопада:\nЧерга 1.1: 10-12", ref), ["2026-11-20"]);
+  assert.deepEqual(extractScheduleDates("Графік на сьогодні:\nЧерга 1.1: 10-12", ref), ["2026-11-19"]);
+  assert.deepEqual(extractScheduleDates("Графік на 19 листопада 2026:\nЧерга 1.1: 10-12", ref), ["2026-11-19"]);
+});
+
+test("parseTelegramHtml: ранковий графік 2 через 2 скасовано о 07:30, перевірка о 15:00 не показує відключень між 07:30 і 15:00, а графік на завтра зберігається", () => {
+  const html = `
+<div class="tgme_widget_message_wrap">
+  <div class="tgme_widget_message_text">На 19.11.2026 графік відключень 2 через 2:<br>Черга 1.1: 06-08, 10-12, 14-16, 18-20, 22-24</div>
+  <time datetime="2026-11-19T05:00:00+00:00"></time>
+</div>
+<div class="tgme_widget_message_wrap">
+  <div class="tgme_widget_message_text">Увага! О 07:30 за розпорядженням НЕК Укренерго графік погодинних відключень на сьогодні скасовано!</div>
+  <time datetime="2026-11-19T05:30:00+00:00"></time>
+</div>
+<div class="tgme_widget_message_wrap">
+  <div class="tgme_widget_message_text">Оприлюднено графік погодинних відключень на завтра, 20 листопада:<br>Черга 1.1: 08-10, 12-14</div>
+  <time datetime="2026-11-19T12:00:00+00:00"></time>
+</div>
+`;
+  const result = parseTelegramHtml(html, { channel: "test_channel", now: new Date("2026-11-19T13:00:00.000Z") }); // 15:00 Kyiv
+  const today = "2026-11-19";
+  const tomorrow = "2026-11-20";
+
+  assert.equal(result.today, today);
+  assert.equal(result.tomorrow, tomorrow);
+
+  // На сьогодні: відключення 06-08 обрізано до 07:30 (360-450).
+  // Відключення 10-12 та 14-16 НЕ відновлюються, бо графік було скасовано о 07:30.
+  assert.deepEqual(result.schedules[today].queues["1.1"], [
+    { start: 360, end: 450 },
+  ]);
+
+  // На завтра: графік 08-10 (480-600) та 12-14 (720-840) не пропущено й збережено повністю.
+  assert.deepEqual(result.schedules[tomorrow].queues["1.1"], [
+    { start: 480, end: 600 },
+    { start: 720, end: 840 },
+  ]);
+});
