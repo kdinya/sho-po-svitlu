@@ -59,6 +59,35 @@ export function preserveElapsedOutages(previousPeriods = [], currentPeriods = []
   return mergeIntervals([...preserved, ...currentAndFuture]);
 }
 
+function kyivMinutes(date) {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/Kyiv", hour: "2-digit", minute: "2-digit", hourCycle: "h23",
+  }).formatToParts(date);
+  const hour = Number(parts.find((part) => part.type === "hour")?.value || 0);
+  const minute = Number(parts.find((part) => part.type === "minute")?.value || 0);
+  return hour * 60 + minute;
+}
+
+export function extractEffectiveMinutes(messageText, postedAt, fallbackMinutes = 0) {
+  if (typeof messageText === "string") {
+    const match = messageText.match(/(?:станом\s+на|з|від|о|об)\s+(\d{1,2})[:.](\d{2})/iu);
+    if (match) {
+      const hours = Number(match[1]);
+      const mins = Number(match[2]);
+      if (hours >= 0 && hours < 24 && mins >= 0 && mins < 60) {
+        return hours * 60 + mins;
+      }
+    }
+  }
+  if (postedAt) {
+    const date = new Date(postedAt);
+    if (!Number.isNaN(date.getTime())) {
+      return kyivMinutes(date);
+    }
+  }
+  return fallbackMinutes;
+}
+
 export function mergeClientScheduleData(existingData, incomingData, now = new Date()) {
   if (!existingData || !incomingData) return incomingData;
   if (!incomingData.today || existingData.today !== incomingData.today) return incomingData;
@@ -67,10 +96,11 @@ export function mergeClientScheduleData(existingData, incomingData, now = new Da
   if (!existingSchedule?.queues || !incomingSchedule?.queues) return incomingData;
 
   const { minutes: nowMinutes } = getLocalClock(now);
+  const cutoffMinutes = extractEffectiveMinutes(incomingSchedule.messageText, incomingSchedule.postedAt, nowMinutes);
   const mergedQueues = { ...incomingSchedule.queues };
   for (const [queue, prevPeriods] of Object.entries(existingSchedule.queues)) {
     const nextPeriods = mergedQueues[queue] ?? [];
-    mergedQueues[queue] = preserveElapsedOutages(prevPeriods, nextPeriods, nowMinutes);
+    mergedQueues[queue] = preserveElapsedOutages(prevPeriods, nextPeriods, cutoffMinutes);
   }
 
   return {
