@@ -309,6 +309,7 @@ body[data-screen="home"] .queue-picker { position: absolute; top: var(--queue-pi
   color: var(--muted);
   padding-left: 36px;
   line-height: 1.25;
+  white-space: nowrap;
 }
 .schedule-changes-notice:empty {
   display: none;

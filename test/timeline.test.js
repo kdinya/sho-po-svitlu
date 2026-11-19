@@ -351,12 +351,27 @@ test("mergeClientScheduleData: при відкритті додатку о 15:00
 });
 
 test("formatScheduleChangesLabel: коректно формує підпис часу повідомлення з каналу", () => {
-  // 05:58 UTC взимку (Europe/Kyiv UTC+2) -> 7:58
-  assert.equal(formatScheduleChangesLabel("2026-11-19T05:58:00.000Z"), "(зміни на 7:58)");
-  assert.equal(formatScheduleChangesLabel("2026-11-19T16:04:00.000Z"), "(зміни на 18:04)");
-  // Текстовий fallback
-  assert.equal(formatScheduleChangesLabel(null, "Станом на 07:58 графік оновлено"), "(зміни на 7:58)");
-  assert.equal(formatScheduleChangesLabel(null, "з 14:30 діють зміни"), "(зміни на 14:30)");
+  const refNow = new Date("2026-11-19T12:00:00.000Z");
+
+  // Опубліковано сьогодні (19.11) -> лише час у поточному форматі (зміни на HH:MM)
+  assert.equal(formatScheduleChangesLabel("2026-11-19T05:58:00.000Z", "", { now: refNow }), "(зміни на 7:58)");
+  assert.equal(formatScheduleChangesLabel("2026-11-19T16:04:00.000Z", "", { now: refNow }), "(зміни на 18:04)");
+
+  // Опубліковано вчора (18.11) для графіка на сьогодні або на завтра -> дописується дата після часу
+  assert.equal(formatScheduleChangesLabel("2026-11-18T19:30:00.000Z", "", { now: refNow }), "(зміни на 21:30, 18.11)");
+  assert.equal(formatScheduleChangesLabel("2026-11-18T15:00:00.000Z", "", { now: refNow }), "(зміни на 17:00, 18.11)");
+
+  // Опубліковано раніше поточного місяця
+  assert.equal(formatScheduleChangesLabel("2026-11-15T08:15:00.000Z", "", { now: refNow }), "(зміни на 10:15, 15.11)");
+
+  // Опубліковано минулого року -> включається повний рік
+  assert.equal(formatScheduleChangesLabel("2025-12-31T20:00:00.000Z", "", { now: refNow }), "(зміни на 22:00, 31.12.2025)");
+
+  // Текстовий fallback з повідомлення
+  assert.equal(formatScheduleChangesLabel(null, "Станом на 07:58 графік оновлено", { now: refNow }), "(зміни на 7:58)");
+  assert.equal(formatScheduleChangesLabel(null, "з 14:30 діють зміни", { now: refNow }), "(зміни на 14:30)");
+  assert.equal(formatScheduleChangesLabel(null, "Повідомлення від 18.11 станом на 19:30", { now: refNow }), "(зміни на 19:30, 18.11)");
+
   // Немає даних або порожні рядки
   assert.equal(formatScheduleChangesLabel(null, null), "");
   assert.equal(formatScheduleChangesLabel("", ""), "");

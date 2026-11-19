@@ -14,26 +14,67 @@ export function formatDate(isoDate, options = {}) {
   return `${day}.${month}.${year}`;
 }
 
-export function formatScheduleChangesLabel(postedAt, messageText = "") {
+function getKyivDateParts(date) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Kyiv",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+  const get = (type) => parts.find((part) => part.type === type)?.value;
+  return {
+    year: get("year"),
+    month: get("month"),
+    day: get("day"),
+    iso: `${get("year")}-${get("month")}-${get("day")}`,
+  };
+}
+
+export function formatScheduleChangesLabel(postedAt, messageText = "", { now = new Date() } = {}) {
+  const nowDate = now instanceof Date ? now : new Date(now);
+  const nowKyiv = getKyivDateParts(nowDate);
+
   if (postedAt) {
     const date = new Date(postedAt);
     if (!Number.isNaN(date.getTime())) {
+      const postedKyiv = getKyivDateParts(date);
       const time = new Intl.DateTimeFormat("uk-UA", {
         timeZone: "Europe/Kyiv",
         hour: "numeric",
         minute: "2-digit",
       }).format(date);
-      return `(зміни на ${time})`;
+
+      if (postedKyiv.iso === nowKyiv.iso) {
+        return `(зміни на ${time})`;
+      }
+      const datePart = postedKyiv.year === nowKyiv.year
+        ? `${postedKyiv.day}.${postedKyiv.month}`
+        : `${postedKyiv.day}.${postedKyiv.month}.${postedKyiv.year}`;
+      return `(зміни на ${time}, ${datePart})`;
     }
   }
+
   if (typeof messageText === "string" && messageText.trim()) {
-    const match = messageText.match(/(?:станом\s+на|з|від|о|об)\s+(\d{1,2})[:.](\d{2})/iu);
-    if (match) {
-      const hours = Number(match[1]);
-      const minutes = match[2];
-      return `(зміни на ${hours}:${minutes})`;
+    const timeMatch = messageText.match(/(?:станом\s+на|о|об)\s+(\d{1,2})[:.](\d{2})/iu)
+      ?? messageText.match(/(?:з|від)\s+(\d{1,2}):(\d{2})/iu)
+      ?? messageText.match(/\b([01]?\d|2[0-3]):([0-5]\d)\b/);
+    if (timeMatch) {
+      const hours = Number(timeMatch[1]);
+      const minutes = timeMatch[2];
+      const timeStr = `${hours}:${minutes}`;
+
+      const dateMatch = messageText.match(/(?:від|за|допис\s+від|повідомлення\s+від)?\s*\b(\d{1,2})[.\/](\d{2})\b/iu);
+      if (dateMatch) {
+        const day = dateMatch[1].padStart(2, "0");
+        const month = dateMatch[2].padStart(2, "0");
+        if (day !== nowKyiv.day || month !== nowKyiv.month) {
+          return `(зміни на ${timeStr}, ${day}.${month})`;
+        }
+      }
+      return `(зміни на ${timeStr})`;
     }
   }
+
   return "";
 }
 
