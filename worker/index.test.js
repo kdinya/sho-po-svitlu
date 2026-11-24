@@ -264,7 +264,7 @@ test("Worker використовує KV namespace через binding KV_BINDING
   }
 });
 
-test("після часткового виправлення зберігає не згадані черги й запам'ятовує найбільший набір", async () => {
+test("після часткового виправлення скасовує не згадані черги (відключень не буде) та оновлює згадані", async () => {
   const kv = memoryKv();
   const originalFetch = globalThis.fetch;
   const now = new Date();
@@ -289,21 +289,24 @@ test("після часткового виправлення зберігає н
     const first = await firstResponse.json();
     const scheduleDate = Object.keys(first.schedules)[0];
     assert.equal(scheduleDate, first.tomorrow);
-    assert.equal(Object.keys(first.schedules[scheduleDate].queues).length, 6);
+    assert.equal(Object.keys(first.schedules[scheduleDate].queues).length, 12);
+    assert.deepEqual(first.schedules[scheduleDate].queues["3.1"], [{ start: 600, end: 660 }]);
+    assert.deepEqual(first.schedules[scheduleDate].queues["4.1"], []);
 
     stage = 1;
     const correctionResponse = await handleRequest(new Request(`${url}&refresh=1`), { KV_BINDING: kv });
     const result = await correctionResponse.json();
-    assert.equal(Object.keys(result.schedules[scheduleDate].queues).length, 6);
+    assert.equal(Object.keys(result.schedules[scheduleDate].queues).length, 12);
     assert.deepEqual(result.schedules[scheduleDate].queues["1.1"], [{ start: 720, end: 780 }]);
-    assert.deepEqual(result.schedules[scheduleDate].queues["3.1"], first.schedules[scheduleDate].queues["3.1"]);
-    assert.deepEqual(result.knownQueues, ["1.1", "1.2", "2.1", "2.2", "3.1", "3.2"]);
+    // Черги 3.1 немає в оновленому повідомленні (stage 1 містить лише 4 черги: 1.1-2.2), тому відключення скасовуються
+    assert.deepEqual(result.schedules[scheduleDate].queues["3.1"], []);
+    assert.equal(result.knownQueues.length, 12);
 
     stage = 2;
     const tomorrowResponse = await handleRequest(new Request(`${url}&refresh=1`), { KV_BINDING: kv });
     const tomorrowResult = await tomorrowResponse.json();
-    assert.equal(Object.keys(tomorrowResult.schedules[tomorrowResult.tomorrow].queues).length, 8);
-    assert.deepEqual(tomorrowResult.knownQueues, ["1.1", "1.2", "2.1", "2.2", "3.1", "3.2", "4.1", "4.2"]);
+    assert.equal(Object.keys(tomorrowResult.schedules[tomorrowResult.tomorrow].queues).length, 12);
+    assert.equal(tomorrowResult.knownQueues.length, 12);
   } finally {
     globalThis.fetch = originalFetch;
   }
@@ -771,4 +774,27 @@ test("parseTelegramHtml: ранковий графік 2 через 2 скасо
     { start: 480, end: 600 },
     { start: 720, end: 840 },
   ]);
+});
+
+test("Кіровоградська область: якщо черги немає в списку або вона пуста — відключень не буде", () => {
+  const html = `<html><head><meta property="og:title" content="Світло"></head><body>${messageBlock(
+    "24.11.2026 Графік відключень:\nЧерга 1.1: 04-06, 12-14\nЧерга 1.2:\nЧерга 2.1: -\nЧерга 2.2: відключень немає",
+    "2026-11-24T06:00:00+00:00",
+    1
+  )}</body></html>`;
+  const result = parseTelegramHtml(html, { channel: "SvitloMalovyskivskohoRaionu", now: new Date("2026-11-24T06:00:00Z") });
+  const schedule = result.schedules["2026-11-24"];
+  assert.ok(schedule, "розклад на дату знайдено");
+  // Черга з інтервалами
+  assert.deepEqual(schedule.queues["1.1"], [{ start: 240, end: 360 }, { start: 720, end: 840 }]);
+  // Черга пуста
+  assert.deepEqual(schedule.queues["1.2"], []);
+  // Черга з прочерком
+  assert.deepEqual(schedule.queues["2.1"], []);
+  // Черга з текстом "відключень немає"
+  assert.deepEqual(schedule.queues["2.2"], []);
+  // Черги, яких взагалі немає в повідомленні (3.1-6.2), мають порожній масив відключень (відключень не буде)
+  assert.deepEqual(schedule.queues["3.1"], []);
+  assert.deepEqual(schedule.queues["6.2"], []);
+  assert.equal(Object.keys(schedule.queues).length, 12);
 });

@@ -196,12 +196,11 @@ export function parseQueues(text) {
   const queues = {};
   const lines = text.replace(/\r/g, "").split(/\n/);
   for (const line of lines) {
-    const match = line.match(/(?:черга|черги|черг\w*)\s*([1-6][.]\d)\s*[:：-]\s*(.*)/i);
+    const match = line.match(/(?:(?:черга|черги|черг\w*)\s*([1-6][.]\d)|([1-6][.]\d)\s*(?:черга|черги|черг\w*)?)\s*[:：-]\s*(.*)/i);
     if (!match) continue;
-    const queue = match[1];
-    const periods = parseIntervals(match[2]);
-    const explicitlyNoOutages = /(?:нема(?:є)?(?:\s+(?:планових\s+)?відключень)?|(?:планових\s+)?відключень\s+(?:не\s+буде|нема(?:є)?|не\s+планується)|без\s+відключень|відключення\s+(?:скасовано|відмінено|відсутні)|відсутні|графік\s+(?:відключень\s+)?(?:скасовано|відмінено)|(?:скасовано|відмінено)\s+відключення|не\s+вимикають|світло\s+є|(?:увімкнули|включили|відновили\s+електропостачання)|[-–—−]+)/iu.test(match[2].trim());
-    if (periods.length || explicitlyNoOutages) queues[queue] = periods;
+    const queue = match[1] || match[2];
+    const periods = parseIntervals(match[3]);
+    queues[queue] = periods;
   }
   return queues;
 }
@@ -280,7 +279,11 @@ export function mergeTelegramScheduleData(current, previous, historicalQueues = 
     const fresh = current.schedules?.[date];
     const old = previous?.schedules?.[date];
     const effectiveMinutes = extractEffectiveMinutes(fresh?.messageText, fresh?.postedAt, kyivMinutes(fetchedAt));
-    const queueNames = new Set([...Object.keys(old?.queues || {}), ...Object.keys(fresh?.queues || {})]);
+    const queueNames = new Set([
+      ...EXPECTED_QUEUES,
+      ...Object.keys(old?.queues || {}),
+      ...Object.keys(fresh?.queues || {}),
+    ]);
     const queues = {};
     for (const queue of queueNames) {
       if (fresh?.queues && Object.hasOwn(fresh.queues, queue)) {
@@ -289,7 +292,11 @@ export function mergeTelegramScheduleData(current, previous, historicalQueues = 
           ? preserveElapsedOutages(old?.queues?.[queue], incoming, effectiveMinutes)
           : incoming;
       } else if (old?.queues && Object.hasOwn(old.queues, queue)) {
-        queues[queue] = old.queues[queue];
+        queues[queue] = date === current.today && fresh
+          ? preserveElapsedOutages(old.queues[queue], [], effectiveMinutes)
+          : fresh ? [] : old.queues[queue];
+      } else if (fresh) {
+        queues[queue] = [];
       }
     }
     const base = fresh || old;
@@ -316,6 +323,14 @@ export function parseTelegramHtml(html, { channel, now = new Date() } = {}) {
       queues = Object.fromEntries(EXPECTED_QUEUES.map((q) => [q, []]));
     }
     if (!Object.keys(queues).length) continue;
+    const fullQueues = {};
+    for (const q of EXPECTED_QUEUES) {
+      fullQueues[q] = queues[q] ?? [];
+    }
+    for (const [q, periods] of Object.entries(queues)) {
+      if (!Object.hasOwn(fullQueues, q)) fullQueues[q] = periods;
+    }
+    queues = fullQueues;
     const mentionedDates = extractScheduleDates(message.text, today);
     const postedDate = message.postedAt ? dateInKyiv(new Date(message.postedAt)) : null;
     const targetDates = mentionedDates.length ? mentionedDates : [postedDate ?? today];
