@@ -763,6 +763,7 @@ body[data-power="off"] .zzz { display: block; }
 .completed-nicknames-copy, .completed-nicknames-missing { margin: 8px 0 14px; color: var(--muted); font-size: 14px; line-height: 1.5; }
 .completed-nicknames-list { display: grid; gap: 7px; max-height: 42vh; overflow: auto; margin: 0 0 12px; padding: 0; list-style: none; }
 .completed-nicknames-list li { padding: 9px 12px; border: 1px solid var(--line); border-radius: 12px; background: rgba(8, 16, 42, .55); overflow-wrap: anywhere; }
+.completed-nickname-seen { color: var(--muted); font-size: 13px; white-space: nowrap; }
 .completed-nicknames-box > .primary-btn { width: 100%; justify-content: center; }
 .nickname-privacy-note { margin: 8px 2px 14px; color: var(--muted); font-size: 12.5px; line-height: 1.5; }
 .pwa-buttons .primary-btn.wide { width: 100%; justify-content: center; }

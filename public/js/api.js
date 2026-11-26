@@ -214,5 +214,11 @@ export async function fetchCompletedSetupNicknames({ workerUrl } = {}) {
   if (!base) return null;
   const data = await requestUsersData(`${base}/api/completed-settings/nicknames`, { method: "GET", headers: { Accept: "application/json" } });
   if (!Array.isArray(data?.nicknames) || !Number.isFinite(data?.users) || !Number.isFinite(data?.missingNicknames)) return null;
-  return { users: data.users, nicknames: data.nicknames.filter((nickname) => typeof nickname === "string"), missingNicknames: data.missingNicknames };
+  const nicknames = data.nicknames.filter((nickname) => typeof nickname === "string");
+  const entries = Array.isArray(data.entries)
+    ? data.entries
+        .filter((entry) => entry && typeof entry.nickname === "string")
+        .map((entry) => ({ nickname: entry.nickname, lastSeen: typeof entry.lastSeen === "string" && Number.isFinite(Date.parse(entry.lastSeen)) ? entry.lastSeen : null }))
+    : nicknames.map((nickname) => ({ nickname, lastSeen: null }));
+  return { users: data.users, nicknames, entries, missingNicknames: data.missingNicknames };
 }

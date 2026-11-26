@@ -18,10 +18,15 @@ test("fetchCompletedSetupNicknames: returns the public test nickname list withou
   let url;
   globalThis.fetch = async (value) => {
     url = value.toString();
-    return new Response(JSON.stringify({ ok: true, users: 2, nicknames: ["Світлячок", "Mila"], missingNicknames: 1 }), { status: 200 });
+    return new Response(JSON.stringify({ ok: true, users: 2, nicknames: ["Світлячок", "Mila"], entries: [{ nickname: "Світлячок", lastSeen: "2026-11-26T12:05:00.000Z" }, { nickname: "Mila", lastSeen: "broken" }], missingNicknames: 1 }), { status: 200 });
   };
   try {
-    assert.deepEqual(await fetchCompletedSetupNicknames({ workerUrl: "https://worker.test.dev" }), { users: 2, nicknames: ["Світлячок", "Mila"], missingNicknames: 1 });
+    assert.deepEqual(await fetchCompletedSetupNicknames({ workerUrl: "https://worker.test.dev" }), {
+      users: 2,
+      nicknames: ["Світлячок", "Mila"],
+      entries: [{ nickname: "Світлячок", lastSeen: "2026-11-26T12:05:00.000Z" }, { nickname: "Mila", lastSeen: null }],
+      missingNicknames: 1,
+    });
     assert.equal(url, "https://worker.test.dev/api/completed-settings/nicknames");
   } finally {
     globalThis.fetch = originalFetch;

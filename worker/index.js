@@ -22,6 +22,7 @@ const COMPLETED_COUNTER_NAME = "sho-po-svitlu-completed-settings";
 // New counter generation starts from zero while retaining the previous records in storage.
 const COMPLETED_COUNTER_GENERATION = "v2";
 const COMPLETED_COUNTER_COUNT_KEY = `${COMPLETED_COUNTER_GENERATION}:count`;
+const LAST_SEEN_REFRESH_MS = 5 * 60 * 1000;
 const RESERVED_SETUP_NICKNAME = "shoposvitlu_bot";
 const SETUP_NICKNAME_PATTERN = /^[\p{L}\p{M}\p{N}_ -]+$/u;
 const UKRAINE_REGIONS = new Set([
@@ -956,19 +957,23 @@ export class CompletedSetupCounter {
     if (url.pathname === "/nicknames" && request.method === "GET") {
       const count = Math.max(0, Number(await this.ctx.storage.get(COMPLETED_COUNTER_COUNT_KEY) ?? 0));
       const nicknames = [];
+      const entries = [];
       const prefix = `${COMPLETED_COUNTER_GENERATION}:user:`;
       let startAfter;
       while (true) {
         const records = await this.ctx.storage.list({ prefix, limit: 1000, ...(startAfter ? { startAfter } : {}) });
         for (const value of records.values()) {
           const nickname = value && typeof value === "object" && typeof value.nickname === "string" ? value.nickname : "";
-          if (nickname) nicknames.push(nickname);
+          if (!nickname) continue;
+          nicknames.push(nickname);
+          const lastSeenMs = Date.parse(value.lastSeen);
+          entries.push({ nickname, lastSeen: Number.isFinite(lastSeenMs) ? new Date(lastSeenMs).toISOString() : null });
         }
         if (records.size < 1000) break;
         startAfter = [...records.keys()].at(-1);
         if (!startAfter) break;
       }
-      return Response.json({ ok: true, users: Number.isFinite(count) ? count : 0, nicknames, missingNicknames: Math.max(0, count - nicknames.length) });
+      return Response.json({ ok: true, users: Number.isFinite(count) ? count : 0, nicknames, entries, missingNicknames: Math.max(0, count - nicknames.length) });
     }
     if (url.pathname !== "/register" || request.method !== "POST") {
       return Response.json({ error: "not_found", message: "Маршрут не знайдено." }, { status: 404 });
@@ -990,7 +995,13 @@ export class CompletedSetupCounter {
     const result = await this.ctx.storage.transaction(async (transaction) => {
       const count = Math.max(0, Number(await transaction.get(COMPLETED_COUNTER_COUNT_KEY) ?? 0));
       const key = `${COMPLETED_COUNTER_GENERATION}:user:${id}`;
-      const exists = await transaction.get(key) !== undefined;
+      const previous = await transaction.get(key);
+      const exists = previous !== undefined;
+      const nowMs = Date.now();
+      const previousSeenMs = Date.parse(previous?.lastSeen);
+      const lastSeen = Number.isFinite(previousSeenMs) && nowMs - previousSeenMs < LAST_SEEN_REFRESH_MS
+        ? new Date(previousSeenMs).toISOString()
+        : new Date(nowMs).toISOString();
       if (nickname.toLowerCase() === RESERVED_SETUP_NICKNAME) {
         if (exists) {
           await transaction.delete(key);
@@ -1001,11 +1012,11 @@ export class CompletedSetupCounter {
         return { users: count, isNew: false, excluded: true };
       }
       if (exists) {
-        await transaction.put(key, { nickname });
+        await transaction.put(key, { ...(previous && typeof previous === "object" ? previous : {}), nickname, lastSeen });
         return { users: count, isNew: false, excluded: false };
       }
       const nextCount = count + 1;
-      await transaction.put(key, { nickname });
+      await transaction.put(key, { nickname, lastSeen });
       await transaction.put(COMPLETED_COUNTER_COUNT_KEY, nextCount);
       return { users: nextCount, isNew: true, excluded: false };
     });
@@ -1155,7 +1166,7 @@ export async function handleRequest(request, env = {}) {
     try {
       const data = await callCompletedSetupCounter(env, "/nicknames");
       if (!Array.isArray(data?.nicknames) || !Number.isFinite(data?.users)) return json({ ok: false, users: null, nicknames: [], missingNicknames: null }, request, 503);
-      return json({ ok: true, users: data.users, nicknames: data.nicknames, missingNicknames: data.missingNicknames }, request);
+      return json({ ok: true, users: data.users, nicknames: data.nicknames, entries: Array.isArray(data.entries) ? data.entries : [], missingNicknames: data.missingNicknames }, request);
     } catch {
       return json({ ok: false, users: null, nicknames: [], missingNicknames: null, message: "Не вдалося прочитати тестовий список." }, request, 503);
     }

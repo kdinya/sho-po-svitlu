@@ -547,7 +547,7 @@ test("/api/completed-settings/nicknames: exposes nicknames only, migrates old re
   const env = { COMPLETED_SETUP_COUNTER: counter };
   const response = await handleRequest(new Request("https://worker.example/api/completed-settings/nicknames"), env);
   assert.equal(response.status, 200);
-  assert.deepEqual(await response.json(), { ok: true, users: 2, nicknames: ["Світлячок"], missingNicknames: 1 });
+  assert.deepEqual(await response.json(), { ok: true, users: 2, nicknames: ["Світлячок"], entries: [{ nickname: "Світлячок", lastSeen: null }], missingNicknames: 1 });
 
   const migrate = await handleRequest(new Request("https://worker.example/api/complete-setup", {
     method: "POST", body: JSON.stringify({ id: oldId, nickname: "Сонячний_Кіт" }),
@@ -797,4 +797,32 @@ test("Кіровоградська область: якщо черги нема�
   assert.deepEqual(schedule.queues["3.1"], []);
   assert.deepEqual(schedule.queues["6.2"], []);
   assert.equal(Object.keys(schedule.queues).length, 12);
+});
+
+
+test("/api/complete-setup: stores lastSeen on registration and refreshes it on later visits", async () => {
+  const counter = memoryCompletedCounter();
+  const env = { COMPLETED_SETUP_COUNTER: counter };
+  const id = "last-seen-browser-id-123456";
+  const register = () => handleRequest(new Request("https://worker.example/api/complete-setup", {
+    method: "POST", body: JSON.stringify({ id, nickname: "Олена" }),
+  }), env);
+  const list = async () => (await (await handleRequest(new Request("https://worker.example/api/completed-settings/nicknames"), env)).json()).entries;
+
+  assert.equal((await (await register()).json()).isNew, true);
+  const [first] = await list();
+  assert.equal(first.nickname, "Олена");
+  assert.ok(Number.isFinite(Date.parse(first.lastSeen)));
+
+  // Повторний вхід одразу після першого не перезаписує час (захист від зайвих записів).
+  assert.equal((await (await register()).json()).isNew, false);
+  assert.equal((await list())[0].lastSeen, first.lastSeen);
+
+  // Через 10 хвилин час оновлюється.
+  const key = `v2:user:${id}`;
+  const old = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+  counter.entries.set(key, { ...counter.entries.get(key), lastSeen: old });
+  await register();
+  const [updated] = await list();
+  assert.ok(Date.parse(updated.lastSeen) > Date.parse(old));
 });

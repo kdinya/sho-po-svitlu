@@ -1804,6 +1804,12 @@ function renderUsersCount(count) {
   els.shareCounter.hidden = false;
 }
 
+function formatLastSeen(value) {
+  const time = Date.parse(value);
+  if (!Number.isFinite(time)) return "";
+  return new Date(time).toLocaleString("uk-UA", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+}
+
 async function openCompletedNicknames() {
   if (!els.completedNicknamesDialog || !settings.workerUrl) return;
   els.completedNicknamesSummary.textContent = "Збираємо компанію…";
@@ -1814,14 +1820,22 @@ async function openCompletedNicknames() {
     const result = await fetchCompletedSetupNicknames({ workerUrl: settings.workerUrl });
     if (!result) throw new Error("Не вдалося прочитати список.");
     els.completedNicknamesSummary.textContent = `У лічильнику: ${result.users.toLocaleString("uk-UA")}. Ніків у списку: ${result.nicknames.length.toLocaleString("uk-UA")}.`;
-    if (!result.nicknames.length) {
+    const entries = Array.isArray(result.entries) ? result.entries : result.nicknames.map((nickname) => ({ nickname, lastSeen: null }));
+    if (!entries.length) {
       const item = document.createElement("li");
       item.textContent = "Поки що тут тихенько — ніки ще збираються 🙂";
       els.completedNicknamesList.append(item);
     } else {
-      [...result.nicknames].sort((a, b) => a.localeCompare(b, "uk")).forEach((nickname) => {
+      [...entries].sort((a, b) => a.nickname.localeCompare(b.nickname, "uk")).forEach(({ nickname, lastSeen }) => {
         const item = document.createElement("li");
         item.textContent = nickname;
+        const seenLabel = formatLastSeen(lastSeen);
+        if (seenLabel) {
+          const seen = document.createElement("span");
+          seen.className = "completed-nickname-seen";
+          seen.textContent = ` (${seenLabel})`;
+          item.append(seen);
+        }
         els.completedNicknamesList.append(item);
       });
     }
@@ -1867,14 +1881,14 @@ async function syncUsersCount({ force = false } = {}) {
     try {
       const profile = readStoredProfile();
       let count;
-      if (profile && !profile.registered) {
+      if (profile) {
         const result = await registerCompletedSetup({
           workerUrl: settings.workerUrl,
           clientId: await getClientId(),
           nickname: profile.nickname,
         });
         if (!result) return { ok: false, excluded: false };
-        saveProfile({ ...profile, registered: true });
+        if (!profile.registered) saveProfile({ ...profile, registered: true });
         count = result.users;
         if (result.excluded) {
           usersSyncedAt = Date.now();
